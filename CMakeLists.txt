@@ -14,17 +14,37 @@ configure_file (
   "${PROJECT_BINARY_DIR}/src/version_unittest.cc"
 )
 
-include_directories("${PROJECT_SOURCE_DIR}/include")
+include (CheckIncludeFiles)
+check_include_files (string_view HAVE_STRING_VIEW)
+
+configure_file (
+  "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/config.h.in"
+  "${PROJECT_BINARY_DIR}/platform/berrydb/platform/config.h"
+)
+
+include_directories (
+  "${PROJECT_SOURCE_DIR}/include"
+  "${PROJECT_SOURCE_DIR}/platform"
+  "${PROJECT_BINARY_DIR}/platform"
+  )
 
 option (BUILD_TESTS
   "Build BerryDB's unit tests" ON)
 
-add_library (berrydb
-  include/berrydb.h
-  include/berrydb/database.h
-  include/berrydb/manager.h
-  include/berrydb/version.h
-  src/database.cc
+add_library (berrydb "")
+target_sources(berrydb
+  PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/database.cc"
+  PUBLIC
+    "${PROJECT_BINARY_DIR}/platform/berrydb/platform/config.h"
+    "${PROJECT_SOURCE_DIR}/platform/berrydb/platform.h"
+    "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/dcheck.h"
+    "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/string_view.h"
+    "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/types.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/database.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/manager.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/version.h"
   )
 
 if (BUILD_TESTS)
@@ -33,9 +53,12 @@ if (BUILD_TESTS)
   # This project is tested using GoogleTest.
   add_subdirectory (third_party/googletest)
 
-  add_executable (berrydb_tests
-    "${PROJECT_BINARY_DIR}/src/version_unittest.cc"
-    src/database_unittest.cc
+  add_executable (berrydb_tests "")
+  target_sources (berrydb_tests
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/src/database_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/string_view_unittest.cc"
+      "${PROJECT_BINARY_DIR}/src/version_unittest.cc"
     )
 
   target_link_libraries(berrydb_tests berrydb gtest_main)

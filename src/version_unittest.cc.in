@@ -1,8 +1,16 @@
+// Copyright 2017 The BerryDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 #include "berrydb/version.h"
 
-static_assert(berrydb::kVersionMajor == @BerryDB_VERSION_MAJOR@,
+namespace berrydb {
+
+static_assert(kVersionMajor == @BerryDB_VERSION_MAJOR@,
     "Version mismatch between version.h and CMakeLists.txt");
-static_assert(berrydb::kVersionMinor == @BerryDB_VERSION_MINOR@,
+static_assert(kVersionMinor == @BerryDB_VERSION_MINOR@,
     "Version mismatch between version.h and CMakeLists.txt");
-static_assert(berrydb::kVersionPatch == @BerryDB_VERSION_PATCH@,
+static_assert(kVersionPatch == @BerryDB_VERSION_PATCH@,
     "Version mismatch between version.h and CMakeLists.txt");
+
+}  // namespace berrydb

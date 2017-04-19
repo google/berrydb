@@ -2,10 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifndef BERRYDB_PLATFORM_TYPES_H_
+#define BERRYDB_PLATFORM_TYPES_H_
+
+#include <cstddef>
+#include <cstdint>
+
 namespace berrydb {
+
+using std::uint8_t;
+using std::uint32_t;
+using std::uint64_t;
 
 }  // namespace berrydb
 
-#include "berrydb/database.h"
-#include "berrydb/manager.h"
-#include "berrydb/version.h"
+#endif  // BERRYDB_PLATFORM_TYPES_H_

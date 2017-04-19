@@ -1,2 +1,6 @@
 -Iinclude/
+-Iplatform/
+-Ithird_party/googletest/googletest/include/
+-Ithird_party/googletest/googlemock/include/
+-Iout/platform/
 -std=c++11
