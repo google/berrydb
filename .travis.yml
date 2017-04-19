@@ -1,0 +1,32 @@
+# Build matrix / environment variable are explained on:
+# http://about.travis-ci.org/docs/user/build-configuration/
+# This file can be validated on:
+# http://lint.travis-ci.org/
+
+sudo: false
+dist: trusty
+language: cpp
+
+compiler:
+  - gcc
+  - clang
+os:
+  - linux
+  - osx
+
+addons:
+  apt:
+    # List of whitelisted in travis packages for ubuntu-precise can be found here:
+    #   https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-precise
+    # List of whitelisted in travis apt-sources:
+    #   https://github.com/travis-ci/apt-source-whitelist/blob/master/ubuntu.json
+    sources:
+    - ubuntu-toolchain-r-test
+    - llvm-toolchain-trusty-4.0
+    packages:
+    - cmake
+    - gcc-6
+    - g++-6
+    - clang-4.0
+
+script: mkdir -p out && cd out && cmake .. && CTEST_OUTPUT_ON_FAILURE=1 make all test

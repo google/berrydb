@@ -1,0 +1,8 @@
+#include "berrydb/version.h"
+
+static_assert(berrydb::kVersionMajor == @BerryDB_VERSION_MAJOR@,
+    "Version mismatch between version.h and CMakeLists.txt");
+static_assert(berrydb::kVersionMinor == @BerryDB_VERSION_MINOR@,
+    "Version mismatch between version.h and CMakeLists.txt");
+static_assert(berrydb::kVersionPatch == @BerryDB_VERSION_PATCH@,
+    "Version mismatch between version.h and CMakeLists.txt");

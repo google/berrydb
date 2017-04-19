@@ -1,0 +1,26 @@
+version: "{build}"
+
+image:
+  - Visual Studio 2015
+  - Visual Studio 2017
+
+platform:
+  - x86
+  - x64
+
+configuration:
+  - Release
+  - Debug
+
+build:
+  verbosity: minimal
+
+build_script:
+  - git submodule update --init --recursive
+  - mkdir out
+  - cd out
+  - cmake .. -G "Visual Studio 14 2015" -DCMAKE_CONFIGURATION_TYPES="Debug;Release"
+  - cmake --build . --config %CONFIGURATION%
+
+test_script:
+  - ctest -C %CONFIGURATION% --output-on-failure
