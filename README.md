@@ -12,7 +12,7 @@ available in all popular Linux distributions, as well as in
 This project uses submodules for dependency management.
 
 ```bash
-git submodules update --init --recursive
+git submodule update --init --recursive
 ```
 
 If you're using [Atom](https://atom.io/), the following packages can help.
