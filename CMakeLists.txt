@@ -50,6 +50,10 @@ target_sources(berrydb
 if (BUILD_TESTS)
   enable_testing()
 
+  # Prevent overriding the parent project's compiler/linker settings on Windows.
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+
   # This project is tested using GoogleTest.
   add_subdirectory (third_party/googletest)
 

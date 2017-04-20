@@ -11,7 +11,7 @@ class Transaction;
 
 class Database {
  public:
-  Transaction* Transaction();
+  Transaction* NewTransaction();
 };
 
 }  // namespace berrydb
