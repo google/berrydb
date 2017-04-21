@@ -118,13 +118,13 @@ inline bool operator <(const string_view& l, const string_view& r) noexcept {
   return l.compare(r) < 0;
 }
 inline bool operator <=(const string_view& l, const string_view& r) noexcept {
-  return l.compare(r) < 0;
+  return l.compare(r) <= 0;
 }
 inline bool operator >(const string_view& l, const string_view& r) noexcept {
   return l.compare(r) > 0;
 }
 inline bool operator >=(const string_view& l, const string_view& r) noexcept {
-  return l.compare(r) > 0;
+  return l.compare(r) >= 0;
 }
 
 }  // namespace berrydb
