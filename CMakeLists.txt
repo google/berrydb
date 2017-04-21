@@ -34,7 +34,8 @@ option (BUILD_TESTS
 add_library (berrydb "")
 target_sources(berrydb
   PRIVATE
-    "${PROJECT_SOURCE_DIR}/src/database.cc"
+    "${PROJECT_SOURCE_DIR}/src/pool.cc"
+    "${PROJECT_SOURCE_DIR}/src/store.cc"
   PUBLIC
     "${PROJECT_BINARY_DIR}/platform/berrydb/platform/config.h"
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform.h"
@@ -42,8 +43,10 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/string_view.h"
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/types.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb.h"
-    "${PROJECT_SOURCE_DIR}/include/berrydb/database.h"
-    "${PROJECT_SOURCE_DIR}/include/berrydb/manager.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/pool.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/status.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/store.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/transaction.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/version.h"
   )
 
@@ -60,7 +63,7 @@ if (BUILD_TESTS)
   add_executable (berrydb_tests "")
   target_sources (berrydb_tests
     PRIVATE
-      "${PROJECT_SOURCE_DIR}/src/database_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/store_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/string_view_unittest.cc"
       "${PROJECT_BINARY_DIR}/src/version_unittest.cc"
     )

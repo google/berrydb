@@ -12,49 +12,29 @@ namespace berrydb {
 enum class Status;
 
 /**
- * An atomic, isolated (read committed) and durable unit of database operations.
+ * An atomic and durable (once committed) unit of database operations.
  *
- * BerryDB transactions see the results of other committed transactions, which
- * is equivalent to the "read committed" SQL isolation level. This limited
- * guarantee was chosen because it is sufficient for implementing IndexedDB
- * transactions.
+ * Transactions should use an external synchronization mechanism to avoid
+ * read-write conflicts. Specifically, if a transaction writes to a key, its
+ * lifetime must not overlap with the lifetime of any other transaction that
+ * either reads from or writes to the same key.
  */
 class Transaction {
  public:
-  /**
-   * Reads a database key. Sees Put()s and Delete()s made by this transaction.
-   *
-   * @param  key   must point to valid memory until the call returns
-   * @param  value guaranteed to point to valid memory until the next call on
-   *               this transaction
-   * @return       kNotFound if the key does not exist in the database
-   */
-  Status Get(string_view key, string_view& value);
+  /** Reads a store key. Sees Put()s and Delete()s made by this transaction. */
+  Status Get(string_view key, string_view* value);
 
-  /**
-   * Creates / updates a database key. Seen by Gets() made by this transaction.
-   *
-   * @param  key   must point to valid memory until the call returns
-   * @param  value must point to valid memory until the call returns
-   * @return       kSuccess, unless something bad happened
-   */
+  /** Creates / updates a store key. Seen by Gets() made by this transaction. */
   Status Put(string_view key, string_view value);
 
-  /**
-   * Creates / updates a database key. Seen by Gets() made by this transaction.
-   *
-   * @param  key   must point to valid memory until the call returns
-   * @return       kSuccess, unless something bad happened
-   */
+  /** Deletes a store key. Seen by Gets() made by this transaction. */
   Status Delete(string_view key);
 
   /**
-   * Exposes Put()s and Deletes() in this transaction to all other transactions.
+   * Writes Put()s and Deletes() in this transaction to durable storage.
    *
    * After this method is called, the transaction becomes invalid. No other
    * methods should be called.
-   *
-   * @return       kSuccess, unless something bad happened
    */
   Status Commit();
 
@@ -63,11 +43,8 @@ class Transaction {
    *
    * After this method is called, the transaction becomes invalid. No other
    * methods should be called.
-   *
-   * @return       kSuccess, unless something bad happened
    */
   Status Abort();
-
 };
 
 }  // namespace berrydb

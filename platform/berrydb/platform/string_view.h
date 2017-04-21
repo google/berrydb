@@ -58,6 +58,13 @@ class string_view {
   inline string_view(const_pointer data) noexcept
       : data_(data), size_(traits_type::length(data)) { }
 
+  constexpr inline const_iterator cbegin() const noexcept { return data_; }
+  constexpr inline const_iterator cend() const noexcept {
+    return data_ + size_;
+  }
+  constexpr inline const_iterator begin() const noexcept { return cbegin(); }
+  constexpr inline const_iterator end() const noexcept { return cend(); }
+
   constexpr inline size_type size() const noexcept { return size_; }
   constexpr inline size_type length() const noexcept { return size_; }
   constexpr inline bool empty() const noexcept { return size_ == 0; }

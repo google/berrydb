@@ -8,9 +8,13 @@ namespace berrydb {
 
 class Database;
 
-class Manager {
+/** A pool of resources that can be shared among stores. */
+class Pool {
  public:
   Database* Open(std::string path);
+
+  /** Construct a new pool. */
+  static Pool* New();
 };
 
 }  // namespace berrydb
