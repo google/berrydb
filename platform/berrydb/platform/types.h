@@ -13,6 +13,7 @@ namespace berrydb {
 using std::uint8_t;
 using std::uint32_t;
 using std::uint64_t;
+using std::uintptr_t;
 
 }  // namespace berrydb
 

@@ -3,3 +3,6 @@
 // found in the LICENSE file.
 
 #include "berrydb/pool.h"
+
+namespace berrydb {
+}  // namespace berrydb

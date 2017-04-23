@@ -28,6 +28,30 @@ include_directories (
   "${PROJECT_BINARY_DIR}/platform"
   )
 
+# https://github.com/izenecloud/cmake/blob/master/SetCompilerWarningAll.cmake
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  # Use the highest warning level for Visual Studio.
+  set (CMAKE_CXX_WARNING_LEVEL 4)
+  if (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+    STRING(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  else (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+  endif (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+
+else (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  # use -Wall for clang and gcc
+  if (NOT CMAKE_CXX_FLAGS MATCHES "-Wall$")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+  endif (NOT CMAKE_CXX_FLAGS MATCHES "-Wall$")
+
+  # use -Werror for clang and gcc
+  if (NOT CMAKE_CXX_FLAGS MATCHES "-Werror$")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+  endif (NOT CMAKE_CXX_FLAGS MATCHES "-Werror$")
+
+endif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+
+
 option (BUILD_TESTS
   "Build BerryDB's unit tests" ON)
 
@@ -39,15 +63,25 @@ target_sources(berrydb
   PUBLIC
     "${PROJECT_BINARY_DIR}/platform/berrydb/platform/config.h"
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform.h"
+    "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/alloc.h"
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/dcheck.h"
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/string_view.h"
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/types.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/pool.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/space.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/status.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/store.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/transaction.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/version.h"
+    "${PROJECT_SOURCE_DIR}/src/util/platform_allocator.h"
+    "${PROJECT_SOURCE_DIR}/src/page_pool.cc"
+    "${PROJECT_SOURCE_DIR}/src/page_pool.h"
+    "${PROJECT_SOURCE_DIR}/src/page.cc"
+    "${PROJECT_SOURCE_DIR}/src/page.h"
+    "${PROJECT_SOURCE_DIR}/src/pool.cc"
+    "${PROJECT_SOURCE_DIR}/src/space.h"
+    "${PROJECT_SOURCE_DIR}/src/store.cc"
   )
 
 if (BUILD_TESTS)
@@ -55,7 +89,6 @@ if (BUILD_TESTS)
 
   # Prevent overriding the parent project's compiler/linker settings on Windows.
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
 
   # This project is tested using GoogleTest.
   add_subdirectory (third_party/googletest)

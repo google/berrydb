@@ -9,26 +9,27 @@
 
 namespace berrydb {
 
+class Space;
 enum class Status;
 
 /**
  * An atomic and durable (once committed) unit of database operations.
  *
  * Transactions should use an external synchronization mechanism to avoid
- * read-write conflicts. Specifically, if a transaction writes to a key, its
+ * read-write conflicts. Specifically, if a transaction writes to a Space, its
  * lifetime must not overlap with the lifetime of any other transaction that
- * either reads from or writes to the same key.
+ * either reads from or writes to the same Space.
  */
 class Transaction {
  public:
   /** Reads a store key. Sees Put()s and Delete()s made by this transaction. */
-  Status Get(string_view key, string_view* value);
+  Status Get(Space* space, string_view key, string_view* value);
 
   /** Creates / updates a store key. Seen by Gets() made by this transaction. */
-  Status Put(string_view key, string_view value);
+  Status Put(Space* space, string_view key, string_view value);
 
   /** Deletes a store key. Seen by Gets() made by this transaction. */
-  Status Delete(string_view key);
+  Status Delete(Space* space, string_view key);
 
   /**
    * Writes Put()s and Deletes() in this transaction to durable storage.

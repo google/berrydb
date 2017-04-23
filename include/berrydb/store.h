@@ -12,7 +12,10 @@ class Transaction;
 /** A key-value store. */
 class Store {
  public:
+  /** Starts a transaction. */
   Transaction* NewTransaction();
+
+  void Close();
 };
 
 }  // namespace berrydb

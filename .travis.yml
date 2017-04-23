@@ -29,4 +29,9 @@ addons:
     - g++-6
     - clang-4.0
 
+install:
+# /usr/bin/gcc is 4.6 always, but gcc-X.Y is available.
+- if [ "$CXX" = "g++" ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then export CXX="g++-6" CC="gcc-6"; fi
+- if [ "$CXX" = "g++" ] && [ "$TRAVIS_OS_NAME" = "osx" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
+
 script: mkdir -p out && cd out && cmake .. && CTEST_OUTPUT_ON_FAILURE=1 make all test

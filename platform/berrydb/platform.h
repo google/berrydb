@@ -18,7 +18,9 @@
 
 #include "berrydb/platform/config.h"
 
+#include "./platform/alloc.h"
 #include "./platform/dcheck.h"
+#include "./platform/hashing.h"
 #include "./platform/string_view.h"
 #include "./platform/types.h"
 

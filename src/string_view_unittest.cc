@@ -12,8 +12,8 @@ TEST(StringViewTest, ConstructorEmpty) {
   string_view sv;
 
   EXPECT_EQ(sv.data(), nullptr);
-  EXPECT_EQ(sv.length(), 0);
-  EXPECT_EQ(sv.size(), 0);
+  EXPECT_EQ(sv.length(), 0U);
+  EXPECT_EQ(sv.size(), 0U);
   EXPECT_EQ(sv.empty(), true);
 }
 
@@ -22,8 +22,8 @@ TEST(StringViewTest, ConstructorCString) {
   string_view sv(cstring);
 
   EXPECT_EQ(sv.data(), cstring);
-  EXPECT_EQ(sv.length(), 11);
-  EXPECT_EQ(sv.size(), 11);
+  EXPECT_EQ(sv.length(), 11U);
+  EXPECT_EQ(sv.size(), 11U);
   EXPECT_EQ(sv.empty(), false);
 }
 
@@ -32,8 +32,8 @@ TEST(StringViewTest, ConstructorDataSize) {
   string_view sv(data, 42);
 
   EXPECT_EQ(sv.data(), data);
-  EXPECT_EQ(sv.length(), 42);
-  EXPECT_EQ(sv.size(), 42);
+  EXPECT_EQ(sv.length(), 42U);
+  EXPECT_EQ(sv.size(), 42U);
   EXPECT_EQ(sv.empty(), false);
 }
 
@@ -43,8 +43,8 @@ TEST(StringViewTest, ConstructorCopy) {
   string_view sv(source_sv);
 
   EXPECT_EQ(sv.data(), data);
-  EXPECT_EQ(sv.length(), 42);
-  EXPECT_EQ(sv.size(), 42);
+  EXPECT_EQ(sv.length(), 42U);
+  EXPECT_EQ(sv.size(), 42U);
   EXPECT_EQ(sv.empty(), false);
 }
 
@@ -65,8 +65,8 @@ TEST(StringViewTest, RemovePrefixNone) {
 
   sv.remove_prefix(0);
   EXPECT_EQ(sv.data(), buffer);
-  EXPECT_EQ(sv.length(), 11);
-  EXPECT_EQ(sv.size(), 11);
+  EXPECT_EQ(sv.length(), 11U);
+  EXPECT_EQ(sv.size(), 11U);
   EXPECT_EQ(sv.empty(), false);
 }
 
@@ -76,8 +76,8 @@ TEST(StringViewTest, RemovePrefixSingleElement) {
 
   sv.remove_prefix(1);
   EXPECT_EQ(sv.data(), buffer + 1);
-  EXPECT_EQ(sv.length(), 10);
-  EXPECT_EQ(sv.size(), 10);
+  EXPECT_EQ(sv.length(), 10U);
+  EXPECT_EQ(sv.size(), 10U);
   EXPECT_EQ(sv.empty(), false);
 }
 
@@ -87,8 +87,8 @@ TEST(StringViewTest, RemovePrefixMultiElement) {
 
   sv.remove_prefix(6);
   EXPECT_EQ(sv.data(), buffer + 6);
-  EXPECT_EQ(sv.length(), 5);
-  EXPECT_EQ(sv.size(), 5);
+  EXPECT_EQ(sv.length(), 5U);
+  EXPECT_EQ(sv.size(), 5U);
   EXPECT_EQ(sv.empty(), false);
 }
 
@@ -98,8 +98,8 @@ TEST(StringViewTest, RemovePrefixWhole) {
 
   sv.remove_prefix(11);
   EXPECT_EQ(sv.data(), buffer + 11);
-  EXPECT_EQ(sv.length(), 0);
-  EXPECT_EQ(sv.size(), 0);
+  EXPECT_EQ(sv.length(), 0U);
+  EXPECT_EQ(sv.size(), 0U);
   EXPECT_EQ(sv.empty(), true);
 }
 
@@ -109,8 +109,8 @@ TEST(StringViewTest, RemoveSuffixNone) {
 
   sv.remove_suffix(0);
   EXPECT_EQ(sv.data(), buffer);
-  EXPECT_EQ(sv.length(), 11);
-  EXPECT_EQ(sv.size(), 11);
+  EXPECT_EQ(sv.length(), 11U);
+  EXPECT_EQ(sv.size(), 11U);
   EXPECT_EQ(sv.empty(), false);
 }
 
@@ -120,8 +120,8 @@ TEST(StringViewTest, RemoveSuffixPartial) {
 
   sv.remove_suffix(1);
   EXPECT_EQ(sv.data(), buffer);
-  EXPECT_EQ(sv.length(), 10);
-  EXPECT_EQ(sv.size(), 10);
+  EXPECT_EQ(sv.length(), 10U);
+  EXPECT_EQ(sv.size(), 10U);
   EXPECT_EQ(sv.empty(), false);
 }
 
@@ -131,8 +131,8 @@ TEST(StringViewTest, RemoveSuffixWhole) {
 
   sv.remove_suffix(11);
   EXPECT_EQ(sv.data(), buffer);
-  EXPECT_EQ(sv.length(), 0);
-  EXPECT_EQ(sv.size(), 0);
+  EXPECT_EQ(sv.length(), 0U);
+  EXPECT_EQ(sv.size(), 0U);
   EXPECT_EQ(sv.empty(), true);
 }
 
@@ -142,8 +142,8 @@ TEST(StringViewTest, SubstringDefaultCount) {
 
   sv = sv.substr(6);
   EXPECT_EQ(sv.data(), buffer + 6);
-  EXPECT_EQ(sv.length(), 5);
-  EXPECT_EQ(sv.size(), 5);
+  EXPECT_EQ(sv.length(), 5U);
+  EXPECT_EQ(sv.size(), 5U);
   EXPECT_EQ(sv.empty(), false);
 }
 
@@ -153,8 +153,8 @@ TEST(StringViewTest, SubstringZeroCount) {
 
   sv = sv.substr(11, 0);
   EXPECT_EQ(sv.data(), buffer + 11);
-  EXPECT_EQ(sv.length(), 0);
-  EXPECT_EQ(sv.size(), 0);
+  EXPECT_EQ(sv.length(), 0U);
+  EXPECT_EQ(sv.size(), 0U);
   EXPECT_EQ(sv.empty(), true);
 }
 
@@ -164,8 +164,8 @@ TEST(StringViewTest, SubstringCountWithinSize) {
 
   sv = sv.substr(6, 3);
   EXPECT_EQ(sv.data(), buffer + 6);
-  EXPECT_EQ(sv.length(), 3);
-  EXPECT_EQ(sv.size(), 3);
+  EXPECT_EQ(sv.length(), 3U);
+  EXPECT_EQ(sv.size(), 3U);
   EXPECT_EQ(sv.empty(), false);
 }
 
@@ -175,8 +175,8 @@ TEST(StringViewTest, SubstringCountExceedsSize) {
 
   sv = sv.substr(6, 100);
   EXPECT_EQ(sv.data(), buffer + 6);
-  EXPECT_EQ(sv.length(), 5);
-  EXPECT_EQ(sv.size(), 5);
+  EXPECT_EQ(sv.length(), 5U);
+  EXPECT_EQ(sv.size(), 5U);
   EXPECT_EQ(sv.empty(), false);
 }
 
@@ -186,8 +186,8 @@ TEST(StringViewTest, SubstringStartIndexEqualsSize) {
 
   sv = sv.substr(11, 100);
   EXPECT_EQ(sv.data(), buffer + 11);
-  EXPECT_EQ(sv.length(), 0);
-  EXPECT_EQ(sv.size(), 0);
+  EXPECT_EQ(sv.length(), 0U);
+  EXPECT_EQ(sv.size(), 0U);
   EXPECT_EQ(sv.empty(), true);
 }
 
