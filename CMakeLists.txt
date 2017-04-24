@@ -58,9 +58,13 @@ option (BUILD_TESTS
 add_library (berrydb "")
 target_sources(berrydb
   PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/page.h"
     "${PROJECT_SOURCE_DIR}/src/page.cc"
     "${PROJECT_SOURCE_DIR}/src/page_pool.cc"
+    "${PROJECT_SOURCE_DIR}/src/page_pool.h"
     "${PROJECT_SOURCE_DIR}/src/pool.cc"
+    "${PROJECT_SOURCE_DIR}/src/pool_impl.cc"
+    "${PROJECT_SOURCE_DIR}/src/pool_impl.h"
     "${PROJECT_SOURCE_DIR}/src/store.cc"
     "${PROJECT_SOURCE_DIR}/src/util/platform_allocator.h"
     "${PROJECT_SOURCE_DIR}/src/util/vfs_stubs.cc"
@@ -79,8 +83,6 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/include/berrydb/store.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/transaction.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/version.h"
-    "${PROJECT_SOURCE_DIR}/src/page_pool.h"
-    "${PROJECT_SOURCE_DIR}/src/page.h"
     "${PROJECT_SOURCE_DIR}/src/space.h"
   )
 
@@ -100,6 +102,7 @@ if (BUILD_TESTS)
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/string_view_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/vfs_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/store_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/util/platform_allocator_unittest.cc"
       "${PROJECT_BINARY_DIR}/src/version_unittest.cc"
     )
 

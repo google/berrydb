@@ -24,10 +24,13 @@ class PagePool {
 
  public:
   /** Sets up a page pool. Page memory may be allocated on-demand. */
-  PagePool(size_t page_size, size_t page_capacity);
+  PagePool(size_t page_shift, size_t page_capacity);
 
-  /** Size of a page. Must be a power of two. */
+  /** Size of a page. Guaranteed to be a power of two. */
   inline size_t page_size() const noexcept { return page_size_; }
+
+  /** Maximum number of pages cached by this page pool. */
+  inline size_t page_capacity() const noexcept { return page_capacity_; }
 
   /** Fetches a page from a store and pins it.
    *
@@ -64,6 +67,10 @@ class PagePool {
       std::equal_to<PageMapKey>,
       PlatformAllocator<std::pair<const PageMapKey, Page*>>> page_map_;
 
+  /** The page size is (1 << page_shift_). */
+  size_t page_shift_;
+
+  /** Size of a page. Guaranteed to be a power of two. */
   size_t page_size_;
 
   /** Maximum number of pages that the pool will hold. */

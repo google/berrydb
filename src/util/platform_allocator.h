@@ -13,7 +13,7 @@
 
 namespace berrydb {
 
-/** std::allocator variant that uses BerryDB's platform.
+/** std::allocator variant that proxies to BerryDB's platform.
  *
  * Implemented for use with the standard library's containers. */
 template<typename T>
@@ -29,11 +29,11 @@ struct PlatformAllocator {
   typedef const T& const_reference;
   template <typename U> struct rebind { typedef PlatformAllocator<U> other; };
 
-  inline T* allocate(std::size_t bytes) {
-    return reinterpret_cast<T*>(Allocate(bytes));
+  inline T* allocate(std::size_t count) {
+    return reinterpret_cast<T*>(Allocate(sizeof(T) * count));
   }
-  inline void deallocate(T* data, std::size_t bytes) {
-    Deallocate(reinterpret_cast<void*>(data), bytes);
+  inline void deallocate(T* data, std::size_t count) {
+    Deallocate(reinterpret_cast<void*>(data), sizeof(T) * count);
   }
 
   inline PlatformAllocator() noexcept = default;
@@ -43,9 +43,6 @@ struct PlatformAllocator {
     UNUSED(other);
   };
 };
-
-static_assert(std::is_empty<PlatformAllocator<int>>::value,
-    "PlatformAllocator should not have state");
 
 }  // namespace berrydb
 

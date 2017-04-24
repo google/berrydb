@@ -11,17 +11,10 @@
 
 namespace berrydb {
 
-static_assert(std::is_standard_layout<Page>::value,
-    "Page should have standard layout so it can be freed by a custom allocator");
-
 Page* Page::Create(PagePool* page_pool) {
   size_t block_size = sizeof(Page) + page_pool->page_size();
   void* page_block = Allocate(block_size);
   Page* page = new (page_block) Page();
-
-  // The Page address must match the heap block address, so we can release the
-  // page back to the heap later on. This should hold true for any reasonable
-  // compiler, as we static_assserted that Page is a POD, above.
   DCHECK_EQ(reinterpret_cast<void*>(page), page_block);
 
 #if DCHECK_IS_ON()

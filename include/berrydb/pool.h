@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifndef BERRYDB_INCLUDE_POOL_H_
+#define BERRYDB_INCLUDE_POOL_H_
+
 #include <string>
 
 namespace berrydb {
@@ -20,7 +23,8 @@ struct PoolOptions {
 
   /** Maximum number of store pages cached the page pool.
    *
-   * The page pool's memory usage will be
+   * The page pool's peak memory usage is bounded by the page size and the
+   * maximum number of pages. Each page requires a small bookkeeping overhead.
    */
   size_t page_pool_size;
 };
@@ -31,17 +35,22 @@ class Pool {
   Store* Open(std::string path);
 
   /** Construct a new pool. */
-  static Pool* New(const PoolOptions& options);
+  static Pool* Create(const PoolOptions& options);
 
   /** The store page size supported by this resource pool. */
-  inline size_t page_size() const { return 1 << options_.page_shift; }
+  size_t page_size() const;
 
-  /** The options used to create this pool. */
-  inline const PoolOptions& options() const { return options_; }
-
+  /** The maximum number of store pages cached by the page pool. */
+  size_t page_pool_size() const;
  private:
-  PoolOptions options_;
+  friend class PoolImpl;
+
+  /** Use Pool::Create() to create Pool instances. */
+  Pool();
+  /** Use Pool::Release() to destroy Pool instances. */
+  ~Pool();
 };
 
-
 }  // namespace berrydb
+
+#endif  // BERRYDB_INCLUDE_POOL_H_

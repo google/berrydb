@@ -4,5 +4,12 @@
 
 #include "berrydb/pool.h"
 
+#include "./pool_impl.h"
+
 namespace berrydb {
+
+Pool* Pool::Create(const PoolOptions& options) {
+  return PoolImpl::Create(options)->ToPool();
+}
+
 }  // namespace berrydb

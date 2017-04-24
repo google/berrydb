@@ -10,6 +10,9 @@
 
 namespace berrydb {
 
+static_assert((sizeof(size_t) & (sizeof(size_t) - 1)) == 0,
+    "Allocate and Deallocate assume that sizeof(size_t) is a power of two");
+
 TEST(AllocTest, DoesNotCrash) {
   void* buffer = Allocate(64);
   std::memset(buffer, '\0', 64);

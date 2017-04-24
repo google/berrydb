@@ -17,9 +17,6 @@
 
 namespace berrydb {
 
-static_assert((sizeof(size_t) & (sizeof(size_t) - 1)) == 0,
-    "sizeof(size_t) must be a power of two");
-
 /**
  * Dynamically allocates memory.
  *
