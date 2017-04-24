@@ -54,6 +54,8 @@ endif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
 option (BUILD_TESTS
   "Build BerryDB's unit tests" ON)
+option (BUILD_CLI
+  "Build CLI for demo" ON)
 
 add_library (berrydb "")
 target_sources(berrydb
@@ -110,3 +112,12 @@ if (BUILD_TESTS)
 
   add_test (NAME berrydb_tests COMMAND berrydb_tests)
 endif (BUILD_TESTS)
+
+if (BUILD_CLI)
+  add_executable (berrydb_cli "")
+  target_sources (berrydb_cli
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/src/cli/cli.cc"
+  )
+  target_link_libraries(berrydb_cli berrydb)
+endif (BUILD_CLI)
