@@ -5,6 +5,8 @@
 #include <iostream>
 #include <cstring>
 
+#include "boost/tokenizer.hpp"
+
 int main() {
   std::cout << "Welcome to BerryDB!" << std::endl;
   while (true) {

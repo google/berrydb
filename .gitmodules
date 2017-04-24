@@ -1,3 +1,36 @@
 [submodule "third_party/googletest"]
 	path = third_party/googletest
 	url = https://github.com/google/googletest.git
+[submodule "third_party/boost/tokenizer"]
+	path = third_party/boost/tokenizer
+	url = https://github.com/boostorg/tokenizer.git
+[submodule "third_party/boost/assert"]
+	path = third_party/boost/assert
+	url = https://github.com/boostorg/assert.git
+[submodule "third_party/boost/iterator"]
+	path = third_party/boost/iterator
+	url = https://github.com/boostorg/iterator.git
+[submodule "third_party/boost/static_assert"]
+	path = third_party/boost/static_assert
+	url = https://github.com/boostorg/static_assert.git
+[submodule "third_party/boost/config"]
+	path = third_party/boost/config
+	url = https://github.com/boostorg/config.git
+[submodule "third_party/boost/core"]
+	path = third_party/boost/core
+	url = https://github.com/boostorg/core.git
+[submodule "third_party/boost/mpl"]
+	path = third_party/boost/mpl
+	url = https://github.com/boostorg/mpl.git
+[submodule "third_party/boost/preprocessor"]
+	path = third_party/boost/preprocessor
+	url = https://github.com/boostorg/preprocessor.git
+[submodule "third_party/boost/type_traits"]
+	path = third_party/boost/type_traits
+	url = https://github.com/boostorg/type_traits.git
+[submodule "third_party/boost/detail"]
+	path = third_party/boost/detail
+	url = https://github.com/boostorg/detail.git
+[submodule "third_party/boost/throw_exception"]
+	path = third_party/boost/throw_exception
+	url = https://github.com/boostorg/throw_exception.git

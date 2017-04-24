@@ -1,5 +1,16 @@
 -Iinclude/
 -Iplatform/
+-Ithird_party/boost/assert/include/
+-Ithird_party/boost/config/include/
+-Ithird_party/boost/core/include/
+-Ithird_party/boost/detail/include/
+-Ithird_party/boost/iterator/include/
+-Ithird_party/boost/mpl/include/
+-Ithird_party/boost/preprocessor/include/
+-Ithird_party/boost/static_assert/include/
+-Ithird_party/boost/throw_exception/include/
+-Ithird_party/boost/tokenizer/include/
+-Ithird_party/boost/type_traits/include/
 -Ithird_party/googletest/googletest/include/
 -Ithird_party/googletest/googlemock/include/
 -Iout/platform/

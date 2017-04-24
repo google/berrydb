@@ -114,7 +114,23 @@ if (BUILD_TESTS)
 endif (BUILD_TESTS)
 
 if (BUILD_CLI)
+  set (BOOST_ROOT "third_party/")
+
   add_executable (berrydb_cli "")
+  target_include_directories (berrydb_cli
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/third_party/boost/assert/include"
+      "${PROJECT_SOURCE_DIR}/third_party/boost/config/include"
+      "${PROJECT_SOURCE_DIR}/third_party/boost/core/include"
+      "${PROJECT_SOURCE_DIR}/third_party/boost/detail/include"
+      "${PROJECT_SOURCE_DIR}/third_party/boost/iterator/include"
+      "${PROJECT_SOURCE_DIR}/third_party/boost/mpl/include"
+      "${PROJECT_SOURCE_DIR}/third_party/boost/preprocessor/include"
+      "${PROJECT_SOURCE_DIR}/third_party/boost/static_assert/include"
+      "${PROJECT_SOURCE_DIR}/third_party/boost/throw_exception/include"
+      "${PROJECT_SOURCE_DIR}/third_party/boost/tokenizer/include"
+      "${PROJECT_SOURCE_DIR}/third_party/boost/type_traits/include"
+  )
   target_sources (berrydb_cli
     PRIVATE
       "${PROJECT_SOURCE_DIR}/src/cli/cli.cc"
