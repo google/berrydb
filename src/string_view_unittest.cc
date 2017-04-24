@@ -136,6 +136,42 @@ TEST(StringViewTest, RemoveSuffixWhole) {
   EXPECT_EQ(sv.empty(), true);
 }
 
+TEST(StringViewTest, CopyDefault) {
+  char target[12]     = "ZZZZZZZZZZZ";
+  const char buffer[] = "hello world";
+  string_view sv(buffer, 11);
+
+  EXPECT_EQ(6U, sv.copy(target, 6));
+  EXPECT_STREQ(target, "hello ZZZZZ");
+}
+
+TEST(StringViewTest, CopyInner) {
+  char target[12]     = "ZZZZZZZZZZZ";
+  const char buffer[] = "hello world";
+  string_view sv(buffer, 11);
+
+  EXPECT_EQ(5U, sv.copy(target, 5, 3));
+  EXPECT_STREQ(target, "lo woZZZZZZ");
+}
+
+TEST(StringViewTest, CopyEnd) {
+  char target[12]     = "ZZZZZZZZZZZ";
+  const char buffer[] = "hello world";
+  string_view sv(buffer, 11);
+
+  EXPECT_EQ(6U, sv.copy(target, 6, 5));
+  EXPECT_STREQ(target, " worldZZZZZ");
+}
+
+TEST(StringViewTest, CopyPastEnd) {
+  char target[12]     = "ZZZZZZZZZZZ";
+  const char buffer[] = "hello world";
+  string_view sv(buffer, 11);
+
+  EXPECT_EQ(6U, sv.copy(target, 16, 5));
+  EXPECT_STREQ(target, " worldZZZZZ");
+}
+
 TEST(StringViewTest, SubstringDefaultCount) {
   const char buffer[] = "hello world";
   string_view sv(buffer, 11);

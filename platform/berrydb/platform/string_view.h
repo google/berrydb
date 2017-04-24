@@ -88,6 +88,13 @@ class string_view {
     size_ -= n;
   }
 
+  size_type copy(char* to, size_type n, size_type pos = 0) {
+    DCHECK_LE(pos, size_);
+    size_t copy_size = std::min(n, size_ - pos);
+    traits_type::copy(to, data_ + pos, copy_size);
+    return copy_size; 
+  }
+
   // constexpr in C++14
   inline string_view substr(size_type pos = 0, size_type n = npos) const {
     DCHECK_LE(pos, size_);
