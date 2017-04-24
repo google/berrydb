@@ -34,12 +34,12 @@ struct PointerHasher {
 // Hash specialization used for pairs of pointers and size_t.
 template<typename T>
 struct PointerSizeHasher {
-  inline size_t operator()(std::pair<T*, size_t> pair) const noexcept {
+  inline size_t operator()(const std::pair<T*, size_t> pair) const noexcept {
     SizeHasher size_hasher;
     PointerHasher<T> pointer_hasher;
 
-    size_t h1 = size_hasher(pair.first);
-    size_t h2 = pointer_hasher(pair.second);
+    size_t h1 = pointer_hasher(pair.first);
+    size_t h2 = size_hasher(pair.second);
 
     static_assert(sizeof(size_t) == 4 || sizeof(size_t) == 8,
         "This implementation assumes that hash outputs are 32-bit or 64-bit");

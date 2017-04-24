@@ -36,7 +36,8 @@ class Vfs {
    */
   virtual Status OpenForBlockAccess(
       const std::string& file_path, size_t block_shift,
-      bool create_if_missing, bool error_if_exists, BlockAccessFile** file) = 0;
+      bool create_if_missing, bool error_if_exists,
+      BlockAccessFile** result) = 0;
 
 
   /** Deletes a file from the filesystem.

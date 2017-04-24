@@ -60,16 +60,22 @@ option (BUILD_CLI
 add_library (berrydb "")
 target_sources(berrydb
   PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/api/options.cc"
+    "${PROJECT_SOURCE_DIR}/src/api/pool.cc"
+    "${PROJECT_SOURCE_DIR}/src/api/store.cc"
+    "${PROJECT_SOURCE_DIR}/src/api/transaction.cc"
+    "${PROJECT_SOURCE_DIR}/src/api/vfs.cc"
     "${PROJECT_SOURCE_DIR}/src/page.h"
     "${PROJECT_SOURCE_DIR}/src/page.cc"
     "${PROJECT_SOURCE_DIR}/src/page_pool.cc"
     "${PROJECT_SOURCE_DIR}/src/page_pool.h"
-    "${PROJECT_SOURCE_DIR}/src/pool.cc"
     "${PROJECT_SOURCE_DIR}/src/pool_impl.cc"
     "${PROJECT_SOURCE_DIR}/src/pool_impl.h"
-    "${PROJECT_SOURCE_DIR}/src/store.cc"
+    "${PROJECT_SOURCE_DIR}/src/store_impl.cc"
+    "${PROJECT_SOURCE_DIR}/src/store_impl.h"
+    "${PROJECT_SOURCE_DIR}/src/transaction_impl.cc"
+    "${PROJECT_SOURCE_DIR}/src/transaction_impl.h"
     "${PROJECT_SOURCE_DIR}/src/util/platform_allocator.h"
-    "${PROJECT_SOURCE_DIR}/src/util/vfs_stubs.cc"
     "${PROJECT_SOURCE_DIR}/src/vfs/libc_vfs.cc"
   PUBLIC
     "${PROJECT_BINARY_DIR}/platform/berrydb/platform/config.h"

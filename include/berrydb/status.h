@@ -14,8 +14,11 @@ enum class Status : int {
   // The desired key or file was not found.
   kNotFound = 1,
 
-  // Generic I/O error.
+  // The unerlying filesystem returned an error.
   kIoError = 2,
+
+  // The resource pool is over-utilized.
+  kPoolFull = 3,
 };
 
 }  // namespace berrydb

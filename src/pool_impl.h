@@ -2,12 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <string>
+#ifndef BERRYDB_POOL_IMPL_H_
+#define BERRYDB_POOL_IMPL_H_
 
 #include "berrydb/pool.h"
 #include "./page_pool.h"
 
 namespace berrydb {
+
+class StoreImpl;
+class Vfs;
 
 /** Internal representation for the Pool class in the public API. */
 class PoolImpl {
@@ -15,13 +19,27 @@ class PoolImpl {
   /** Create a new pool. */
   static PoolImpl* Create(const PoolOptions& options);
 
+  /** Computes the PoolImpl* for a Pool* coming from the public API. */
+  static inline PoolImpl* FromApi(Pool* api) noexcept {
+    PoolImpl* pool = reinterpret_cast<PoolImpl*>(api);
+    DCHECK_EQ(api, &pool->api_);
+    return pool;
+  }
+  /** Computes the PoolImpl* for a Pool* coming from the public API. */
+  static inline const PoolImpl* FromApi(const Pool* api) noexcept {
+    const PoolImpl* pool = reinterpret_cast<const PoolImpl*>(api);
+    DCHECK_EQ(api, &pool->api_);
+    return pool;
+  }
+
   /** Computes the public API Pool* for this resource pool. */
-  inline Pool* ToPool() noexcept { return &api_; }
+  inline Pool* ToApi() noexcept { return &api_; }
 
-  /** The store page size supported by this resource pool. */
+  // See the public API documention for details.
+  Status OpenStore(
+      const std::string& path, const StoreOptions& options,
+      StoreImpl** result);
   inline size_t page_size() const noexcept { return page_pool_.page_size(); }
-
-  /** Maximum number of store pages cached the page pool. */
   inline size_t page_pool_size() const noexcept {
     return page_pool_.page_capacity();
   }
@@ -30,27 +48,16 @@ class PoolImpl {
   /** Use PoolImpl::Create() to obtain PoolImpl instances. */
   PoolImpl(const PoolOptions& options);
 
-  /** Computes the PoolImpl* for a Pool* coming from the public API. */
-  static inline PoolImpl* FromPool(Pool* api) noexcept {
-    PoolImpl* pool = reinterpret_cast<PoolImpl*>(api);
-    DCHECK_EQ(api, &pool->api_);
-    return pool;
-  }
-  /** Computes the PoolImpl* for a Pool* coming from the public API. */
-  static inline const PoolImpl* FromPool(const Pool* api) noexcept {
-    const PoolImpl* pool = reinterpret_cast<const PoolImpl*>(api);
-    DCHECK_EQ(api, &pool->api_);
-    return pool;
-  }
-
-  // So it can access FromPool() and ToPool().
-  friend class Pool;
-
-  /** The public part of this class must be its first member. */
-  Pool api_;
+  /* The public API version of this class. */
+  Pool api_;  // Must be the first class member.
 
   /** The page pool part of this resource pool. */
   PagePool page_pool_;
+
+  /** The platform services implementation used by this pool's stores. */
+  Vfs* const vfs_;
 };
 
 }  // namespace berrydb
+
+#endif  // BERRYDB_POOL_IMPL_H_

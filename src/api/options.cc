@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "berrydb/pool.h"
-
-#include "./pool_impl.h"
+#include "berrydb/options.h"
 
 namespace berrydb {
 
-Pool* Pool::Create(const PoolOptions& options) {
-  return PoolImpl::Create(options)->ToPool();
-}
+PoolOptions::PoolOptions() : page_shift(15), page_pool_size(), vfs(nullptr) { }
+
+StoreOptions::StoreOptions()
+    : create_if_missing(true), error_if_exists(false) { }
 
 }  // namespace berrydb

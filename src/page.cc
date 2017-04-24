@@ -14,32 +14,37 @@ namespace berrydb {
 Page* Page::Create(PagePool* page_pool) {
   size_t block_size = sizeof(Page) + page_pool->page_size();
   void* page_block = Allocate(block_size);
-  Page* page = new (page_block) Page();
+  Page* page = new (page_block) Page(page_pool, nullptr /* is_not_sentinel */);
   DCHECK_EQ(reinterpret_cast<void*>(page), page_block);
-
-#if DCHECK_IS_ON()
-  page->pool_ = page_pool;
-#endif  // DCHECK_IS_ON()
 
   return page;
 }
 
-Page::Page() : pin_count_(0) {
+Page::Page(PagePool* page_pool, std::nullptr_t is_not_sentinel)
+    : pin_count_(1), is_dirty_(false)
+#if DCHECK_IS_ON()
+    , page_pool_(page_pool), is_sentinel_(false)
+#endif  // DCHECK_IS_ON()
+    {
 #if DCHECK_IS_ON()
   next_ = nullptr;
   prev_ = nullptr;
-#endif  // DCHECK_IS_ON()
+#endif
 }
 
 Page::Page(PagePool* page_pool)
     : next_(this), prev_(this),  // List sentinel initialization
-    // The values below are chosen to trigger DCHECKs if the sentinel is
-    // accidentally mistaken for a real page. The page ID is initialized to a
-    // recognizable pattern.
-    store_(nullptr), page_id_(0x80000000), pin_count_(1) {
+      store_(nullptr), page_id_(0), pin_count_(kSentinelPinCount),
+      is_dirty_(false)
 #if DCHECK_IS_ON()
-  pool_ = page_pool;
+    , page_pool_(page_pool), is_sentinel_(true)
 #endif  // DCHECK_IS_ON()
+      {
+  // The store_ and pin_count_ values below are chosen to trigger DCHECKs if the
+  // sentinel is accidentally mistaken for a real page. We could skip their
+  // initialization when DCHECKs are disabled, but sentinel page stubs are
+  // created very rarely, so initializing the members all the time is an
+  // insignificant performance hit.
 }
 
 }  // namespace berrydb

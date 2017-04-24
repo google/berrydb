@@ -7,41 +7,35 @@
 
 #include <string>
 
+#include "berrydb/status.h"
+
 namespace berrydb {
 
+struct PoolOptions;
+struct StoreOptions;
 class Store;
 
-/** Options used to create a resource pool. */
-struct PoolOptions {
-  /** The base-2 logarithm of the pool's page size.
-   *
-   * The pool's page size can be computed as (1 << page_shift), or
-   * 2 ** page_shift. The pool can only be used to open stores whose page size
-   * matches the pool's page size.
-   */
-  size_t page_shift;
-
-  /** Maximum number of store pages cached the page pool.
-   *
-   * The page pool's peak memory usage is bounded by the page size and the
-   * maximum number of pages. Each page requires a small bookkeeping overhead.
-   */
-  size_t page_pool_size;
-};
-
-/** A pool of resources that can be shared among stores. */
+/** A pool of resources that can be shared among stores.
+ *
+ * Resource pools capture the bulk of a store's resource (memory, I/O) usage.
+ * For best results, a system should have very few pools (ideally, one) that all
+ * the stores use.
+ */
 class Pool {
  public:
-  Store* Open(std::string path);
-
-  /** Construct a new pool. */
+  /** Construct a new resource pool. */
   static Pool* Create(const PoolOptions& options);
+
+  /** Open (or create) a store. */
+  Status OpenStore(
+      const std::string& path, const StoreOptions& options, Store** result);
 
   /** The store page size supported by this resource pool. */
   size_t page_size() const;
 
   /** The maximum number of store pages cached by the page pool. */
   size_t page_pool_size() const;
+
  private:
   friend class PoolImpl;
 

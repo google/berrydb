@@ -5,17 +5,22 @@
 #ifndef BERRYDB_INCLUDE_STORE_H_
 #define BERRYDB_INCLUDE_STORE_H_
 
+#include "berrydb/platform.h"
+
 namespace berrydb {
+
+enum class Status : int;
 
 class Transaction;
 
 /** A key-value store. */
 class Store {
  public:
-  /** Starts a transaction. */
-  Transaction* NewTransaction();
+  /** Starts a transaction against this store. */
+  Transaction* CreateTransaction();
 
-  void Close();
+  /** Closes the store. */
+  Status Close();
 };
 
 }  // namespace berrydb
