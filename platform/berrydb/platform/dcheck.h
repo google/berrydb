@@ -32,4 +32,9 @@
 /** Convenience wrapper over DCHECK. */
 #define DCHECK_LE(a, b)  DCHECK((a) <= (b))
 
+/** Silences compiler warnings about unused variables.
+ *
+ * This is generally necessary in code that uses DCHECK_IS_ON(). */
+#define UNUSED(x)  (void)(x)
+
 #endif  // BERRYDB_PLATFORM_DCHECK_H_

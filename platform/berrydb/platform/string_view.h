@@ -44,7 +44,7 @@ class string_view {
 
   typedef size_t size_type;
 
-  static const size_type npos = -1;
+  static constexpr const size_type npos = ~static_cast<size_t>(0);
 
   constexpr inline string_view() noexcept : data_(nullptr), size_(0) { }
   constexpr inline string_view(const string_view&) noexcept = default;
@@ -92,7 +92,7 @@ class string_view {
     DCHECK_LE(pos, size_);
     size_t copy_size = std::min(n, size_ - pos);
     traits_type::copy(to, data_ + pos, copy_size);
-    return copy_size; 
+    return copy_size;
   }
 
   // constexpr in C++14
@@ -108,6 +108,14 @@ class string_view {
     if (result == 0 && size_ != other.size_)
       result = (size_ < other.size_) ? -1 : 1;
     return result;
+  }
+
+  // Hack to make up for the lack of a std::string constructor override.
+  template<typename Allocator>
+  inline constexpr operator std::basic_string<
+      char, std::char_traits<char>, Allocator>() const {
+    return std::basic_string<char, std::char_traits<char>, Allocator>(
+      data_, size_, Allocator());
   }
  private:
   const_pointer data_;

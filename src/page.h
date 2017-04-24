@@ -49,8 +49,8 @@ class Page {
   inline size_t page_id() const noexcept { return page_id_; }
 
   /** The page data held by this page. */
-  inline void* data() noexcept {
-    return reinterpret_cast<void*>(this + 1);
+  inline uint8_t* data() noexcept {
+    return reinterpret_cast<uint8_t*>(this + 1);
   }
 
   /** True if the pool page's contents can be replaced. */

@@ -10,7 +10,7 @@
 namespace berrydb {
 
 class Space;
-enum class Status;
+enum class Status : int;
 
 /**
  * An atomic and durable (once committed) unit of database operations.

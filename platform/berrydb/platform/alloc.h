@@ -24,19 +24,18 @@ static_assert((sizeof(size_t) & (sizeof(size_t) - 1)) == 0,
  * Dynamically allocates memory.
  *
  * @param bytes guaranteed to be positive
- * @return nullptr if not enough memory is available, otherwise a pointer
- *                 guaranteed to be aligned to size_t
+ * @return a pointer guaranteed to be aligned to size_t
  */
-inline void* Allocate(std::size_t bytes) {
-  DCHECK_GT(bytes, 0);
+inline void* Allocate(std::size_t size_in_bytes) {
+  DCHECK(size_in_bytes > 0);
 
 #if DCHECK_IS_ON()
-  void* heap_block = std::malloc(bytes + sizeof(size_t));
+  void* heap_block = std::malloc(size_in_bytes + sizeof(size_t));
 
-  *static_cast<uintptr_t*>(heap_block) = bytes;
-  void* data = static_cast<void*>(static_cast<uintptr_t*>(heap_block) + 1);
+  *static_cast<size_t*>(heap_block) = size_in_bytes;
+  void* data = static_cast<void*>(static_cast<size_t*>(heap_block) + 1);
 #else  // DCHECK_IS_ON()
-  void* data = std::malloc(bytes);
+  void* data = std::malloc(size_in_bytes);
 #endif  // DCHECK_IS_ON()
 
   DCHECK_EQ(reinterpret_cast<uintptr_t>(data) & (sizeof(size_t) - 1), 0);
@@ -49,21 +48,22 @@ inline void* Allocate(std::size_t bytes) {
  * @param data  result of a previous call to Allocate(bytes)
  * @param bytes must match the value passed to the Allocate() call
  */
-inline void Deallocate(void* data, std::size_t bytes) {
+inline void Deallocate(void* data, std::size_t size_in_bytes) {
+  DCHECK(size_in_bytes > 0);
   DCHECK(data != nullptr);
   DCHECK_EQ(reinterpret_cast<uintptr_t>(data) & (sizeof(size_t) - 1), 0);
 
 #if DCHECK_IS_ON()
-  void* heap_block = static_cast<void*>(static_cast<uintptr_t*>(data) - 1);
+  void* heap_block = static_cast<void*>(static_cast<size_t*>(data) - 1);
 
-  DCHECK_EQ(*static_cast<uintptr_t*>(heap_block), bytes);
+  DCHECK_EQ(*static_cast<size_t*>(heap_block), size_in_bytes);
 #else  // DCHECK_IS_ON()
   void* heap_block = data;
 #endif  // DCHECK_IS_ON()
 
-  free(data);
+  free(heap_block);
 }
 
 }  // namespace berrydb
 
-#endif  // BERRYDB_PLATFORM_TYPES_H_
+#endif  // BERRYDB_PLATFORM_ALLOC_H_

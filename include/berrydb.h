@@ -6,7 +6,9 @@ namespace berrydb {
 
 }  // namespace berrydb
 
-#include "berrydb/database.h"
 #include "berrydb/pool.h"
+#include "berrydb/space.h"
+#include "berrydb/status.h"
+#include "berrydb/store.h"
 #include "berrydb/transaction.h"
 #include "berrydb/version.h"

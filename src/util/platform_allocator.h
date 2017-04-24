@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BERRYDB_ALLOCATOR_H_
-#define BERRYDB_ALLOCATOR_H_
+#ifndef BERRYDB_UTIL_PLATFORM_ALLOCATOR_H_
+#define BERRYDB_UTIL_PLATFORM_ALLOCATOR_H_
 
 #include "berrydb/platform.h"
 
@@ -36,10 +36,12 @@ struct PlatformAllocator {
     Deallocate(reinterpret_cast<void*>(data), bytes);
   }
 
-  PlatformAllocator() noexcept = default;
-  PlatformAllocator(const PlatformAllocator& other) noexcept = default;
+  inline PlatformAllocator() noexcept = default;
+  inline PlatformAllocator(const PlatformAllocator& other) noexcept = default;
   template<typename U>
-  PlatformAllocator(const PlatformAllocator<U> other) noexcept {};
+  inline PlatformAllocator(const PlatformAllocator<U>& other) noexcept {
+    UNUSED(other);
+  };
 };
 
 static_assert(std::is_empty<PlatformAllocator<int>>::value,
@@ -47,4 +49,4 @@ static_assert(std::is_empty<PlatformAllocator<int>>::value,
 
 }  // namespace berrydb
 
-#endif  // BERRYDB_ALLOCATOR_H_
+#endif  // BERRYDB_UTIL_PLATFORM_ALLOCATOR_H_

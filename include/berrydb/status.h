@@ -7,13 +7,15 @@
 
 namespace berrydb {
 
-enum class Status {
+enum class Status : int {
   // Everything went well.
   kSuccess = 0,
 
   // The desired key or file was not found.
   kNotFound = 1,
 
+  // Generic I/O error.
+  kIoError = 2,
 };
 
 }  // namespace berrydb

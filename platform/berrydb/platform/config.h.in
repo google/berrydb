@@ -14,4 +14,4 @@
 // and most of the configuration can go away.
 #cmakedefine BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW
 
-#endif  // BERRYDB_PLATFORM_DCHECK_H_
+#endif  // BERRYDB_PLATFORM_CONFIG_H_
