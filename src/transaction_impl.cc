@@ -19,28 +19,62 @@ TransactionImpl* TransactionImpl::Create(StoreImpl* store) {
   return transaction;
 }
 
+void TransactionImpl::Release() {
+  this->~TransactionImpl();
+  void* heap_block = static_cast<void*>(this);
+  Deallocate(heap_block, sizeof(TransactionImpl));
+}
+
 TransactionImpl::TransactionImpl(StoreImpl* store) : store_(store) {
   DCHECK(store != nullptr);
 }
+TransactionImpl::~TransactionImpl() {
+  if (!is_closed_)
+    Rollback();
+}
 
-Status Get(Space* space, string_view key, string_view* value) {
+Status TransactionImpl::Get(Space* space, string_view key, string_view* value) {
+  if (is_closed_)
+    return Status::kAlreadyClosed;
+
   return Status::kIoError;
 }
 
-Status Put(Space* space, string_view key, string_view value) {
+Status TransactionImpl::Put(Space* space, string_view key, string_view value) {
+  if (is_closed_)
+    return Status::kAlreadyClosed;
+
   return Status::kIoError;
 }
 
-Status Delete(Space* space, string_view key) {
+Status TransactionImpl::Delete(Space* space, string_view key) {
+  if (is_closed_)
+    return Status::kAlreadyClosed;
+
   return Status::kIoError;
 }
 
-Status Commit() {
-  return Status::kIoError;
+Status TransactionImpl::Close() {
+  DCHECK(!is_closed_);
+
+  is_closed_ = true;
+  store_->TransactionClosed(this);
+  return Status::kSuccess;
 }
 
-Status Abort() {
-  return Status::kIoError;
+Status TransactionImpl::Commit() {
+  if (is_closed_)
+    return Status::kAlreadyClosed;
+
+  is_committed_ = true;
+  return Close();
+}
+
+Status TransactionImpl::Rollback() {
+  if (is_closed_)
+    return Status::kAlreadyClosed;
+
+  return Close();
 }
 
 }  // namespace berrydb

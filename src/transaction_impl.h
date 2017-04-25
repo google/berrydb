@@ -35,21 +35,49 @@ class TransactionImpl {
   /** Computes the public API representation for this transaction. */
   inline Transaction* ToApi() noexcept { return &api_; }
 
+#if DCHECK_IS_ON()
+  /** The store this transaction is running against. For use in DCHECKs only. */
+  inline StoreImpl* store() const noexcept { return store_; }
+#endif  // DCHECK_IS_ON()
+
   // See the public API documention for details.
   Status Get(Space* space, string_view key, string_view* value);
   Status Put(Space* space, string_view key, string_view value);
   Status Delete(Space* space, string_view key);
   Status Commit();
-  Status Abort();
+  Status Rollback();
+  inline bool IsClosed() const noexcept {
+    DCHECK(!is_committed_ || is_closed_);
+    return is_closed_;
+  }
+  inline bool IsCommitted() const noexcept {
+    DCHECK(!is_committed_ || is_closed_);
+    return is_committed_;
+  }
+  /** True if the transaction was rolled back. */
+  inline bool IsRolledBack() const noexcept {
+    DCHECK(!is_committed_ || is_closed_);
+    return is_closed_ && !is_committed_;
+  }
+  void Release();
 
  private:
   /** Use TransactionImpl::Create() to obtain TransactionImpl instances. */
   TransactionImpl(StoreImpl* store);
+  /** Use Release() to destroy TransactionImpl instances. */
+  ~TransactionImpl();
+
+  /** Common path of commit and abort. */
+  Status Close();
 
   /* The public API version of this class. */
   Transaction api_;  // Must be the first class member.
 
+  /** The store this transaction runs against. */
   StoreImpl* const store_;
+
+  bool is_closed_ = false;
+  bool is_committed_ = false;
 };
 
 }  // namespace berrydb

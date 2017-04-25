@@ -265,11 +265,11 @@ class Page {
    * This should only be true for pool pages that cache store pages. When a
    * dirty page is removed from the pool, its content must be written to disk.
    */
-  bool is_dirty_;
+  bool is_dirty_ = false;
 
 #if DCHECK_IS_ON()
   PagePool* const page_pool_;
-  bool const is_sentinel_;
+  const bool is_sentinel_;
 #endif  // DCHECK_IS_ON()
 };
 

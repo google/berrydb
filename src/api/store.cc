@@ -17,5 +17,12 @@ Status Store::Close() {
   return StoreImpl::FromApi(this)->Close();
 }
 
+bool Store::IsClosed() {
+  return StoreImpl::FromApi(this)->IsClosed();
+}
+
+void Store::Release() {
+  StoreImpl::FromApi(this)->Release();
+}
 
 }  // namespace berrydb

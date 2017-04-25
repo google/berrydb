@@ -13,6 +13,10 @@ Pool* Pool::Create(const PoolOptions& options) {
   return PoolImpl::Create(options)->ToApi();
 }
 
+void Pool::Release() {
+  return PoolImpl::FromApi(this)->Release();
+}
+
 Status Pool::OpenStore(
       const std::string& path, const StoreOptions& options, Store** result) {
   StoreImpl* store;

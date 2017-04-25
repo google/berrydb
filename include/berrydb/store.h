@@ -21,6 +21,21 @@ class Store {
 
   /** Closes the store. */
   Status Close();
+
+  /** True if the store is closed, false if it can still be used. */
+  bool IsClosed();
+
+  /** Releases the store's memory.
+   *
+   * Closes the store, if it hasn't been already closed. */
+  void Release();
+ private:
+  friend class StoreImpl;
+
+  /** Use Pool::OpenStore() to create Store instances. */
+  Store() = default;
+  /** Use Release() to destroy Store instances. */
+  ~Store() = default;
 };
 
 }  // namespace berrydb

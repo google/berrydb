@@ -6,6 +6,7 @@
 
 #include <cstring>
 #include <random>
+#include <string>
 
 #include "gtest/gtest.h"
 
@@ -15,21 +16,60 @@ class VfsTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
     vfs_ = DefaultVfs();
-
-    vfs_->DeleteFile("log");
+    vfs_->DeleteFile(kFileName);
   }
 
+  virtual void TearDown() {
+    vfs_->DeleteFile(kFileName);
+  }
+
+  const std::string kFileName = "test_vfs.berry";
   Vfs* vfs_;
   std::mt19937 rnd_;
 };
 
+#if defined(_WIN32) || defined(WIN32)
+TEST_F(VfsTest, DISABLED_OpenForBlockAccessOptions) {
+#else  // defined(_WIN32) || defined(WIN32)
+TEST_F(VfsTest, OpenForBlockAccessOptions) {
+#endif  // defined(_WIN32) || defined(WIN32)
+  BlockAccessFile* file = nullptr;
+
+  // Setup guarantees that the file does not exist.
+  ASSERT_NE(
+      Status::kSuccess,
+      vfs_->OpenForBlockAccess(kFileName, 12, false, false, &file));
+  EXPECT_EQ(nullptr, file);
+
+  ASSERT_EQ(
+      Status::kSuccess,
+      vfs_->OpenForBlockAccess(kFileName, 12, true, true, &file));
+  file->Close();
+
+  // The ASSERT above guarantees that the file was created.
+  file = nullptr;
+  ASSERT_NE(
+      Status::kSuccess,
+      vfs_->OpenForBlockAccess(kFileName, 12, true, true, &file));
+  EXPECT_EQ(nullptr, file);
+
+  ASSERT_EQ(
+      Status::kSuccess,
+      vfs_->OpenForBlockAccess(kFileName, 12, true, false, &file));
+  file->Close();
+
+  ASSERT_EQ(
+      Status::kSuccess,
+      vfs_->OpenForBlockAccess(kFileName, 12, false, false, &file));
+  file->Close();
+}
+
 TEST_F(VfsTest, BlockAccessFilePersistence) {
-  const std::string kFileName("test_block_access_file_write_read.berry");
   uint8_t buffer[1 << 12], read_buffer[1 << 12];
   BlockAccessFile* file;
 
   for (size_t i = 0; i < 1 << 12; ++i)
-    buffer[i] = rnd_();
+    buffer[i] = static_cast<uint8_t>(rnd_());
 
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
       kFileName, 12, true, false, &file));
@@ -46,13 +86,12 @@ TEST_F(VfsTest, BlockAccessFilePersistence) {
 }
 
 TEST_F(VfsTest, BlockAccessFileReadWriteOffsets) {
-  const std::string kFileName("test_block_access_file_write_read.berry");
   uint8_t buffer[4][1 << 12], read_buffer[1 << 12];
   BlockAccessFile* file;
 
   for (size_t i = 0; i < 4; ++i) {
     for (size_t j = 0; j < 1 << 12; ++j)
-      buffer[i][j] = rnd_();
+      buffer[i][j] = static_cast<uint8_t>(rnd_());
   }
 
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(

@@ -59,6 +59,7 @@ inline void Deallocate(void* data, std::size_t size_in_bytes) {
 #endif  // DCHECK_IS_ON()
 
   free(heap_block);
+  UNUSED(size_in_bytes);
 }
 
 }  // namespace berrydb

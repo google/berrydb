@@ -105,14 +105,14 @@ class LibcVfs : public Vfs {
       if (create_if_missing) {
         // NOTE: It might be faster to freopen.
         fp = std::fopen(cpath, "ab+");
-        if (fp)
+        if (fp != nullptr)
           std::fclose(fp);
       }
 
       fp = std::fopen(cpath, "rb+");
     }
 
-    if (!fp)
+    if (fp == nullptr)
       return Status::kIoError;
 
     void* heap_block = Allocate(sizeof(LibcBlockAccessFile));

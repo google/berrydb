@@ -26,6 +26,11 @@ class Pool {
   /** Construct a new resource pool. */
   static Pool* Create(const PoolOptions& options);
 
+  /** Releases all resources held by this pool.
+   *
+   * This closes all the databases opened using this resource pool. */
+  void Release();
+
   /** Open (or create) a store. */
   Status OpenStore(
       const std::string& path, const StoreOptions& options, Store** result);
@@ -40,9 +45,9 @@ class Pool {
   friend class PoolImpl;
 
   /** Use Pool::Create() to create Pool instances. */
-  Pool();
-  /** Use Pool::Release() to destroy Pool instances. */
-  ~Pool();
+  Pool() = default;
+  /** Use Release() to destroy Pool instances. */
+  ~Pool() = default;
 };
 
 }  // namespace berrydb

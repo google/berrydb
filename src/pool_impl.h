@@ -5,8 +5,12 @@
 #ifndef BERRYDB_POOL_IMPL_H_
 #define BERRYDB_POOL_IMPL_H_
 
+#include <functional>
+#include <unordered_set>
+
 #include "berrydb/pool.h"
 #include "./page_pool.h"
+#include "./util/platform_allocator.h"
 
 namespace berrydb {
 
@@ -16,7 +20,7 @@ class Vfs;
 /** Internal representation for the Pool class in the public API. */
 class PoolImpl {
  public:
-  /** Create a new pool. */
+  // See the public API documention for details.
   static PoolImpl* Create(const PoolOptions& options);
 
   /** Computes the PoolImpl* for a Pool* coming from the public API. */
@@ -36,6 +40,7 @@ class PoolImpl {
   inline Pool* ToApi() noexcept { return &api_; }
 
   // See the public API documention for details.
+  void Release();
   Status OpenStore(
       const std::string& path, const StoreOptions& options,
       StoreImpl** result);
@@ -47,12 +52,20 @@ class PoolImpl {
  private:
   /** Use PoolImpl::Create() to obtain PoolImpl instances. */
   PoolImpl(const PoolOptions& options);
+  /** Use Release() to delete PoolImpl instances. */
+  ~PoolImpl();
 
   /* The public API version of this class. */
   Pool api_;  // Must be the first class member.
 
   /** The page pool part of this resource pool. */
   PagePool page_pool_;
+
+  /** The opened stores that use this resource pool. */
+  using StoreSet = std::unordered_set<
+      StoreImpl*, PointerHasher<StoreImpl>, std::equal_to<StoreImpl*>,
+      PlatformAllocator<StoreImpl*>>;
+  StoreSet stores_;
 
   /** The platform services implementation used by this pool's stores. */
   Vfs* const vfs_;

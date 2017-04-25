@@ -100,22 +100,18 @@ class PagePool {
   Status FetchStorePage(Page* page, PageFetchMode fetch_mode);
 
  private:
-  typedef std::pair<StoreImpl*, size_t> PageMapKey;
+  /** Entries that belong to this page pool that are assigned to stores. */
+  using PageMapKey = std::pair<StoreImpl*, size_t>;
   std::unordered_map<PageMapKey, Page*, PointerSizeHasher<StoreImpl>,
       std::equal_to<PageMapKey>,
       PlatformAllocator<std::pair<const PageMapKey, Page*>>> page_map_;
 
-  /** The page size is (1 << page_shift_). */
   size_t page_shift_;
-
-  /** Size of a page. Guaranteed to be a power of two. */
   size_t page_size_;
-
-  /** Maximum number of pages that the pool will hold. */
   size_t page_capacity_;
 
   /** Number of pages currently held by the pool. */
-  size_t page_count_;
+  size_t page_count_ = 0;
 
   /** Sentinel for the list of pages that haven't been returned to the OS.
    *

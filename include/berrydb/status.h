@@ -19,6 +19,9 @@ enum class Status : int {
 
   // The resource pool is over-utilized.
   kPoolFull = 3,
+
+  // Close() has already been called.
+  kAlreadyClosed = 4,
 };
 
 }  // namespace berrydb

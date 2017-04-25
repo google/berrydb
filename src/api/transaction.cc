@@ -24,8 +24,24 @@ Status Transaction::Commit() {
   return TransactionImpl::FromApi(this)->Commit();
 }
 
-Status Transaction::Abort() {
-  return TransactionImpl::FromApi(this)->Abort();
+Status Transaction::Rollback() {
+  return TransactionImpl::FromApi(this)->Rollback();
+}
+
+bool Transaction::IsClosed() {
+  return TransactionImpl::FromApi(this)->IsClosed();
+}
+
+bool Transaction::IsCommitted() {
+  return TransactionImpl::FromApi(this)->IsCommitted();
+}
+
+bool Transaction::IsRolledBack() {
+  return TransactionImpl::FromApi(this)->IsRolledBack();
+}
+
+void Transaction::Release() {
+  TransactionImpl::FromApi(this)->Release();
 }
 
 }  // namespace berrydb

@@ -21,8 +21,8 @@ struct PlatformAllocator {
   typedef T value_type;
   typedef std::true_type is_empty;
 
-  // The following are deprecated in C++17, but are still needed to build the
-  // code right now.
+  // The types below are deprecated in C++17, but are still needed by the
+  // compilers that we need to support right now.
   typedef T* pointer;
   typedef const T* const_pointer;
   typedef T& reference;
@@ -43,6 +43,15 @@ struct PlatformAllocator {
     UNUSED(other);
   };
 };
+
+template<typename T, typename U> inline constexpr bool operator==(
+    const PlatformAllocator<T>&, const PlatformAllocator<U>&) noexcept {
+  return true;
+}
+template<typename T, typename U> inline constexpr bool operator!=(
+    const PlatformAllocator<T>& lhs, const PlatformAllocator<U>& rhs) noexcept {
+  return false;
+}
 
 }  // namespace berrydb
 

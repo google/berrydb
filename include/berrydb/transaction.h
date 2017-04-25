@@ -45,7 +45,29 @@ class Transaction {
    * After this method is called, the transaction becomes invalid. No other
    * methods should be called.
    */
-  Status Abort();
+  Status Rollback();
+
+  /** True if the transaction was committed or rolled back. */
+  bool IsClosed();
+
+  /** True if the transaction was committed. */
+  bool IsCommitted();
+
+  /** True if the transaction was rolled back. */
+  bool IsRolledBack();
+
+  /** Releases the transaction's memory.
+   *
+   * If the transaction is in progress, it is aborted. */
+  void Release();
+
+ private:
+  friend class TransactionImpl;
+
+  /** Use Store::CreateTransaction() to create Transaction instances. */
+  Transaction() = default;
+  /** Use Release() to destroy Transaction instances. */
+  ~Transaction() = default;
 };
 
 }  // namespace berrydb

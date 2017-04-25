@@ -7,6 +7,7 @@
 #include "berrydb/options.h"
 #include "berrydb/vfs.h"
 #include "./pool_impl.h"
+#include "./transaction_impl.h"
 
 namespace berrydb {
 
@@ -23,21 +24,61 @@ StoreImpl* StoreImpl::Create(
   return store;
 }
 
+void StoreImpl::Release() {
+  this->~StoreImpl();
+  void* heap_block = static_cast<void*>(this);
+  Deallocate(heap_block, sizeof(StoreImpl));
+}
+
 StoreImpl::StoreImpl(
     BlockAccessFile* data_file, PagePool* page_pool,
     const StoreOptions& options)
-    : api_(), data_file_(data_file), page_pool_(page_pool),
+    : data_file_(data_file), page_pool_(page_pool),
       page_shift_(page_pool->page_shift()) {
   DCHECK(data_file != nullptr);
   DCHECK(page_pool != nullptr);
 }
 
+StoreImpl::~StoreImpl() {
+  if (!is_closed_)
+    Close();
+}
+
 TransactionImpl* StoreImpl::CreateTransaction() {
-  return nullptr;
+  TransactionImpl* transaction = TransactionImpl::Create(this);
+  transactions_.insert(transaction);
+  return transaction;
 }
 
 Status StoreImpl::Close() {
-  return Status::kIoError;
+  if (is_closed_)
+    return Status::kAlreadyClosed;
+
+#if DCHECK_IS_ON()
+  is_closing_ = true;
+#endif  // DCHECK_IS_ON()
+
+  // Replace the entire transaction list so TransactionClosed() doesn't
+  // invalidate our iterator.
+  TransactionSet rollback_queue;
+  rollback_queue.swap(transactions_);
+
+  Status result = Status::kSuccess;
+  for (TransactionImpl* transaction : rollback_queue) {
+    Status rollback_status = transaction->Rollback();
+
+    // Report the first non-success status encountered while rolling back the
+    // running transactions. If an I/O error occurs, the first transaction will
+    // rollback with kIoError, but the following transactions will rollback with
+    // kAlreadyClosed. It's nice to return kIoError in this case.
+    if (rollback_status != Status::kSuccess && result == Status::kSuccess)
+      result = rollback_status;
+  }
+
+  // The closed_ flag cannot be set earlier, because we want to abort the live
+  // transactions cleanly, if there are no I/O errors.
+  is_closed_ = true;
+  return result;
 }
 
 Status StoreImpl::ReadPage(Page* page) {
@@ -55,6 +96,14 @@ Status StoreImpl::WritePage(Page* page) {
   size_t file_offset = page->page_id() << page_shift_;
   size_t page_size = 1 << page_shift_;
   return data_file_->Write(page->data(), file_offset, page_size);
+}
+
+void StoreImpl::TransactionClosed(TransactionImpl* transaction) {
+  DCHECK_EQ(this, transaction->store());
+  DCHECK(transaction->IsClosed());
+
+  DCHECK(is_closing_ || transactions_.count(transaction) == 1);
+  transactions_.erase(transaction);
 }
 
 }  // namespace berrydb

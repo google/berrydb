@@ -27,6 +27,23 @@ PoolImpl::PoolImpl(const PoolOptions& options)
       vfs_((options.vfs == nullptr) ? DefaultVfs() : options.vfs) {
 }
 
+PoolImpl::~PoolImpl() = default;
+
+void PoolImpl::Release() {
+  // Replace the entire store list so StoreClosed() doesn't invalidate our
+  // iterator.
+  StoreSet close_queue;
+  close_queue.swap(stores_);
+  for (StoreImpl* store : close_queue)
+    store->Close();
+
+  // TODO(pwnall): Trim the page pool.
+
+  this->~PoolImpl();
+  void* heap_block = static_cast<void*>(this);
+  Deallocate(heap_block, sizeof(PoolImpl));
+}
+
 Status PoolImpl::OpenStore(
     const std::string& path, const StoreOptions& options,
     StoreImpl** result) {
@@ -41,8 +58,8 @@ Status PoolImpl::OpenStore(
   //               store opens.
 
   StoreImpl* store = StoreImpl::Create(data_file, &page_pool_, options);
-  
 
+  stores_.insert(store);
   *result = store;
   return Status::kSuccess;
 }

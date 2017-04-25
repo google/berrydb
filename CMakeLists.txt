@@ -6,12 +6,14 @@ set (BerryDB_VERSION_MAJOR 0)
 set (BerryDB_VERSION_MINOR 1)
 set (BerryDB_VERSION_PATCH 0)
 
-# This project requires C++ 11.
+# This project requires C++11.
 set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD_REQUIRED ON)
+set (CMAKE_CXX_EXTENSIONS OFF)
 
 configure_file (
-  "${PROJECT_SOURCE_DIR}/src/version_unittest.cc.in"
-  "${PROJECT_BINARY_DIR}/src/version_unittest.cc"
+  "${PROJECT_SOURCE_DIR}/src/api/version_unittest.cc.in"
+  "${PROJECT_BINARY_DIR}/src/api/version_unittest.cc"
 )
 
 include (CheckIncludeFiles)
@@ -106,12 +108,13 @@ if (BUILD_TESTS)
   add_executable (berrydb_tests "")
   target_sources (berrydb_tests
     PRIVATE
+      "${PROJECT_SOURCE_DIR}/src/api/pool_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/api/store_unittest.cc"
+      "${PROJECT_BINARY_DIR}/src/api/version_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/alloc_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/string_view_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/vfs_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/store_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/util/platform_allocator_unittest.cc"
-      "${PROJECT_BINARY_DIR}/src/version_unittest.cc"
     )
 
   target_link_libraries(berrydb_tests berrydb gtest_main)
