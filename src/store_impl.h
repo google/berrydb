@@ -12,7 +12,7 @@
 #include "berrydb/pool.h"
 #include "berrydb/store.h"
 #include "berrydb/vfs.h"
-#include "./util/platform_allocator.h"
+#include "./util/linked_list.h"
 
 namespace berrydb {
 
@@ -48,7 +48,7 @@ class StoreImpl {
   // See the public API documention for details.
   TransactionImpl* CreateTransaction();
   Status Close();
-  inline bool IsClosed() const noexcept { return is_closed_; }
+  inline bool IsClosed() const noexcept { return state_ == State::kClosed; }
   void Release();
 
   /** Reads a page from the store into the page pool.
@@ -84,6 +84,12 @@ class StoreImpl {
   /** Use Release() to destroy StoreImpl instances. */
   ~StoreImpl();
 
+  enum class State {
+    kOpen = 0,
+    kClosing = 1,
+    kClosed = 2,
+  };
+
   /* The public API version of this class. */
   Store api_;  // Must be the first class member.
 
@@ -97,17 +103,9 @@ class StoreImpl {
   const size_t page_shift_;
 
   /** The transactions opened on this store. */
-  using TransactionSet = std::unordered_set<
-      TransactionImpl*, PointerHasher<TransactionImpl>,
-      std::equal_to<TransactionImpl*>,
-      PlatformAllocator<TransactionImpl*>>;
-  TransactionSet transactions_;
+  LinkedList<TransactionImpl> transactions_;
 
-  bool is_closed_ = false;
-
-#if DCHECK_IS_ON()
-  bool is_closing_ = false;
-#endif  // DCHECK_IS_ON()
+  State state_ = State::kOpen;
 };
 
 }  // namespace berrydb

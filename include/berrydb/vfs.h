@@ -8,11 +8,11 @@
 #include <string>
 
 #include "berrydb/platform.h"
-#include "berrydb/status.h"
 
 namespace berrydb {
 
 class BlockAccessFile;
+enum class Status : int;
 
 /** Pure virtual interface for platform services.
  *
@@ -65,7 +65,7 @@ class BlockAccessFile {
    * @param  buffer receives the bytes from the file
    * @return most likely kSuccess or kIoError
    */
-  virtual Status Read(size_t offset, size_t bytes, uint8_t* buffer) = 0;
+  virtual Status Read(size_t offset, size_t byte_count, uint8_t* buffer) = 0;
 
   /** Writes blocks to the file.
    *
@@ -74,7 +74,7 @@ class BlockAccessFile {
    * @param  bytes  must be a multiple of the block size used to open the file
    * @return most likely kSuccess or kIoError
    */
-  virtual Status Write(uint8_t* buffer, size_t offset, size_t bytes) = 0;
+  virtual Status Write(uint8_t* buffer, size_t offset, size_t byte_count) = 0;
 
   /** Closes the file and releases its underlying resources.
    *

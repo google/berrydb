@@ -14,6 +14,13 @@ os:
   - linux
   - osx
 
+env:
+  - GLOG=0 BUILD_TYPE=Debug
+  - GLOG=0 BUILD_TYPE=RelWithDebInfo
+  # TODO(pwnall): Fix up the way we use glog so we can get stack traces when
+  #               things crash on Travis.
+  # - GLOG=1 BUILD_TYPE=Debug
+
 addons:
   apt:
     # List of whitelisted in travis packages for ubuntu-precise can be found here:
@@ -30,9 +37,16 @@ addons:
     - clang-4.0
 
 install:
+# Travis doesn't have a nice way to install homebrew packages yet.
+# https://github.com/travis-ci/travis-ci/issues/5377
+- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install gcc@6; fi
 # /usr/bin/gcc is stuck to old versions by on both Linux and OSX.
-- if [ "$CXX" = "g++" ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then export CXX="g++-6" CC="gcc-6"; fi
-- if [ "$CXX" = "g++" ] && [ "$TRAVIS_OS_NAME" = "osx" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
+- if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi
+- echo ${CC}
+- echo ${CXX}
+- ${CXX} --version
 
 script:
-- mkdir -p out && cd out && cmake .. && CTEST_OUTPUT_ON_FAILURE=1 make all test
+- mkdir -p out && cd out &&
+      cmake .. -DWITH_GLOG=$GLOG -DCMAKE_BUILD_TYPE=$BUILD_TYPE &&
+      CTEST_OUTPUT_ON_FAILURE=1 make all test

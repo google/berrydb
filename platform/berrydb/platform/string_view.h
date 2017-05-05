@@ -9,6 +9,8 @@
 #ifndef BERRYDB_PLATFORM_STRING_VIEW_H_
 #define BERRYDB_PLATFORM_STRING_VIEW_H_
 
+#include "berrydb/platform/config.h"
+
 #if BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW
 
 #include <string_view>

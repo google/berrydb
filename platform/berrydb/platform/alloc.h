@@ -5,12 +5,18 @@
 #ifndef BERRYDB_PLATFORM_ALLOC_H_
 #define BERRYDB_PLATFORM_ALLOC_H_
 
+#include "./dcheck.h"
+
 // Embedders who use custom memory allocators will want to replace the functions
 // below. The interface is inspired from std::pmr::memory_resource.
 
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+
+#if DCHECK_IS_ON()
+#include <cstring>
+#endif  // DCHECK_IS_ON()
 
 #include "./dcheck.h"
 #include "./types.h"
@@ -31,6 +37,10 @@ inline void* Allocate(std::size_t size_in_bytes) {
 
   *static_cast<size_t*>(heap_block) = size_in_bytes;
   void* data = static_cast<void*>(static_cast<size_t*>(heap_block) + 1);
+
+  // Fill the heap block with a recognizable pattern, so it is easier to detect
+  // use-before-initialize bugs.
+  std::memset(data, 0xCC, size_in_bytes);
 #else  // DCHECK_IS_ON()
   void* data = std::malloc(size_in_bytes);
 #endif  // DCHECK_IS_ON()
@@ -54,6 +64,10 @@ inline void Deallocate(void* data, std::size_t size_in_bytes) {
   void* heap_block = static_cast<void*>(static_cast<size_t*>(data) - 1);
 
   DCHECK_EQ(*static_cast<size_t*>(heap_block), size_in_bytes);
+
+  // Fill the heap block with a recognizable pattern, so it is easier to detect
+  // use-after-free bugs.
+  std::memset(data, 0xDD, size_in_bytes);
 #else  // DCHECK_IS_ON()
   void* heap_block = data;
 #endif  // DCHECK_IS_ON()

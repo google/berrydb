@@ -39,6 +39,9 @@ class PoolImpl {
   /** Computes the public API Pool* for this resource pool. */
   inline Pool* ToApi() noexcept { return &api_; }
 
+  /** This resource pool's page pool. */
+  inline PagePool* page_pool() noexcept { return &page_pool_; }
+
   // See the public API documention for details.
   void Release();
   Status OpenStore(

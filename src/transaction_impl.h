@@ -6,13 +6,20 @@
 #define BERRYDB_TRANSACTION_IMPL_H_
 
 #include "berrydb/transaction.h"
+#include "./util/linked_list.h"
 
 namespace berrydb {
 
 class BlockAccessFile;
 class StoreImpl;
 
-/** Internal representation for the Transaction class in the public API. */
+/** Internal representation for the Transaction class in the public API.
+ *
+ * A transaction is associated with a store for its entire lifecycle. For
+ * resource cleanup purposes, each store has a linked list of all its live
+ * transactinons. To reduce dynamic memory allocations, the linked list nodes
+ * are embedded in the transaction objects.
+ */
 class TransactionImpl {
  public:
   /** Create a TransactionImpl instance. */
@@ -72,6 +79,9 @@ class TransactionImpl {
 
   /* The public API version of this class. */
   Transaction api_;  // Must be the first class member.
+
+  friend class LinkedList<TransactionImpl>;
+  LinkedList<TransactionImpl>::Node linked_list_node_;
 
   /** The store this transaction runs against. */
   StoreImpl* const store_;

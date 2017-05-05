@@ -13,6 +13,7 @@
 #include "berrydb/platform.h"
 #include "berrydb/status.h"
 #include "./page.h"
+#include "./util/linked_list.h"
 #include "./util/platform_allocator.h"
 
 namespace berrydb {
@@ -35,20 +36,14 @@ class PagePool {
      *
      * Intended for callers who intend to overwrite the page without reading it.
      */
-    kIgnorePageData = true,
+    kIgnorePageData = false,
   };
 
   /** Sets up a page pool. Page memory may be allocated on-demand. */
   PagePool(size_t page_shift, size_t page_capacity);
 
-  /** The base-2 log of the pool's page size. */
-  inline size_t page_shift() const noexcept { return page_shift_; }
-
-  /** Size of a page. Guaranteed to be a power of two. */
-  inline size_t page_size() const noexcept { return page_size_; }
-
-  /** Maximum number of pages cached by this page pool. */
-  inline size_t page_capacity() const noexcept { return page_capacity_; }
+  /** */
+  ~PagePool();
 
   /** Fetches a page from a store and pins it.
    *
@@ -57,7 +52,7 @@ class PagePool {
    *
    * @param  store      the store to fetch a page from
    * @param  page_id    the page that will be fetched from the store
-   * @param  fetch_mode desired behavior
+   * @param  fetch_mode desired fetching behavior
    * @param  result     if the call succeeds, will receive a pointer to the page
    *                    pool entry holding the page
    * @return            may return kPoolFull if the page pool is (almost) full
@@ -76,6 +71,35 @@ class PagePool {
    */
   void UnpinStorePage(Page* page);
 
+  /** The base-2 log of the pool's page size. */
+  inline size_t page_shift() const noexcept { return page_shift_; }
+
+  /** Size of a page. Guaranteed to be a power of two. */
+  inline size_t page_size() const noexcept { return page_size_; }
+
+  /** Maximum number of pages cached by this page pool. */
+  inline size_t page_capacity() const noexcept { return page_capacity_; }
+
+  /** Total number of pages allocated for this pool. */
+  inline size_t allocated_pages() const noexcept { return page_count_; }
+
+  /** Number of pages that were allocated and are now unused.
+   *
+   * Pool pages can become unused when a store is closed or experiences I/O
+   * errors. These pages are added to a free list, so future demand can be met
+   * without invoking the platform allocator.
+   */
+  inline size_t unused_pages() const noexcept { return free_list_.size(); }
+
+  /** Number of pages that are pinned by running transactions.
+   *
+   * Only unpinned pages can be evicted and reused to meed demands for new
+   * pages. If all pages in the pool become pinned, transactions that need more
+   * page pool entries will be aborted. */
+  inline size_t pinned_pages() const noexcept {
+    return page_count_ - free_list_.size() - lru_list_.size();
+  }
+
   /**
    * Allocates a page and pins it.
    *
@@ -85,12 +109,21 @@ class PagePool {
    *
    * The caller is responsible for reducing the page's pin count.
    *
-   * @return a pinned page, or nullptr if the pool cannot find a page - this
-   *         means the pool is (almost) full of pinned pages.
+   * @return a pinned page, or nullptr if the pool is at capacity
    */
   Page* AllocPage();
 
+  /** Releases a Page previously obtained by Alloc().
+   *
+   * This method is intended for internal and testing use.
+   *
+   * @param page a page that was not assigned to cache a store page
+   */
+  void UnpinUnassignedPage(Page* page);
+
   /** Reads a pool entry's page data from its associated store.
+   *
+   * This method is intended for internal and testing use.
    *
    * @param  page       a page pool entry that is associated with a store
    * @param  fetch_mode if kIgnorePageData, marks the page as dirty instead of
@@ -98,6 +131,26 @@ class PagePool {
    * @return            most likely kSuccess or kIoError
    */
   Status FetchStorePage(Page* page, PageFetchMode fetch_mode);
+
+  /** Assigns a page pool entry to cache a store page.
+   *
+   * The store page must not already be cached in this page pool. This method is
+   * intended for internal and testing use.
+   *
+   * @param  page       a page pool entry that is not associated with a store
+   * @param  store      the store to fetch a page from
+   * @param  page_id    the page that will be fetched from the store
+   * @param  fetch_mode desired fetching behavior
+   * @return            [description]
+   */
+  Status AssignPageToStore(
+      Page* page, StoreImpl* store, size_t page_id, PageFetchMode fetch_mode);
+
+  /** Frees up a page pool entry that is currently caching a store page.
+   *
+   * @param page the page pool entry to be freed
+   */
+  void UnassignPageFromStore(Page* page);
 
  private:
   /** Entries that belong to this page pool that are assigned to stores. */
@@ -113,23 +166,24 @@ class PagePool {
   /** Number of pages currently held by the pool. */
   size_t page_count_ = 0;
 
-  /** Sentinel for the list of pages that haven't been returned to the OS.
+  /** The list of pages that haven't been returned to the OS.
    *
    * This is only populated when a Store is closed and its pages are flushed
    * from the pool.
    */
-  Page free_sentinel_;
+  LinkedList<Page> free_list_;
 
   /** Pages that can be evicted, ordered by the relative time of last use.
    *
-   * The first page in the list is the most recently used (MRU) page. Therefore,
-   * the LRU cache replacement policy should be implemented by removing the last
-   * page in this list.
+   * The first page in the list is the least recently used (LRU) page. The LRU
+   * cache replacement policy should be implemented by removing the first page
+   * in this list (pop_front), and pages should be added at the end of the list
+   * (push_back).
    */
-  Page mru_sentinel_;
+  LinkedList<Page> lru_list_;
 
   /** Log pages waiting to be written to disk. */
-  Page log_sentinel_;
+  LinkedList<Page> log_list_;
 };
 
 }  // namespace berrydb

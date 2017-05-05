@@ -21,6 +21,7 @@ StoreImpl* StoreImpl::Create(
   void* heap_block = Allocate(sizeof(StoreImpl));
   StoreImpl* store = new (heap_block) StoreImpl(data_file, page_pool, options);
   DCHECK_EQ(heap_block, static_cast<void*>(store));
+
   return store;
 }
 
@@ -37,31 +38,39 @@ StoreImpl::StoreImpl(
       page_shift_(page_pool->page_shift()) {
   DCHECK(data_file != nullptr);
   DCHECK(page_pool != nullptr);
+
+  // This will be used when we implement loading the metadata page.
+  UNUSED(page_pool_);
 }
 
 StoreImpl::~StoreImpl() {
-  if (!is_closed_)
+  if (state_ == State::kOpen)
     Close();
+
+  DCHECK(state_ == State::kClosed);
 }
 
 TransactionImpl* StoreImpl::CreateTransaction() {
   TransactionImpl* transaction = TransactionImpl::Create(this);
-  transactions_.insert(transaction);
+  transactions_.push_back(transaction);
   return transaction;
 }
 
 Status StoreImpl::Close() {
-  if (is_closed_)
-    return Status::kAlreadyClosed;
+  if (state_ != State::kOpen) {
+    if (state_ == State::kClosed)
+      return Status::kAlreadyClosed;
+    else
+      return Status::kSuccess;
+  }
 
-#if DCHECK_IS_ON()
-  is_closing_ = true;
-#endif  // DCHECK_IS_ON()
+  // We cannot transition directly into the closed state because we want to
+  // abort the live transactions cleanly, assuming no I/O errors.
+  state_ = State::kClosing;
 
   // Replace the entire transaction list so TransactionClosed() doesn't
   // invalidate our iterator.
-  TransactionSet rollback_queue;
-  rollback_queue.swap(transactions_);
+  LinkedList<TransactionImpl> rollback_queue(std::move(transactions_));
 
   Status result = Status::kSuccess;
   for (TransactionImpl* transaction : rollback_queue) {
@@ -75,13 +84,12 @@ Status StoreImpl::Close() {
       result = rollback_status;
   }
 
-  // The closed_ flag cannot be set earlier, because we want to abort the live
-  // transactions cleanly, if there are no I/O errors.
-  is_closed_ = true;
+  state_ = State::kClosed;
   return result;
 }
 
 Status StoreImpl::ReadPage(Page* page) {
+  DCHECK(page != nullptr);
   DCHECK_EQ(this, page->store());
   DCHECK(!page->is_dirty());
 
@@ -99,10 +107,16 @@ Status StoreImpl::WritePage(Page* page) {
 }
 
 void StoreImpl::TransactionClosed(TransactionImpl* transaction) {
-  DCHECK_EQ(this, transaction->store());
+  DCHECK(transaction != nullptr);
   DCHECK(transaction->IsClosed());
+#if DCHECK_IS_ON()
+  DCHECK_EQ(this, transaction->store());
+#endif  // DCHECK_IS_ON()
 
-  DCHECK(is_closing_ || transactions_.count(transaction) == 1);
+  DCHECK(state_ != State::kClosed);
+  if (state_ != State::kOpen)
+    return;
+
   transactions_.erase(transaction);
 }
 

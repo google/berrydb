@@ -11,6 +11,7 @@
 #include <cstdio>
 
 #include "berrydb/platform.h"
+#include "berrydb/status.h"
 #include "../util/platform_allocator.h"
 
 namespace berrydb {
@@ -29,9 +30,9 @@ class LibcBlockAccessFile : public BlockAccessFile {
     std::setbuf(fp, nullptr);
   }
 
-  Status Read(size_t offset, size_t bytes, uint8_t* buffer) override {
+  Status Read(size_t offset, size_t byte_count, uint8_t* buffer) override {
     DCHECK_EQ(offset & (block_size_ - 1), 0);
-    DCHECK_EQ(bytes & (block_size_ - 1), 0);
+    DCHECK_EQ(byte_count & (block_size_ - 1), 0);
 
     // NOTE(pwnall): On POSIX, we'd want to use pread instead of fseek() and
     //               fread().
@@ -41,7 +42,7 @@ class LibcBlockAccessFile : public BlockAccessFile {
       return Status::kIoError;
     }
 
-    size_t block_count = bytes >> block_shift_;
+    size_t block_count = byte_count >> block_shift_;
     if (std::fread(buffer, block_size_, block_count, fp_) != block_count) {
       // feof() and ferror() have more details on the error.
       return Status::kIoError;
@@ -50,9 +51,9 @@ class LibcBlockAccessFile : public BlockAccessFile {
     return Status::kSuccess;
   }
 
-  Status Write(uint8_t* buffer, size_t offset, size_t bytes) override {
+  Status Write(uint8_t* buffer, size_t offset, size_t byte_count) override {
     DCHECK_EQ(offset & (block_size_ - 1), 0);
-    DCHECK_EQ(bytes & (block_size_ - 1), 0);
+    DCHECK_EQ(byte_count & (block_size_ - 1), 0);
 
     // NOTE(pwnall): On POSIX, we'd want to use pwrite instead of fseek() and
     //               fwrite().
@@ -62,7 +63,7 @@ class LibcBlockAccessFile : public BlockAccessFile {
       return Status::kIoError;
     }
 
-    size_t block_count = bytes >> block_shift_;
+    size_t block_count = byte_count >> block_shift_;
     if (std::fwrite(buffer, block_size_, block_count, fp_) != block_count) {
       // feof() and ferror() have more details on the error.
       return Status::kIoError;

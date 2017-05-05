@@ -16,20 +16,6 @@ configure_file (
   "${PROJECT_BINARY_DIR}/src/api/version_unittest.cc"
 )
 
-include (CheckIncludeFiles)
-check_include_files (string_view HAVE_STRING_VIEW)
-
-configure_file (
-  "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/config.h.in"
-  "${PROJECT_BINARY_DIR}/platform/berrydb/platform/config.h"
-)
-
-include_directories (
-  "${PROJECT_SOURCE_DIR}/include"
-  "${PROJECT_SOURCE_DIR}/platform"
-  "${PROJECT_BINARY_DIR}/platform"
-  )
-
 # https://github.com/izenecloud/cmake/blob/master/SetCompilerWarningAll.cmake
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   # Use the highest warning level for Visual Studio.
@@ -53,11 +39,29 @@ else (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
 endif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
+option (BUILD_TESTS "Build BerryDB's unit tests" ON)
+option (BUILD_CLI "Build CLI for demo" ON)
+option (WITH_GLOG "Build with Google Logging" ON)
 
-option (BUILD_TESTS
-  "Build BerryDB's unit tests" ON)
-option (BUILD_CLI
-  "Build CLI for demo" ON)
+include (CheckIncludeFiles)
+check_include_files (string_view BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW)
+
+if (WITH_GLOG)
+  find_package (glog 0.3.4 REQUIRED PATH third_party/glog)
+  set (BERRYDB_PLATFORM_BUILT_WITH_GLOG 1)
+endif (WITH_GLOG)
+
+configure_file (
+  "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/config.h.in"
+  "${PROJECT_BINARY_DIR}/platform/berrydb/platform/config.h"
+)
+
+include_directories (
+  "${PROJECT_SOURCE_DIR}/include"
+  "${PROJECT_SOURCE_DIR}/platform"
+  "${PROJECT_BINARY_DIR}/platform"
+  )
+
 
 add_library (berrydb "")
 target_sources(berrydb
@@ -77,6 +81,7 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/src/store_impl.h"
     "${PROJECT_SOURCE_DIR}/src/transaction_impl.cc"
     "${PROJECT_SOURCE_DIR}/src/transaction_impl.h"
+    "${PROJECT_SOURCE_DIR}/src/util/linked_list.h"
     "${PROJECT_SOURCE_DIR}/src/util/platform_allocator.h"
     "${PROJECT_SOURCE_DIR}/src/vfs/libc_vfs.cc"
   PUBLIC
@@ -96,6 +101,10 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/src/space.h"
   )
 
+if (WITH_GLOG)
+  target_link_libraries (berrydb glog::glog)
+endif (WITH_GLOG)
+
 if (BUILD_TESTS)
   enable_testing()
 
@@ -114,10 +123,19 @@ if (BUILD_TESTS)
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/alloc_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/string_view_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/vfs_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/page_pool_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/page_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/test/block_access_file_wrapper.cc"
+      "${PROJECT_SOURCE_DIR}/src/test/block_access_file_wrapper.h"
+      "${PROJECT_SOURCE_DIR}/src/test/test_main.cc"
+      "${PROJECT_SOURCE_DIR}/src/util/linked_list_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/util/platform_allocator_unittest.cc"
     )
 
-  target_link_libraries(berrydb_tests berrydb gtest_main)
+  target_link_libraries (berrydb_tests berrydb gtest)
+  if (WITH_GLOG)
+    target_link_libraries (berrydb_tests glog::glog)
+  endif (WITH_GLOG)
 
   add_test (NAME berrydb_tests COMMAND berrydb_tests)
 endif (BUILD_TESTS)
@@ -144,5 +162,8 @@ if (BUILD_CLI)
     PRIVATE
       "${PROJECT_SOURCE_DIR}/src/cli/cli.cc"
   )
-  target_link_libraries(berrydb_cli berrydb)
+  target_link_libraries (berrydb_cli berrydb)
+  if (WITH_GLOG)
+    target_link_libraries (berrydb_cli glog::glog)
+  endif (WITH_GLOG)
 endif (BUILD_CLI)

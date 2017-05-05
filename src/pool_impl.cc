@@ -27,7 +27,7 @@ PoolImpl::PoolImpl(const PoolOptions& options)
       vfs_((options.vfs == nullptr) ? DefaultVfs() : options.vfs) {
 }
 
-PoolImpl::~PoolImpl() = default;
+PoolImpl::~PoolImpl() { }
 
 void PoolImpl::Release() {
   // Replace the entire store list so StoreClosed() doesn't invalidate our
@@ -37,7 +37,14 @@ void PoolImpl::Release() {
   for (StoreImpl* store : close_queue)
     store->Close();
 
-  // TODO(pwnall): Trim the page pool.
+  // The existence of pinned pages implies that some transactions are still
+  // running. This should not be the case, as all the stores should have been
+  // closed.
+  DCHECK_EQ(0, page_pool_.pinned_pages());
+
+  // The difference between allocated pages and unused pages is pages in the MRU
+  // queue. All the stores should have been closed, so the MRU should be empty.
+  DCHECK_EQ(page_pool_.allocated_pages(), page_pool_.unused_pages());
 
   this->~PoolImpl();
   void* heap_block = static_cast<void*>(this);

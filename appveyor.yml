@@ -19,7 +19,9 @@ build_script:
   - git submodule update --init --recursive
   - mkdir out
   - cd out
-  - cmake .. -G "Visual Studio 14 2015" -DCMAKE_CONFIGURATION_TYPES="Debug;Release"
+  - cmake .. -G "Visual Studio 14 2015"
+      -DCMAKE_CONFIGURATION_TYPES="Debug;Release"
+      -DWITH_GLOG=0
   - cmake --build . --config %CONFIGURATION%
 
 test_script:

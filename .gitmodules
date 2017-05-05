@@ -34,3 +34,6 @@
 [submodule "third_party/boost/throw_exception"]
 	path = third_party/boost/throw_exception
 	url = https://github.com/boostorg/throw_exception.git
+[submodule "third_party/glog"]
+	path = third_party/glog
+	url = https://github.com/google/glog.git

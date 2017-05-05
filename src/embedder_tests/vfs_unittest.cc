@@ -10,6 +10,8 @@
 
 #include "gtest/gtest.h"
 
+#include "berrydb/status.h"
+
 namespace berrydb {
 
 class VfsTest : public ::testing::Test {

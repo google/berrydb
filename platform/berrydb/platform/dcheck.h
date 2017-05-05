@@ -5,8 +5,13 @@
 #ifndef BERRYDB_PLATFORM_DCHECK_H_
 #define BERRYDB_PLATFORM_DCHECK_H_
 
-// Embedders who use google/glog can #include <glog/logging.h> and get better
-// failure messages.
+#include "berrydb/platform/config.h"
+
+#if defined(BERRYDB_PLATFORM_BUILT_WITH_GLOG)
+
+#include <glog/logging.h>
+
+#else  // !defined(BERRYDB_PLATFORM_BUILT_WITH_GLOG)
 
 #include <cassert>
 
@@ -31,6 +36,8 @@
 #define DCHECK_GT(a, b)  DCHECK((a) > (b))
 /** Convenience wrapper over DCHECK. */
 #define DCHECK_LE(a, b)  DCHECK((a) <= (b))
+
+#endif  // defined(BERRYDB_PLATFORM_BUILT_WITH_GLOG)
 
 /** Silences compiler warnings about unused variables.
  *

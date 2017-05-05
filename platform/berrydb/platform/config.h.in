@@ -5,13 +5,15 @@
 #ifndef BERRYDB_PLATFORM_CONFIG_H_
 #define BERRYDB_PLATFORM_CONFIG_H_
 
-// This has to be a preprocessor macro because it is used to gate #include
+// These have to be preprocessor macros because they are used to gate #include
 // directives.
 //
-// This macro is namespaced because it ends up in BerryDB's public header files.
+// The macros are namespaced because they end up in BerryDB's public header
+// files.
 //
-// After C++17 gains widespread support, this can be replaced with __has_include
-// and most of the configuration can go away.
+// After C++17 gains widespread support, the macros can be replaced with
+// __has_include and most of the configuration can go away.
 #cmakedefine BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW
+#cmakedefine BERRYDB_PLATFORM_BUILT_WITH_GLOG
 
 #endif  // BERRYDB_PLATFORM_CONFIG_H_

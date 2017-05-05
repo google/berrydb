@@ -14,4 +14,5 @@
 -Ithird_party/googletest/googletest/include/
 -Ithird_party/googletest/googlemock/include/
 -Iout/platform/
+-Iout/third_party/glog/
 -std=c++11
