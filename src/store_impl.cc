@@ -39,7 +39,8 @@ StoreImpl::StoreImpl(
   DCHECK(data_file != nullptr);
   DCHECK(page_pool != nullptr);
 
-  // This will be used when we implement loading the metadata page.
+  // This will be used when we implement creating/loading the metadata page.
+  UNUSED(options);
   UNUSED(page_pool_);
 }
 

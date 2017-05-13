@@ -37,6 +37,11 @@ else (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
   endif (NOT CMAKE_CXX_FLAGS MATCHES "-Werror$")
 
+  # Disable C++ exceptions
+  STRING(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+
+  # Disable RTTI
+  STRING(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 endif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
 option (BUILD_TESTS "Build BerryDB's unit tests" ON)
@@ -61,7 +66,6 @@ include_directories (
   "${PROJECT_SOURCE_DIR}/platform"
   "${PROJECT_BINARY_DIR}/platform"
   )
-
 
 add_library (berrydb "")
 target_sources(berrydb

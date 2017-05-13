@@ -37,6 +37,9 @@ Status TransactionImpl::Get(Space* space, string_view key, string_view* value) {
   if (is_closed_)
     return Status::kAlreadyClosed;
 
+  UNUSED(space);
+  UNUSED(key);
+  UNUSED(value);
   return Status::kIoError;
 }
 
@@ -44,6 +47,9 @@ Status TransactionImpl::Put(Space* space, string_view key, string_view value) {
   if (is_closed_)
     return Status::kAlreadyClosed;
 
+  UNUSED(space);
+  UNUSED(key);
+  UNUSED(value);
   return Status::kIoError;
 }
 
@@ -51,6 +57,8 @@ Status TransactionImpl::Delete(Space* space, string_view key) {
   if (is_closed_)
     return Status::kAlreadyClosed;
 
+  UNUSED(space);
+  UNUSED(key);
   return Status::kIoError;
 }
 

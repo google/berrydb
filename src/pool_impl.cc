@@ -11,9 +11,11 @@
 
 namespace berrydb {
 
+#ifndef _MSC_VER  // Visual Studio's std::standard_layout is buggy.
 static_assert(std::is_standard_layout<PoolImpl>::value,
     "PoolImpl must be a standard layout type so its public API can be "
     "exposed cheaply");
+#endif  // _MSC_VER
 
 PoolImpl* PoolImpl::Create(const PoolOptions& options) {
   void* heap_block = Allocate(sizeof(PoolImpl));

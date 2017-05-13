@@ -9,7 +9,7 @@ platform:
   - x64
 
 configuration:
-  - Release
+  - RelWithDebInfo
   - Debug
 
 build:
@@ -20,7 +20,7 @@ build_script:
   - mkdir out
   - cd out
   - cmake .. -G "Visual Studio 14 2015"
-      -DCMAKE_CONFIGURATION_TYPES="Debug;Release"
+      -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
       -DWITH_GLOG=0
   - cmake --build . --config %CONFIGURATION%
 

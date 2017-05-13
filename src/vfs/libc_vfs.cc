@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifdef _MSC_VER  // Attempt to silence security warnings in MSVC.
+#define _CRT_SECURE_NO_WARNINGS
+#endif  // _MSC_VER
+
 #include "berrydb/vfs.h"
 
 // TODO(pwnall): This is not as efficient as having separate POSIX and Windows

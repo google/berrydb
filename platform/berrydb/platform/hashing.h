@@ -50,7 +50,7 @@ struct PointerSizeHasher {
       return h1 ^ h2;
 
     } else {
-      h2 *= 0xc6a4a7935bd1e995;
+      h2 *= static_cast<size_t>(0xc6a4a7935bd1e995);
       h2 = (h2 << 47) | (h2 >> 17);
       return h1 ^ h2;
     }
