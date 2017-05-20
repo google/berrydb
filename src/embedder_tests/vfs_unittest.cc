@@ -140,4 +140,69 @@ TEST_F(VfsTest, BlockAccessFileReadWriteOffsets) {
   EXPECT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));
 }
 
+#if defined(_WIN32) || defined(WIN32)
+TEST_F(VfsTest, DISABLED_OpenForRandomAccessOptions) {
+#else  // defined(_WIN32) || defined(WIN32)
+TEST_F(VfsTest, OpenForRandomAccessOptions) {
+#endif  // defined(_WIN32) || defined(WIN32)
+  RandomAccessFile* file = nullptr;
+
+  // Setup guarantees that the file does not exist.
+  ASSERT_NE(
+      Status::kSuccess,
+      vfs_->OpenForRandomAccess(kFileName, false, false, &file));
+  EXPECT_EQ(nullptr, file);
+
+  ASSERT_EQ(
+      Status::kSuccess,
+      vfs_->OpenForRandomAccess(kFileName, true, true, &file));
+  file->Close();
+
+  // The ASSERT above guarantees that the file was created.
+  file = nullptr;
+  ASSERT_NE(
+      Status::kSuccess,
+      vfs_->OpenForRandomAccess(kFileName, true, true, &file));
+  EXPECT_EQ(nullptr, file);
+
+  ASSERT_EQ(
+      Status::kSuccess,
+      vfs_->OpenForRandomAccess(kFileName, true, false, &file));
+  file->Close();
+
+  ASSERT_EQ(
+      Status::kSuccess,
+      vfs_->OpenForRandomAccess(kFileName, false, false, &file));
+  file->Close();
+}
+
+TEST_F(VfsTest, RandomAccessFilePersistence) {
+  uint8_t buffer[9000], read_buffer[9000];
+  RandomAccessFile* file;
+
+  for (size_t i = 0; i < 9000; ++i)
+    buffer[i] = static_cast<uint8_t>(rnd_());
+
+  ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
+      kFileName, true, false, &file));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer, 0, 2000));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 2000, 2000, 1000));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 3000, 3000, 3000));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 6000, 6000, 500));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 6500, 6500, 2500));
+  EXPECT_EQ(Status::kSuccess, file->Close());
+
+  ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
+      kFileName, false, false, &file));
+  EXPECT_EQ(Status::kSuccess, file->Read(0, 2500, read_buffer));
+  EXPECT_EQ(Status::kSuccess, file->Read(2500, 500, read_buffer + 2500));
+  EXPECT_EQ(Status::kSuccess, file->Read(3000, 3000, read_buffer + 3000));
+  EXPECT_EQ(Status::kSuccess, file->Read(6000, 1000, read_buffer + 6000));
+  EXPECT_EQ(Status::kSuccess, file->Read(7000, 2000, read_buffer + 7000));
+  EXPECT_EQ(Status::kSuccess, file->Close());
+
+  EXPECT_EQ(0, std::memcmp(buffer, read_buffer, 1 << 12));
+  EXPECT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));
+}
+
 }  // namespace berrydb

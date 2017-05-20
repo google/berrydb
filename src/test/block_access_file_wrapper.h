@@ -32,6 +32,7 @@ class BlockAccessFileWrapper : public BlockAccessFile {
   // BlockAccessFile API.
   Status Read(size_t offset, size_t byte_count, uint8_t* buffer) override;
   Status Write(uint8_t* buffer, size_t offset, size_t byte_count) override;
+  Status Sync() override;
   Status Close() override;
 
  private:

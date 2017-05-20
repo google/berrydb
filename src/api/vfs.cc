@@ -9,4 +9,7 @@ namespace berrydb {
 BlockAccessFile::BlockAccessFile() = default;
 BlockAccessFile::~BlockAccessFile() = default;
 
+RandomAccessFile::RandomAccessFile() = default;
+RandomAccessFile::~RandomAccessFile() = default;
+
 }  // namespace berrydb

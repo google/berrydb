@@ -31,6 +31,16 @@ Status BlockAccessFileWrapper::Write(
   return file_->Write(buffer, offset, byte_count);
 }
 
+Status BlockAccessFileWrapper::Sync() {
+  DCHECK(!is_closed_);
+  is_closed_ = true;
+
+  if (access_error_ != Status::kSuccess)
+    return access_error_;
+
+  return file_->Sync();
+}
+
 Status BlockAccessFileWrapper::Close() {
   DCHECK(!is_closed_);
   is_closed_ = true;
