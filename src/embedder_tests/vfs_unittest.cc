@@ -180,28 +180,82 @@ TEST_F(VfsTest, RandomAccessFilePersistence) {
   uint8_t buffer[9000], read_buffer[9000];
   RandomAccessFile* file;
 
-  for (size_t i = 0; i < 9000; ++i)
+  for (size_t i = 0; i < sizeof(buffer); ++i)
     buffer[i] = static_cast<uint8_t>(rnd_());
 
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
       kFileName, true, false, &file));
-  EXPECT_EQ(Status::kSuccess, file->Write(buffer, 0, 2000));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer +    0,    0, 2000));
   EXPECT_EQ(Status::kSuccess, file->Write(buffer + 2000, 2000, 1000));
   EXPECT_EQ(Status::kSuccess, file->Write(buffer + 3000, 3000, 3000));
-  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 6000, 6000, 500));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 6000, 6000,  500));
   EXPECT_EQ(Status::kSuccess, file->Write(buffer + 6500, 6500, 2500));
   EXPECT_EQ(Status::kSuccess, file->Close());
 
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
       kFileName, false, false, &file));
-  EXPECT_EQ(Status::kSuccess, file->Read(0, 2500, read_buffer));
-  EXPECT_EQ(Status::kSuccess, file->Read(2500, 500, read_buffer + 2500));
+  EXPECT_EQ(Status::kSuccess, file->Read(   0, 2500, read_buffer +    0));
+  EXPECT_EQ(Status::kSuccess, file->Read(2500,  500, read_buffer + 2500));
   EXPECT_EQ(Status::kSuccess, file->Read(3000, 3000, read_buffer + 3000));
   EXPECT_EQ(Status::kSuccess, file->Read(6000, 1000, read_buffer + 6000));
   EXPECT_EQ(Status::kSuccess, file->Read(7000, 2000, read_buffer + 7000));
   EXPECT_EQ(Status::kSuccess, file->Close());
 
-  EXPECT_EQ(0, std::memcmp(buffer, read_buffer, 1 << 12));
+  static_assert(
+      sizeof(buffer) == sizeof(read_buffer), "Mismatched buffer size");
+  EXPECT_EQ(0, std::memcmp(buffer, read_buffer, sizeof(buffer)));
+  EXPECT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));
+}
+
+TEST_F(VfsTest, RandomAccessFileReadWriteOffsets) {
+  uint8_t buffer[9000], read_buffer[9000];
+  RandomAccessFile* file;
+
+  for (size_t i = 0; i < sizeof(buffer); ++i)
+    buffer[i] = static_cast<uint8_t>(rnd_());
+
+  ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
+      kFileName, true, false, &file));
+
+  // Write the data in order.
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer +    0,    0, 2000));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 2000, 2000, 1000));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 3000, 3000, 3000));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 6000, 6000,  500));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 6500, 6500, 2500));
+
+  // Read the data out of order.
+  EXPECT_EQ(Status::kSuccess, file->Read(3000, 3000, read_buffer + 3000));
+  EXPECT_EQ(Status::kSuccess, file->Read(7000, 2000, read_buffer + 7000));
+  EXPECT_EQ(Status::kSuccess, file->Read(   0, 2500, read_buffer +    0));
+  EXPECT_EQ(Status::kSuccess, file->Read(6000, 1000, read_buffer + 6000));
+  EXPECT_EQ(Status::kSuccess, file->Read(2500,  500, read_buffer + 2500));
+
+  static_assert(
+      sizeof(buffer) == sizeof(read_buffer), "Mismatched buffer size");
+  EXPECT_EQ(0, std::memcmp(buffer, read_buffer, sizeof(buffer)));
+
+  // Reset the data.
+  for (size_t i = 0; i < sizeof(buffer); ++i)
+    buffer[i] = static_cast<uint8_t>(rnd_());
+
+  // Write the new data out of order.
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 3000, 3000, 3000));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 6000, 6000,  500));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer +    0,    0, 2000));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 6500, 6500, 2500));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer + 2000, 2000, 1000));
+
+  // Read the new data out of order.
+  EXPECT_EQ(Status::kSuccess, file->Read(6000, 1000, read_buffer + 6000));
+  EXPECT_EQ(Status::kSuccess, file->Read(3000, 3000, read_buffer + 3000));
+  EXPECT_EQ(Status::kSuccess, file->Read(   0, 2500, read_buffer +    0));
+  EXPECT_EQ(Status::kSuccess, file->Read(7000, 2000, read_buffer + 7000));
+  EXPECT_EQ(Status::kSuccess, file->Read(2500,  500, read_buffer + 2500));
+
+  EXPECT_EQ(0, std::memcmp(buffer, read_buffer, sizeof(buffer)));
+
+  EXPECT_EQ(Status::kSuccess, file->Close());
   EXPECT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));
 }
 
