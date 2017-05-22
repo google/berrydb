@@ -10,6 +10,7 @@
 
 #include "berrydb/options.h"
 #include "berrydb/pool.h"
+#include "berrydb/status.h"
 #include "berrydb/transaction.h"
 #include "berrydb/vfs.h"
 

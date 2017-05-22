@@ -9,6 +9,7 @@
 
 namespace berrydb {
 
+class Catalog;
 class Space;
 enum class Status : int;
 
@@ -38,6 +39,39 @@ class Transaction {
    * methods should be called.
    */
   Status Commit();
+
+  /** Creates a (key/value name)space.
+   *
+   * @param catalog will store the reference to the new (key/value name)space
+   * @param name    the name of the newly created namespace
+   * @param result  if the operation succeeds, receives a pointer to the newly
+   *                created catalog
+   * @return        kAlreadyExists if the catalog already contains an entry with
+   *                the given name; otherwise, most likely kSuccess or kIoError
+   */
+  Status CreateSpace(Catalog* catalog, string_view name, Space** result);
+
+  /** Creates a catalog.
+   *
+   * @param catalog will store the reference to the new catalog
+   * @param name    the name of the newly created namespace
+   * @param result  if the operation succeeds, receives a pointer to the newly
+   *                created space
+   * @return        kAlreadyExists if the catalog already contains an entry with
+   *                the given name; otherwise, most likely kSuccess or kIoError
+   */
+  Status CreateCatalog(Catalog* catalog, string_view name, Catalog** result);
+
+  /** Deletes a (key/value name)space and all its content, or a catalog.
+   *
+   * @param catalog the catalog that stores the reference to the catalog or the
+   *                (key/value name)space that will be deleted
+   * @param name    the name of the catalog or (key/value name)space that will
+   *                be deleted
+   * @return        kNotFound if the catalog does not contain an entry with the
+   *                given name; otherwise, most likely kSuccess or kIoError
+   */
+  Status Delete(Catalog* catalog, string_view name);
 
   /**
    * Discards the Put()s and Deletes() in this transaction.

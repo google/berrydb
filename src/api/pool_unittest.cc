@@ -9,6 +9,7 @@
 #include "gtest/gtest.h"
 
 #include "berrydb/options.h"
+#include "berrydb/status.h"
 #include "berrydb/store.h"
 #include "berrydb/vfs.h"
 

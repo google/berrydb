@@ -31,15 +31,15 @@ class StoreImpl {
 
   /** Computes the internal representation for a pointer from the public API. */
   static inline StoreImpl* FromApi(Store* api) noexcept {
-    StoreImpl* store = reinterpret_cast<StoreImpl*>(api);
-    DCHECK_EQ(api, &store->api_);
-    return store;
+    StoreImpl* impl = reinterpret_cast<StoreImpl*>(api);
+    DCHECK_EQ(api, &impl->api_);
+    return impl;
   }
   /** Computes the internal representation for a pointer from the public API. */
   static inline const StoreImpl* FromApi(const Store* api) noexcept {
-    const StoreImpl* store = reinterpret_cast<const StoreImpl*>(api);
-    DCHECK_EQ(api, &store->api_);
-    return store;
+    const StoreImpl* impl = reinterpret_cast<const StoreImpl*>(api);
+    DCHECK_EQ(api, &impl->api_);
+    return impl;
   }
 
   /** Computes the public API representation for this store. */

@@ -11,11 +11,14 @@ enum class Status : int {
   // Everything went well.
   kSuccess = 0,
 
-  // The desired key or file was not found.
-  kNotFound = 1,
-
   // The unerlying filesystem returned an error.
-  kIoError = 2,
+  kIoError = 1,
+
+  // The desired key or file was not found.
+  kNotFound = 2,
+
+  // An object with the given key already exists.
+  kAlreadyExists = 2,
 
   // The resource pool is over-utilized.
   kPoolFull = 3,

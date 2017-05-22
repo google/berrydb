@@ -27,16 +27,16 @@ class TransactionImpl {
 
   /** Computes the internal representation for a pointer from the public API. */
   static inline TransactionImpl* FromApi(Transaction* api) noexcept {
-    TransactionImpl* transaction = reinterpret_cast<TransactionImpl*>(api);
-    DCHECK_EQ(api, &transaction->api_);
-    return transaction;
+    TransactionImpl* impl = reinterpret_cast<TransactionImpl*>(api);
+    DCHECK_EQ(api, &impl->api_);
+    return impl;
   }
   /** Computes the internal representation for a pointer from the public API. */
-  static inline const TransactionImpl* FromApi(const Transaction* api) noexcept {
-    const TransactionImpl* transaction =
-        reinterpret_cast<const TransactionImpl*>(api);
-    DCHECK_EQ(api, &transaction->api_);
-    return transaction;
+  static inline const TransactionImpl* FromApi(
+      const Transaction* api) noexcept {
+    const TransactionImpl* impl = reinterpret_cast<const TransactionImpl*>(api);
+    DCHECK_EQ(api, &impl->api_);
+    return impl;
   }
 
   /** Computes the public API representation for this transaction. */

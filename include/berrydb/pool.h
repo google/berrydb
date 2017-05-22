@@ -7,11 +7,10 @@
 
 #include <string>
 
-#include "berrydb/status.h"
-
 namespace berrydb {
 
 struct PoolOptions;
+enum class Status : int;
 struct StoreOptions;
 class Store;
 

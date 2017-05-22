@@ -6,6 +6,8 @@ namespace berrydb {
 
 }  // namespace berrydb
 
+#include "berrydb/catalog.h"
+#include "berrydb/options.h"
 #include "berrydb/pool.h"
 #include "berrydb/space.h"
 #include "berrydb/status.h"

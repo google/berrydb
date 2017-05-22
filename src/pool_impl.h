@@ -25,15 +25,15 @@ class PoolImpl {
 
   /** Computes the PoolImpl* for a Pool* coming from the public API. */
   static inline PoolImpl* FromApi(Pool* api) noexcept {
-    PoolImpl* pool = reinterpret_cast<PoolImpl*>(api);
-    DCHECK_EQ(api, &pool->api_);
-    return pool;
+    PoolImpl* impl = reinterpret_cast<PoolImpl*>(api);
+    DCHECK_EQ(api, &impl->api_);
+    return impl;
   }
   /** Computes the PoolImpl* for a Pool* coming from the public API. */
   static inline const PoolImpl* FromApi(const Pool* api) noexcept {
-    const PoolImpl* pool = reinterpret_cast<const PoolImpl*>(api);
-    DCHECK_EQ(api, &pool->api_);
-    return pool;
+    const PoolImpl* impl = reinterpret_cast<const PoolImpl*>(api);
+    DCHECK_EQ(api, &impl->api_);
+    return impl;
   }
 
   /** Computes the public API Pool* for this resource pool. */

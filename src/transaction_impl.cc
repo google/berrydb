@@ -4,6 +4,7 @@
 
 #include "./transaction_impl.h"
 
+#include "berrydb/status.h"
 #include "./store_impl.h"
 
 namespace berrydb {

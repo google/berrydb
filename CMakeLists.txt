@@ -70,17 +70,23 @@ include_directories (
 add_library (berrydb "")
 target_sources(berrydb
   PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/api/catalog.cc"
     "${PROJECT_SOURCE_DIR}/src/api/options.cc"
     "${PROJECT_SOURCE_DIR}/src/api/pool.cc"
+    "${PROJECT_SOURCE_DIR}/src/api/space.cc"
     "${PROJECT_SOURCE_DIR}/src/api/store.cc"
     "${PROJECT_SOURCE_DIR}/src/api/transaction.cc"
     "${PROJECT_SOURCE_DIR}/src/api/vfs.cc"
     "${PROJECT_SOURCE_DIR}/src/page.h"
     "${PROJECT_SOURCE_DIR}/src/page.cc"
+    "${PROJECT_SOURCE_DIR}/src/catalog_impl.cc"
+    "${PROJECT_SOURCE_DIR}/src/catalog_impl.h"
     "${PROJECT_SOURCE_DIR}/src/page_pool.cc"
     "${PROJECT_SOURCE_DIR}/src/page_pool.h"
     "${PROJECT_SOURCE_DIR}/src/pool_impl.cc"
     "${PROJECT_SOURCE_DIR}/src/pool_impl.h"
+    "${PROJECT_SOURCE_DIR}/src/space_impl.cc"
+    "${PROJECT_SOURCE_DIR}/src/space_impl.h"
     "${PROJECT_SOURCE_DIR}/src/store_impl.cc"
     "${PROJECT_SOURCE_DIR}/src/store_impl.h"
     "${PROJECT_SOURCE_DIR}/src/transaction_impl.cc"
@@ -96,13 +102,15 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/string_view.h"
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/types.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/catalog.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/options.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/pool.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/space.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/status.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/store.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/transaction.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/version.h"
-    "${PROJECT_SOURCE_DIR}/src/space.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/vfs.h"
   )
 
 if (WITH_GLOG)

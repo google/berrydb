@@ -5,8 +5,6 @@
 #ifndef BERRYDB_INCLUDE_VFS_H_
 #define BERRYDB_INCLUDE_VFS_H_
 
-#include <string>
-
 #include "berrydb/platform.h"
 
 namespace berrydb {
@@ -39,7 +37,6 @@ class Vfs {
       const std::string& file_path,
       bool create_if_missing, bool error_if_exists,
       RandomAccessFile** result) = 0;
-
 
   /** Opens a file designed for reads/writes at (large) block granularities.
    *
