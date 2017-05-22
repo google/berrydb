@@ -27,7 +27,8 @@ class StoreImpl {
  public:
   /** Create a StoreImpl instance. */
   static StoreImpl* Create(
-      BlockAccessFile* data_file, PagePool* page_pool,
+      BlockAccessFile* data_file, size_t data_file_size,
+      RandomAccessFile* log_file, size_t log_file_size, PagePool* page_pool,
       const StoreOptions& options);
 
   /** Computes the internal representation for a pointer from the public API. */
@@ -47,6 +48,7 @@ class StoreImpl {
   inline Store* ToApi() noexcept { return &api_; }
 
   // See the public API documention for details.
+  static std::string LogFilePath(const std::string& store_path);
   TransactionImpl* CreateTransaction();
   inline CatalogImpl* RootCatalog() noexcept { return nullptr; }
   Status Close();
@@ -81,7 +83,8 @@ class StoreImpl {
  private:
   /** Use StoreImpl::Create() to obtain StoreImpl instances. */
   StoreImpl(
-      BlockAccessFile* data_file, PagePool* page_pool,
+      BlockAccessFile* data_file, size_t data_file_size,
+      RandomAccessFile* log_file, size_t log_file_size, PagePool* page_pool,
       const StoreOptions& options);
   /** Use Release() to destroy StoreImpl instances. */
   ~StoreImpl();
@@ -97,6 +100,9 @@ class StoreImpl {
 
   /** Handle to the store's data file. */
   BlockAccessFile* const data_file_;
+
+  /** Handle to the store's log file. */
+  RandomAccessFile* const log_file_;
 
   /** The page pool used by this store to interact with its data file. */
   PagePool* const page_pool_;

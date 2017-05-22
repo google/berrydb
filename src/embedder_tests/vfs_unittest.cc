@@ -36,59 +36,74 @@ TEST_F(VfsTest, DISABLED_OpenForBlockAccessOptions) {
 TEST_F(VfsTest, OpenForBlockAccessOptions) {
 #endif  // defined(_WIN32) || defined(WIN32)
   BlockAccessFile* file = nullptr;
+  const size_t kInvalidSize = 0x0badc0de;
+  size_t file_size = kInvalidSize;
 
   // Setup guarantees that the file does not exist.
   ASSERT_NE(
       Status::kSuccess,
-      vfs_->OpenForBlockAccess(kFileName, 12, false, false, &file));
+      vfs_->OpenForBlockAccess(kFileName, 12, false, false, &file, &file_size));
   EXPECT_EQ(nullptr, file);
+  EXPECT_EQ(kInvalidSize, file_size);
 
   file = nullptr;
+  file_size = kInvalidSize;
   ASSERT_EQ(
       Status::kSuccess,
-      vfs_->OpenForBlockAccess(kFileName, 12, true, true, &file));
+      vfs_->OpenForBlockAccess(kFileName, 12, true, true, &file, &file_size));
   ASSERT_NE(nullptr, file);
+  EXPECT_EQ(0U, file_size);
   file->Close();
 
   // The ASSERT above guarantees that the file was created.
   file = nullptr;
+  file_size = kInvalidSize;
   ASSERT_NE(
       Status::kSuccess,
-      vfs_->OpenForBlockAccess(kFileName, 12, true, true, &file));
+      vfs_->OpenForBlockAccess(kFileName, 12, true, true, &file, &file_size));
   EXPECT_EQ(nullptr, file);
+  EXPECT_EQ(kInvalidSize, file_size);
 
   file = nullptr;
+  file_size = kInvalidSize;
   ASSERT_EQ(
       Status::kSuccess,
-      vfs_->OpenForBlockAccess(kFileName, 12, true, false, &file));
+      vfs_->OpenForBlockAccess(kFileName, 12, true, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
+  EXPECT_EQ(0U, file_size);
   file->Close();
 
   file = nullptr;
+  file_size = kInvalidSize;
   ASSERT_EQ(
       Status::kSuccess,
-      vfs_->OpenForBlockAccess(kFileName, 12, false, false, &file));
+      vfs_->OpenForBlockAccess(kFileName, 12, false, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
+  EXPECT_EQ(0U, file_size);
   file->Close();
 }
 
 TEST_F(VfsTest, BlockAccessFilePersistence) {
   uint8_t buffer[1 << 12], read_buffer[1 << 12];
   BlockAccessFile* file = nullptr;
+  const size_t kInvalidSize = 0x0badc0de;
+  size_t file_size = kInvalidSize;
 
   for (size_t i = 0; i < 1 << 12; ++i)
     buffer[i] = static_cast<uint8_t>(rnd_());
 
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
-      kFileName, 12, true, false, &file));
+      kFileName, 12, true, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
+  EXPECT_EQ(0U, file_size);
   EXPECT_EQ(Status::kSuccess, file->Write(buffer, 0, 1 << 12));
   EXPECT_EQ(Status::kSuccess, file->Close());
 
   file = nullptr;
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
-      kFileName, 12, false, false, &file));
+      kFileName, 12, false, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
+  EXPECT_EQ(1U << 12, file_size);
   EXPECT_EQ(Status::kSuccess, file->Read(0, 1 << 12, read_buffer));
   EXPECT_EQ(Status::kSuccess, file->Close());
 
@@ -99,6 +114,8 @@ TEST_F(VfsTest, BlockAccessFilePersistence) {
 TEST_F(VfsTest, BlockAccessFileReadWriteOffsets) {
   uint8_t buffer[4][1 << 12], read_buffer[1 << 12];
   BlockAccessFile* file = nullptr;
+  const size_t kInvalidSize = 0x0badc0de;
+  size_t file_size = kInvalidSize;
 
   for (size_t i = 0; i < 4; ++i) {
     for (size_t j = 0; j < 1 << 12; ++j)
@@ -106,8 +123,9 @@ TEST_F(VfsTest, BlockAccessFileReadWriteOffsets) {
   }
 
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
-      kFileName, 12, true, false, &file));
+      kFileName, 12, true, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
+  EXPECT_EQ(0U, file_size);
 
   // Fill up the file with blocks [2, 1, 3, 0].
   EXPECT_EQ(Status::kSuccess, file->Write(buffer[2], 0 << 12, 1 << 12));

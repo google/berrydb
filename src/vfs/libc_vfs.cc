@@ -24,22 +24,34 @@ namespace {
 
 std::FILE* OpenLibcFile(
     const std::string& file_path, bool create_if_missing,
-    bool error_if_exists) {
+    bool error_if_exists, size_t* file_size) {
   const char* cpath = file_path.c_str();
 
+  FILE* fp;
   if (error_if_exists) {
     // NOTE: This relies on C2011.
-    return std::fopen(cpath, "wb+x");
+    fp = std::fopen(cpath, "wb+x");
+  } else {
+    if (create_if_missing) {
+      // NOTE: It might be faster to freopen.
+      FILE* fp = std::fopen(cpath, "ab+");
+      if (fp != nullptr)
+        std::fclose(fp);
+    }
+
+    fp = std::fopen(cpath, "rb+");
   }
 
-  if (create_if_missing) {
-    // NOTE: It might be faster to freopen.
-    FILE* fp = std::fopen(cpath, "ab+");
-    if (fp != nullptr)
+  if (fp != nullptr) {
+    if (std::fseek(fp, 0, SEEK_END) == 0) {
+      *file_size = std::ftell(fp);
+    } else {
+      // ferror() can be checked if we want to return more detailed errors.
       std::fclose(fp);
+      fp = nullptr;
+    }
   }
-
-  return std::fopen(cpath, "rb+");
+  return fp;
 }
 
 Status ReadLibcFile(
@@ -124,6 +136,13 @@ class LibcBlockAccessFile : public BlockAccessFile {
 
   Status Sync() override { return SyncLibcFile(fp_); }
 
+  Status Lock() override {
+    // TODO(pwnall): This should use fcntl(F_SETLK) on POSIX and LockFile() on
+    //               Windows. Chromium's File::Lock() implementations are a good
+    //               source of inspiration.
+    return Status::kSuccess;
+  }
+
   Status Close() override {
     void* heap_block = reinterpret_cast<void*>(this);
     this->~LibcBlockAccessFile();
@@ -186,29 +205,24 @@ class LibcVfs : public Vfs {
   Status OpenForRandomAccess(
       const std::string& file_path, bool create_if_missing,
       bool error_if_exists, RandomAccessFile** result,
-      size_t* result_size) override {
-    FILE* fp = OpenLibcFile(file_path, create_if_missing, error_if_exists);
+      size_t* file_size) override {
+    FILE* fp = OpenLibcFile(
+        file_path, create_if_missing, error_if_exists, file_size);
     if (fp == nullptr)
       return Status::kIoError;
-
-    if (std::fseek(fp, 0, SEEK_END) != 0) {
-      // ferror() can be checked if we want to return more detailed errors.
-      return Status::kIoError;
-    }
-    size_t file_size = std::ftell(fp);
 
     void* heap_block = Allocate(sizeof(LibcRandomAccessFile));
     LibcRandomAccessFile* file = new (heap_block) LibcRandomAccessFile(fp);
     DCHECK_EQ(heap_block, reinterpret_cast<void*>(file));
     *result = file;
-    *result_size = file_size;
     return Status::kSuccess;
   }
   Status OpenForBlockAccess(
       const std::string& file_path, size_t block_shift,
       bool create_if_missing, bool error_if_exists,
-      BlockAccessFile** result) override {
-    FILE* fp = OpenLibcFile(file_path, create_if_missing, error_if_exists);
+      BlockAccessFile** result, size_t* file_size) override {
+    FILE* fp = OpenLibcFile(
+        file_path, create_if_missing, error_if_exists, file_size);
     if (fp == nullptr)
       return Status::kIoError;
 

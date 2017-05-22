@@ -57,16 +57,32 @@ Status PoolImpl::OpenStore(
     const std::string& path, const StoreOptions& options,
     StoreImpl** result) {
   BlockAccessFile* data_file;
+  size_t data_file_size;
   Status status = vfs_->OpenForBlockAccess(
       path, page_pool_.page_shift(), options.create_if_missing,
-      options.error_if_exists, &data_file);
+      options.error_if_exists, &data_file, &data_file_size);
   if (status != Status::kSuccess)
     return status;
 
-  // TODO(pwnall): Lock the data file to prevent against accidental concurrent
-  //               store opens.
+  status = data_file->Lock();
+  if (status != Status::kSuccess) {
+    data_file->Close();
+    return status;
+  }
 
-  StoreImpl* store = StoreImpl::Create(data_file, &page_pool_, options);
+  std::string log_file_path = StoreImpl::LogFilePath(path);
+  RandomAccessFile* log_file;
+  size_t log_file_size;
+  status = vfs_->OpenForRandomAccess(
+      log_file_path, true /* create_if_missing */, false /* error_if_exists */,
+      &log_file, &log_file_size);
+  if (status != Status::kSuccess) {
+    data_file->Close();
+    return status;
+  }
+
+  StoreImpl* store = StoreImpl::Create(
+      data_file, data_file_size, log_file, log_file_size, &page_pool_, options);
 
   stores_.insert(store);
   *result = store;

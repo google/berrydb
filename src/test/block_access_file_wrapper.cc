@@ -15,31 +15,34 @@ BlockAccessFileWrapper::~BlockAccessFileWrapper() = default;
 
 Status BlockAccessFileWrapper::Read(
     size_t offset, size_t byte_count, uint8_t* buffer) {
+  DCHECK(!is_closed_);
   if (access_error_ != Status::kSuccess)
     return access_error_;
-
   return file_->Read(offset, byte_count, buffer);
 }
 
 Status BlockAccessFileWrapper::Write(
     uint8_t* buffer, size_t offset, size_t byte_count) {
   DCHECK(!is_closed_);
-
   if (access_error_ != Status::kSuccess)
     return access_error_;
-
   return file_->Write(buffer, offset, byte_count);
 }
 
 Status BlockAccessFileWrapper::Sync() {
   DCHECK(!is_closed_);
-  is_closed_ = true;
-
   if (access_error_ != Status::kSuccess)
     return access_error_;
-
   return file_->Sync();
 }
+
+Status BlockAccessFileWrapper::Lock() {
+  DCHECK(!is_closed_);
+  if (access_error_ != Status::kSuccess)
+    return access_error_;
+  return file_->Lock();
+}
+
 
 Status BlockAccessFileWrapper::Close() {
   DCHECK(!is_closed_);
@@ -47,7 +50,6 @@ Status BlockAccessFileWrapper::Close() {
 
   if (access_error_ != Status::kSuccess)
     return access_error_;
-
   return file_->Close();
 }
 

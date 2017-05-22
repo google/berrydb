@@ -17,14 +17,20 @@ enum class Status : int {
   // The desired key or file was not found.
   kNotFound = 2,
 
-  // An object with the given key already exists.
-  kAlreadyExists = 2,
+  // The resource has already been locked by another user.
+  kAlreadyLocked = 3,
 
-  // The resource pool is over-utilized.
-  kPoolFull = 3,
+  // An object with the given key already exists.
+  kAlreadyExists = 4,
 
   // Close() has already been called.
-  kAlreadyClosed = 4,
+  kAlreadyClosed = 5,
+
+  // The resource pool is over-utilized.
+  kPoolFull = 6,
+
+  // The underlying data was corrupted.
+  kDataCorrupted = 7,
 };
 
 }  // namespace berrydb

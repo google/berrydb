@@ -12,6 +12,7 @@
 #include "berrydb/store.h"
 #include "berrydb/vfs.h"
 #include "./pool_impl.h"
+#include "./store_impl.h"
 #include "./test/block_access_file_wrapper.h"
 
 namespace berrydb {
@@ -21,9 +22,21 @@ class PagePoolTest : public ::testing::Test {
   virtual void SetUp() {
     vfs_ = DefaultVfs();
     vfs_->DeleteFile(kStoreFileName1);
+    vfs_->DeleteFile(StoreImpl::LogFilePath(kStoreFileName1));
     vfs_->DeleteFile(kStoreFileName2);
+    vfs_->DeleteFile(StoreImpl::LogFilePath(kStoreFileName2));
     vfs_->DeleteFile(kStoreFileName3);
+    vfs_->DeleteFile(StoreImpl::LogFilePath(kStoreFileName3));
     pool_ = nullptr;
+
+    ASSERT_EQ(
+        Status::kSuccess,
+        vfs_->OpenForBlockAccess(kStoreFileName1, 12, true, false, &data_file1_,
+        &data_file1_size_));
+    ASSERT_EQ(
+        Status::kSuccess,
+        vfs_->OpenForRandomAccess(StoreImpl::LogFilePath(kStoreFileName1),
+        true, false, &log_file1_, &log_file1_size_));
   }
 
   virtual void TearDown() {
@@ -31,8 +44,11 @@ class PagePoolTest : public ::testing::Test {
       pool_->Release();
 
     vfs_->DeleteFile(kStoreFileName1);
+    vfs_->DeleteFile(StoreImpl::LogFilePath(kStoreFileName1));
     vfs_->DeleteFile(kStoreFileName2);
+    vfs_->DeleteFile(StoreImpl::LogFilePath(kStoreFileName2));
     vfs_->DeleteFile(kStoreFileName3);
+    vfs_->DeleteFile(StoreImpl::LogFilePath(kStoreFileName3));
   }
 
   void CreatePool(int page_shift, int page_capacity) {
@@ -48,6 +64,10 @@ class PagePoolTest : public ::testing::Test {
 
   Vfs* vfs_;
   PoolImpl* pool_ ;
+  BlockAccessFile* data_file1_;
+  size_t data_file1_size_;
+  RandomAccessFile* log_file1_;
+  size_t log_file1_size_;
 };
 
 TEST_F(PagePoolTest, Constructor) {
@@ -105,11 +125,11 @@ TEST_F(PagePoolTest, AllocUsesFreeList) {
 TEST_F(PagePoolTest, AllocUsesLruList) {
   CreatePool(12, 1);
   PagePool* page_pool = pool_->page_pool();
-  BlockAccessFile* file;
-  ASSERT_EQ(
-      Status::kSuccess,
-      vfs_->OpenForBlockAccess(kStoreFileName1, 12, true, false, &file));
-  StoreImpl* store = StoreImpl::Create(file, page_pool, StoreOptions());
+
+  EXPECT_EQ(0U, data_file1_size_);
+  StoreImpl* store = StoreImpl::Create(
+      data_file1_, data_file1_size_, log_file1_, log_file1_size_, page_pool,
+      StoreOptions());
 
   Page* page = page_pool->AllocPage();
   ASSERT_NE(nullptr, page);
@@ -142,13 +162,12 @@ TEST_F(PagePoolTest, AllocUsesLruList) {
 TEST_F(PagePoolTest, UnassignFromStoreIoError) {
   CreatePool(12, 1);
   PagePool* page_pool = pool_->page_pool();
-  BlockAccessFile* file;
-  ASSERT_EQ(
-      Status::kSuccess,
-      vfs_->OpenForBlockAccess(kStoreFileName1, 12, true, false, &file));
-  BlockAccessFileWrapper file_wrapper(file);
-  StoreImpl* store =
-      StoreImpl::Create(&file_wrapper, page_pool, StoreOptions());
+
+  EXPECT_EQ(0U, data_file1_size_);
+  BlockAccessFileWrapper data_file_wrapper(data_file1_);
+  StoreImpl* store = StoreImpl::Create(
+      &data_file_wrapper, data_file1_size_, log_file1_, log_file1_size_,
+      page_pool, StoreOptions());
 
   Page* page = page_pool->AllocPage();
   ASSERT_NE(nullptr, page);
@@ -157,7 +176,7 @@ TEST_F(PagePoolTest, UnassignFromStoreIoError) {
       page_pool->AssignPageToStore(page, store, 0, PagePool::kIgnorePageData));
   EXPECT_EQ(store, page->store());
 
-  file_wrapper.SetAccessError(Status::kIoError);
+  data_file_wrapper.SetAccessError(Status::kIoError);
   page_pool->UnassignPageFromStore(page);
 #if DCHECK_IS_ON()
   EXPECT_EQ(nullptr, page->store());

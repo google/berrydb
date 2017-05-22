@@ -17,6 +17,19 @@ class Transaction;
 /** A key-value store. */
 class Store {
  public:
+  /** The path of the log file associated with a store file.
+   *
+   * This method allocates a string using the libc allocator instead of
+   * PlatformAllocator. In this case, we consider that opens are infrequent
+   * and cause small allocations, so routing them through PlatformAllocator
+   * isn't worth the code overhead. This decision should be revisited whenever
+   * another std::string allocation is added to the codebase.
+   *
+   * @return a file path that can be passed to Vfs::OpenForRandomAccess() to
+   *         open the store's log file; the log file is not guaranteed to exist
+   */
+  static std::string LogFilePath(const std::string& store_path);
+
   /** Starts a transaction against this store. */
   Transaction* CreateTransaction();
 

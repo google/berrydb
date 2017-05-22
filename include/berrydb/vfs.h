@@ -24,21 +24,19 @@ class Vfs {
    *
    * This method is used for transaction logs.
    *
-   * @param file_path   the file to be opened or created
-   * @param block_shift log2(block size); the block size can be computed as
-   *                    1 << block_shift
-   * @param file        if the call succeeds, populated with a RandomAccessFile*
-   *                    that can be used to access the file
-   * @param result_size the number of bytes contained by the file when it is
-   *                    opened
-   * @return            attempting to open a non-existing file may result in
-   *                    kIoError or kNotFound; all other errors will result in
-   *                    kIoError
+   * @param file_path the file to be opened or created
+   * @param file      if the call succeeds, populated with a RandomAccessFile*
+   *                  that can be used to access the file
+   * @param file_size the number of bytes contained by the file when it is
+   *                  opened
+   * @return          attempting to open a non-existing file may result in
+   *                  kIoError or kNotFound; all other errors will result in
+   *                  kIoError
    */
   virtual Status OpenForRandomAccess(
       const std::string& file_path,
       bool create_if_missing, bool error_if_exists,
-      RandomAccessFile** result, size_t* result_size) = 0;
+      RandomAccessFile** result, size_t* file_size) = 0;
 
   /** Opens a file designed for reads/writes at (large) block granularities.
    *
@@ -49,6 +47,9 @@ class Vfs {
    *                    1 << block_shift
    * @param file        if the call succeeds, populated with a BlockAccessFile*
    *                    that can be used to access the file
+   * @param file_size   the number of bytes contained by the file when it is
+   *                    opened; the size cannot be assumed to be a multiple of
+   *                    the file's block size
    * @return            attempting to open a non-existing file may result in
    *                    kIoError or kNotFound; all other errors will result in
    *                    kIoError
@@ -56,7 +57,7 @@ class Vfs {
   virtual Status OpenForBlockAccess(
       const std::string& file_path, size_t block_shift,
       bool create_if_missing, bool error_if_exists,
-      BlockAccessFile** result) = 0;
+      BlockAccessFile** result, size_t* file_size) = 0;
 
   /** Deletes a file from the filesystem.
    *
@@ -177,6 +178,17 @@ class BlockAccessFile {
    * @return most likely kSuccess or kIoError
    */
   virtual Status Sync() = 0;
+
+  /** Attempts to acquire a mandatory exclusive lock on the file.
+   *
+   * The file remains locked until it is closed. After this method returns
+   * successfully, other processes should not be able to open this file. This
+   * process may also not be able to reopen the file, until Close() is called.
+   *
+   * @return kAlreadyLocked if the lock is already held by another user,
+   *         otherwise kSuccess or kIoError
+   */
+  virtual Status Lock() = 0;
 
   /** Closes the file and releases its underlying resources.
    *

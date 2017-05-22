@@ -21,6 +21,7 @@ class StoreTest : public ::testing::Test {
   virtual void SetUp() {
     vfs_ = DefaultVfs();
     vfs_->DeleteFile(kFileName);
+    vfs_->DeleteFile(Store::LogFilePath(kFileName));
 
     PoolOptions options;
     options.page_shift = 12;
@@ -30,6 +31,7 @@ class StoreTest : public ::testing::Test {
   virtual void TearDown() {
     pool_->Release();
     vfs_->DeleteFile(kFileName);
+    vfs_->DeleteFile(Store::LogFilePath(kFileName));
   }
 
   const std::string kFileName = "test_store.berry";

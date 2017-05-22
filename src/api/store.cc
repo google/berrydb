@@ -10,6 +10,10 @@
 
 namespace berrydb {
 
+std::string Store::LogFilePath(const std::string &store_path) {
+  return StoreImpl::LogFilePath(store_path);
+}
+
 Transaction* Store::CreateTransaction() {
   return StoreImpl::FromApi(this)->CreateTransaction()->ToApi();
 }

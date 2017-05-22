@@ -16,10 +16,12 @@ static_assert(std::is_standard_layout<StoreImpl>::value,
     "exposed cheaply");
 
 StoreImpl* StoreImpl::Create(
-      BlockAccessFile* data_file, PagePool* page_pool,
-      const StoreOptions& options) {
+    BlockAccessFile* data_file, size_t data_file_size,
+    RandomAccessFile* log_file, size_t log_file_size, PagePool* page_pool,
+    const StoreOptions& options) {
   void* heap_block = Allocate(sizeof(StoreImpl));
-  StoreImpl* store = new (heap_block) StoreImpl(data_file, page_pool, options);
+  StoreImpl* store = new (heap_block) StoreImpl(
+      data_file, data_file_size, log_file, log_file_size, page_pool, options);
   DCHECK_EQ(heap_block, static_cast<void*>(store));
 
   return store;
@@ -32,11 +34,13 @@ void StoreImpl::Release() {
 }
 
 StoreImpl::StoreImpl(
-    BlockAccessFile* data_file, PagePool* page_pool,
+    BlockAccessFile* data_file, size_t data_file_size,
+    RandomAccessFile* log_file, size_t log_file_size, PagePool* page_pool,
     const StoreOptions& options)
-    : data_file_(data_file), page_pool_(page_pool),
+    : data_file_(data_file), log_file_(log_file), page_pool_(page_pool),
       page_shift_(page_pool->page_shift()) {
   DCHECK(data_file != nullptr);
+  DCHECK(log_file != nullptr);
   DCHECK(page_pool != nullptr);
 
   // This will be used when we implement creating/loading the metadata page.
@@ -86,6 +90,8 @@ Status StoreImpl::Close() {
   }
 
   state_ = State::kClosed;
+  data_file_->Close();
+  log_file_->Close();
   return result;
 }
 
@@ -119,6 +125,12 @@ void StoreImpl::TransactionClosed(TransactionImpl* transaction) {
     return;
 
   transactions_.erase(transaction);
+}
+
+std::string StoreImpl::LogFilePath(const std::string& store_path) {
+  std::string log_path(store_path);
+  log_path.append(".log", 4);
+  return log_path;
 }
 
 }  // namespace berrydb
