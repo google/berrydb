@@ -17,6 +17,7 @@
 namespace berrydb {
 
 class BlockAccessFile;
+class CatalogImpl;
 class Page;
 class PagePool;
 class TransactionImpl;
@@ -47,6 +48,7 @@ class StoreImpl {
 
   // See the public API documention for details.
   TransactionImpl* CreateTransaction();
+  inline CatalogImpl* RootCatalog() noexcept { return nullptr; }
   Status Close();
   inline bool IsClosed() const noexcept { return state_ == State::kClosed; }
   void Release();

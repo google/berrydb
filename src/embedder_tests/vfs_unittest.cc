@@ -43,9 +43,11 @@ TEST_F(VfsTest, OpenForBlockAccessOptions) {
       vfs_->OpenForBlockAccess(kFileName, 12, false, false, &file));
   EXPECT_EQ(nullptr, file);
 
+  file = nullptr;
   ASSERT_EQ(
       Status::kSuccess,
       vfs_->OpenForBlockAccess(kFileName, 12, true, true, &file));
+  ASSERT_NE(nullptr, file);
   file->Close();
 
   // The ASSERT above guarantees that the file was created.
@@ -55,31 +57,38 @@ TEST_F(VfsTest, OpenForBlockAccessOptions) {
       vfs_->OpenForBlockAccess(kFileName, 12, true, true, &file));
   EXPECT_EQ(nullptr, file);
 
+  file = nullptr;
   ASSERT_EQ(
       Status::kSuccess,
       vfs_->OpenForBlockAccess(kFileName, 12, true, false, &file));
+  ASSERT_NE(nullptr, file);
   file->Close();
 
+  file = nullptr;
   ASSERT_EQ(
       Status::kSuccess,
       vfs_->OpenForBlockAccess(kFileName, 12, false, false, &file));
+  ASSERT_NE(nullptr, file);
   file->Close();
 }
 
 TEST_F(VfsTest, BlockAccessFilePersistence) {
   uint8_t buffer[1 << 12], read_buffer[1 << 12];
-  BlockAccessFile* file;
+  BlockAccessFile* file = nullptr;
 
   for (size_t i = 0; i < 1 << 12; ++i)
     buffer[i] = static_cast<uint8_t>(rnd_());
 
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
       kFileName, 12, true, false, &file));
+  ASSERT_NE(nullptr, file);
   EXPECT_EQ(Status::kSuccess, file->Write(buffer, 0, 1 << 12));
   EXPECT_EQ(Status::kSuccess, file->Close());
 
+  file = nullptr;
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
       kFileName, 12, false, false, &file));
+  ASSERT_NE(nullptr, file);
   EXPECT_EQ(Status::kSuccess, file->Read(0, 1 << 12, read_buffer));
   EXPECT_EQ(Status::kSuccess, file->Close());
 
@@ -89,7 +98,7 @@ TEST_F(VfsTest, BlockAccessFilePersistence) {
 
 TEST_F(VfsTest, BlockAccessFileReadWriteOffsets) {
   uint8_t buffer[4][1 << 12], read_buffer[1 << 12];
-  BlockAccessFile* file;
+  BlockAccessFile* file = nullptr;
 
   for (size_t i = 0; i < 4; ++i) {
     for (size_t j = 0; j < 1 << 12; ++j)
@@ -98,6 +107,7 @@ TEST_F(VfsTest, BlockAccessFileReadWriteOffsets) {
 
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
       kFileName, 12, true, false, &file));
+  ASSERT_NE(nullptr, file);
 
   // Fill up the file with blocks [2, 1, 3, 0].
   EXPECT_EQ(Status::kSuccess, file->Write(buffer[2], 0 << 12, 1 << 12));
@@ -146,45 +156,66 @@ TEST_F(VfsTest, DISABLED_OpenForRandomAccessOptions) {
 TEST_F(VfsTest, OpenForRandomAccessOptions) {
 #endif  // defined(_WIN32) || defined(WIN32)
   RandomAccessFile* file = nullptr;
+  const size_t kInvalidSize = 0x0badc0de;
+  size_t file_size = kInvalidSize;
 
   // Setup guarantees that the file does not exist.
   ASSERT_NE(
       Status::kSuccess,
-      vfs_->OpenForRandomAccess(kFileName, false, false, &file));
+      vfs_->OpenForRandomAccess(kFileName, false, false, &file, &file_size));
   EXPECT_EQ(nullptr, file);
+  EXPECT_EQ(kInvalidSize, file_size);
 
+  file = nullptr;
+  file_size = kInvalidSize;
   ASSERT_EQ(
       Status::kSuccess,
-      vfs_->OpenForRandomAccess(kFileName, true, true, &file));
+      vfs_->OpenForRandomAccess(kFileName, true, true, &file, &file_size));
+  ASSERT_NE(nullptr, file);
+  EXPECT_EQ(0U, file_size);
   file->Close();
 
   // The ASSERT above guarantees that the file was created.
   file = nullptr;
+  file_size = kInvalidSize;
   ASSERT_NE(
       Status::kSuccess,
-      vfs_->OpenForRandomAccess(kFileName, true, true, &file));
+      vfs_->OpenForRandomAccess(kFileName, true, true, &file, &file_size));
   EXPECT_EQ(nullptr, file);
+  EXPECT_EQ(kInvalidSize, file_size);
 
+  file = nullptr;
+  file_size = kInvalidSize;
   ASSERT_EQ(
       Status::kSuccess,
-      vfs_->OpenForRandomAccess(kFileName, true, false, &file));
+      vfs_->OpenForRandomAccess(kFileName, true, false, &file, &file_size));
+  ASSERT_NE(nullptr, file);
+  EXPECT_EQ(0U, file_size);
   file->Close();
 
+  file = nullptr;
+  file_size = kInvalidSize;
   ASSERT_EQ(
       Status::kSuccess,
-      vfs_->OpenForRandomAccess(kFileName, false, false, &file));
+      vfs_->OpenForRandomAccess(kFileName, false, false, &file, &file_size));
+  ASSERT_NE(nullptr, file);
+  EXPECT_EQ(0U, file_size);
   file->Close();
 }
 
 TEST_F(VfsTest, RandomAccessFilePersistence) {
   uint8_t buffer[9000], read_buffer[9000];
-  RandomAccessFile* file;
+  RandomAccessFile* file = nullptr;
+  const size_t kInvalidSize = 0x0badc0de;
+  size_t file_size = kInvalidSize;
 
   for (size_t i = 0; i < sizeof(buffer); ++i)
     buffer[i] = static_cast<uint8_t>(rnd_());
 
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
-      kFileName, true, false, &file));
+      kFileName, true, false, &file, &file_size));
+  ASSERT_NE(nullptr, file);
+  EXPECT_EQ(0U, file_size);
   EXPECT_EQ(Status::kSuccess, file->Write(buffer +    0,    0, 2000));
   EXPECT_EQ(Status::kSuccess, file->Write(buffer + 2000, 2000, 1000));
   EXPECT_EQ(Status::kSuccess, file->Write(buffer + 3000, 3000, 3000));
@@ -192,8 +223,12 @@ TEST_F(VfsTest, RandomAccessFilePersistence) {
   EXPECT_EQ(Status::kSuccess, file->Write(buffer + 6500, 6500, 2500));
   EXPECT_EQ(Status::kSuccess, file->Close());
 
+  file = nullptr;
+  file_size = kInvalidSize;
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
-      kFileName, false, false, &file));
+      kFileName, false, false, &file, &file_size));
+  ASSERT_NE(nullptr, file);
+  EXPECT_EQ(9000U, file_size);
   EXPECT_EQ(Status::kSuccess, file->Read(   0, 2500, read_buffer +    0));
   EXPECT_EQ(Status::kSuccess, file->Read(2500,  500, read_buffer + 2500));
   EXPECT_EQ(Status::kSuccess, file->Read(3000, 3000, read_buffer + 3000));
@@ -210,12 +245,16 @@ TEST_F(VfsTest, RandomAccessFilePersistence) {
 TEST_F(VfsTest, RandomAccessFileReadWriteOffsets) {
   uint8_t buffer[9000], read_buffer[9000];
   RandomAccessFile* file;
+  const size_t kInvalidSize = 0x0badc0de;
+  size_t file_size = kInvalidSize;
 
   for (size_t i = 0; i < sizeof(buffer); ++i)
     buffer[i] = static_cast<uint8_t>(rnd_());
 
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
-      kFileName, true, false, &file));
+      kFileName, true, false, &file, &file_size));
+  ASSERT_NE(nullptr, file);
+  EXPECT_EQ(0U, file_size);
 
   // Write the data in order.
   EXPECT_EQ(Status::kSuccess, file->Write(buffer +    0,    0, 2000));

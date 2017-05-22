@@ -86,4 +86,36 @@ Status TransactionImpl::Rollback() {
   return Close();
 }
 
+Status TransactionImpl::CreateSpace(
+    CatalogImpl* catalog, string_view name, SpaceImpl** result) {
+  if (is_closed_)
+    return Status::kAlreadyClosed;
+
+  UNUSED(catalog);
+  UNUSED(name);
+  UNUSED(result);
+  return Status::kIoError;
+
+}
+
+Status TransactionImpl::CreateCatalog(
+    CatalogImpl* catalog, string_view name, CatalogImpl** result) {
+
+  if (is_closed_)
+    return Status::kAlreadyClosed;
+  UNUSED(catalog);
+  UNUSED(name);
+  UNUSED(result);
+  return Status::kIoError;
+}
+
+Status TransactionImpl::Delete(CatalogImpl* catalog, string_view name) {
+  if (is_closed_)
+    return Status::kAlreadyClosed;
+
+  UNUSED(catalog);
+  UNUSED(name);
+  return Status::kIoError;
+}
+
 }  // namespace berrydb

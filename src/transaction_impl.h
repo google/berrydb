@@ -11,6 +11,8 @@
 namespace berrydb {
 
 class BlockAccessFile;
+class CatalogImpl;
+class SpaceImpl;
 class StoreImpl;
 
 /** Internal representation for the Transaction class in the public API.
@@ -53,6 +55,12 @@ class TransactionImpl {
   Status Delete(Space* space, string_view key);
   Status Commit();
   Status Rollback();
+  Status CreateSpace(
+      CatalogImpl* catalog, string_view name, SpaceImpl** result);
+  Status CreateCatalog(
+      CatalogImpl* catalog, string_view name, CatalogImpl** result);
+  Status Delete(CatalogImpl* catalog, string_view name);
+
   inline bool IsClosed() const noexcept {
     DCHECK(!is_committed_ || is_closed_);
     return is_closed_;

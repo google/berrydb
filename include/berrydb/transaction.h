@@ -40,6 +40,14 @@ class Transaction {
    */
   Status Commit();
 
+  /**
+   * Discards the Put()s and Deletes() in this transaction.
+   *
+   * After this method is called, the transaction becomes invalid. No other
+   * methods should be called.
+   */
+  Status Rollback();
+
   /** Creates a (key/value name)space.
    *
    * @param catalog will store the reference to the new (key/value name)space
@@ -72,14 +80,6 @@ class Transaction {
    *                given name; otherwise, most likely kSuccess or kIoError
    */
   Status Delete(Catalog* catalog, string_view name);
-
-  /**
-   * Discards the Put()s and Deletes() in this transaction.
-   *
-   * After this method is called, the transaction becomes invalid. No other
-   * methods should be called.
-   */
-  Status Rollback();
 
   /** True if the transaction was committed or rolled back. */
   bool IsClosed();

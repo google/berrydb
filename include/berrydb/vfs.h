@@ -29,6 +29,8 @@ class Vfs {
    *                    1 << block_shift
    * @param file        if the call succeeds, populated with a RandomAccessFile*
    *                    that can be used to access the file
+   * @param result_size the number of bytes contained by the file when it is
+   *                    opened
    * @return            attempting to open a non-existing file may result in
    *                    kIoError or kNotFound; all other errors will result in
    *                    kIoError
@@ -36,7 +38,7 @@ class Vfs {
   virtual Status OpenForRandomAccess(
       const std::string& file_path,
       bool create_if_missing, bool error_if_exists,
-      RandomAccessFile** result) = 0;
+      RandomAccessFile** result, size_t* result_size) = 0;
 
   /** Opens a file designed for reads/writes at (large) block granularities.
    *

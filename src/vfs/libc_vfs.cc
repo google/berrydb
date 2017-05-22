@@ -185,15 +185,23 @@ class LibcVfs : public Vfs {
  public:
   Status OpenForRandomAccess(
       const std::string& file_path, bool create_if_missing,
-      bool error_if_exists, RandomAccessFile** result) override {
+      bool error_if_exists, RandomAccessFile** result,
+      size_t* result_size) override {
     FILE* fp = OpenLibcFile(file_path, create_if_missing, error_if_exists);
     if (fp == nullptr)
       return Status::kIoError;
+
+    if (std::fseek(fp, 0, SEEK_END) != 0) {
+      // ferror() can be checked if we want to return more detailed errors.
+      return Status::kIoError;
+    }
+    size_t file_size = std::ftell(fp);
 
     void* heap_block = Allocate(sizeof(LibcRandomAccessFile));
     LibcRandomAccessFile* file = new (heap_block) LibcRandomAccessFile(fp);
     DCHECK_EQ(heap_block, reinterpret_cast<void*>(file));
     *result = file;
+    *result_size = file_size;
     return Status::kSuccess;
   }
   Status OpenForBlockAccess(

@@ -4,6 +4,7 @@
 
 #include "berrydb/store.h"
 
+#include "../catalog_impl.h"
 #include "../store_impl.h"
 #include "../transaction_impl.h"
 
@@ -11,6 +12,10 @@ namespace berrydb {
 
 Transaction* Store::CreateTransaction() {
   return StoreImpl::FromApi(this)->CreateTransaction()->ToApi();
+}
+
+Catalog* Store::RootCatalog() {
+  return StoreImpl::FromApi(this)->RootCatalog()->ToApi();
 }
 
 Status Store::Close() {

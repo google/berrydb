@@ -11,6 +11,7 @@ namespace berrydb {
 
 enum class Status : int;
 
+class Catalog;
 class Transaction;
 
 /** A key-value store. */
@@ -18,6 +19,12 @@ class Store {
  public:
   /** Starts a transaction against this store. */
   Transaction* CreateTransaction();
+
+  /** Obtains the root catalog for this store.
+   *
+   * The root catalog is implicitly released when the Store is released, and
+   * Release() should never be called on it explicitly. */
+  Catalog* RootCatalog();
 
   /** Closes the store. */
   Status Close();

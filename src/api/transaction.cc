@@ -4,6 +4,9 @@
 
 #include "berrydb/transaction.h"
 
+#include "berrydb/status.h"
+#include "../catalog_impl.h"
+#include "../space_impl.h"
 #include "../transaction_impl.h"
 
 namespace berrydb {
@@ -26,6 +29,31 @@ Status Transaction::Commit() {
 
 Status Transaction::Rollback() {
   return TransactionImpl::FromApi(this)->Rollback();
+}
+
+Status Transaction::CreateSpace(
+    Catalog* catalog, string_view name, Space** result) {
+  SpaceImpl* space;
+  Status status = TransactionImpl::FromApi(this)->CreateSpace(
+     CatalogImpl::FromApi(catalog), name, &space);
+  if (status == Status::kSuccess)
+    *result = space->ToApi();
+  return status;
+}
+
+Status Transaction::CreateCatalog(
+    Catalog* catalog, string_view name, Catalog** result) {
+  CatalogImpl* new_catalog;
+  Status status = TransactionImpl::FromApi(this)->CreateCatalog(
+     CatalogImpl::FromApi(catalog), name, &new_catalog);
+  if (status == Status::kSuccess)
+    *result = new_catalog->ToApi();
+  return status;
+}
+
+Status Transaction::Delete(Catalog* catalog, string_view name) {
+  return TransactionImpl::FromApi(this)->Delete(
+      CatalogImpl::FromApi(catalog), name);
 }
 
 bool Transaction::IsClosed() {
