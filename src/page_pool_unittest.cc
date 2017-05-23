@@ -63,7 +63,7 @@ class PagePoolTest : public ::testing::Test {
   const std::string kStoreFileName3 = "test_page_pool_3.berry";
 
   Vfs* vfs_;
-  PoolImpl* pool_ ;
+  PoolImpl* pool_;
   BlockAccessFile* data_file1_;
   size_t data_file1_size_;
   RandomAccessFile* log_file1_;
@@ -71,7 +71,8 @@ class PagePoolTest : public ::testing::Test {
 };
 
 TEST_F(PagePoolTest, Constructor) {
-  PagePool page_pool(16, 42);
+  CreatePool(16, 42);
+  PagePool page_pool(pool_, 16, 42);
   EXPECT_EQ(16U, page_pool.page_shift());
   EXPECT_EQ(65536U, page_pool.page_size());
   EXPECT_EQ(42U, page_pool.page_capacity());
@@ -82,7 +83,8 @@ TEST_F(PagePoolTest, Constructor) {
 }
 
 TEST_F(PagePoolTest, AllocRespectsCapacity) {
-  PagePool page_pool(12, 1);
+  CreatePool(12, 1);
+  PagePool page_pool(pool_, 12, 1);
 
   Page* page = page_pool.AllocPage();
   ASSERT_NE(nullptr, page);

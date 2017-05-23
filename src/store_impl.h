@@ -20,12 +20,18 @@ class BlockAccessFile;
 class CatalogImpl;
 class Page;
 class PagePool;
+class PoolImpl;
 class TransactionImpl;
 
 /** Internal representation for the Store class in the public API. */
 class StoreImpl {
  public:
-  /** Create a StoreImpl instance. */
+  /** Create a StoreImpl instance.
+   *
+   * This returns a minimally set up instance that can be registered with the
+   * pool. The new instance should be initalized via StoreImpl::Initialize()
+   * before it is used for transactions.
+   */
   static StoreImpl* Create(
       BlockAccessFile* data_file, size_t data_file_size,
       RandomAccessFile* log_file, size_t log_file_size, PagePool* page_pool,
@@ -54,6 +60,19 @@ class StoreImpl {
   Status Close();
   inline bool IsClosed() const noexcept { return state_ == State::kClosed; }
   void Release();
+
+  /** Initializes a store obtained by Store::Create.
+   *
+   * Store::Create() gets the store to a state where it can honor the Close()
+   * call, so it can be registered with its resource pool. Before the store can
+   * process user transactions, it must be initialized using this method.
+   *
+   * This method writes the initial on-disk data structures for new stores, and
+   * kicks off the recovery process for existing stores. Therefore, it is quite
+   * possible that initialization will fail due to an I/O error. Callers should
+   * be prepared to handle the error.
+   */
+  Status Initialize(const StoreOptions& options);
 
   /** Reads a page from the store into the page pool.
    *

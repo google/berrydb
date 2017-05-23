@@ -18,6 +18,7 @@
 
 namespace berrydb {
 
+class PoolImpl;
 class Store;
 class StoreImpl;
 
@@ -40,9 +41,9 @@ class PagePool {
   };
 
   /** Sets up a page pool. Page memory may be allocated on-demand. */
-  PagePool(size_t page_shift, size_t page_capacity);
+  PagePool(PoolImpl* pool, size_t page_shift, size_t page_capacity);
 
-  /** */
+  /** Deallocates the memory used by the pool's pages. */
   ~PagePool();
 
   /** Fetches a page from a store and pins it.
@@ -99,6 +100,9 @@ class PagePool {
   inline size_t pinned_pages() const noexcept {
     return page_count_ - free_list_.size() - lru_list_.size();
   }
+
+  /** The resource pool that this page pool belongs to. */
+  inline PoolImpl* pool() const noexcept { return pool_; }
 
   /**
    * Allocates a page and pins it.
@@ -162,6 +166,7 @@ class PagePool {
   size_t page_shift_;
   size_t page_size_;
   size_t page_capacity_;
+  PoolImpl* const pool_;
 
   /** Number of pages currently held by the pool. */
   size_t page_count_ = 0;

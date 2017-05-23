@@ -55,6 +55,12 @@ StoreImpl::~StoreImpl() {
   DCHECK(state_ == State::kClosed);
 }
 
+Status StoreImpl::Initialize(const StoreOptions &options) {
+  UNUSED(options);
+
+  return Status::kSuccess;
+}
+
 TransactionImpl* StoreImpl::CreateTransaction() {
   TransactionImpl* transaction = TransactionImpl::Create(this);
   transactions_.push_back(transaction);
@@ -89,9 +95,12 @@ Status StoreImpl::Close() {
       result = rollback_status;
   }
 
-  state_ = State::kClosed;
   data_file_->Close();
   log_file_->Close();
+
+  state_ = State::kClosed;
+  page_pool_->pool()->StoreClosed(this);
+
   return result;
 }
 

@@ -6,12 +6,36 @@
 
 #include "gtest/gtest.h"
 
+#include "berrydb/options.h"
 #include "./page_pool.h"
+#include "./pool_impl.h"
 
 namespace berrydb {
 
-TEST(PageTest, CreateRelease) {
-  PagePool page_pool(12, 42);
+class PageTest : public ::testing::Test {
+ protected:
+  virtual void SetUp() {
+    pool_ = nullptr;
+  }
+
+  virtual void TearDown() {
+    if (pool_ != nullptr)
+      pool_->Release();
+  }
+
+  void CreatePool(int page_shift, int page_capacity) {
+    PoolOptions options;
+    options.page_shift = page_capacity;
+    options.page_pool_size = page_shift;
+    pool_ = PoolImpl::Create(options);
+  }
+
+  PoolImpl* pool_;
+};
+
+TEST_F(PageTest, CreateRelease) {
+  CreatePool(12, 42);
+  PagePool page_pool(pool_, 12, 42);
 
   Page* page = Page::Create(&page_pool);
 #if DCHECK_IS_ON()
@@ -25,8 +49,9 @@ TEST(PageTest, CreateRelease) {
   page->Release(&page_pool);
 }
 
-TEST(PageTest, Pinning) {
-  PagePool page_pool(12, 42);
+TEST_F(PageTest, Pinning) {
+  CreatePool(12, 42);
+  PagePool page_pool(pool_, 12, 42);
 
   Page* page = Page::Create(&page_pool);
   EXPECT_FALSE(page->IsUnpinned());

@@ -11,9 +11,10 @@
 
 namespace berrydb {
 
-PagePool::PagePool(size_t page_shift, size_t page_capacity)
+PagePool::PagePool(PoolImpl* pool, size_t page_shift, size_t page_capacity)
     : page_shift_(page_shift), page_size_(1 << page_shift),
-      page_capacity_(page_capacity), free_list_(), lru_list_(), log_list_() {
+      page_capacity_(page_capacity), pool_(pool), free_list_(), lru_list_(),
+      log_list_() {
   // The page size should be a power of two.
   DCHECK_EQ(page_size_ & (page_size_ - 1), 0);
 }

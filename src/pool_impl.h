@@ -52,6 +52,12 @@ class PoolImpl {
     return page_pool_.page_capacity();
   }
 
+  /** Called upon the creation of a Store instance that uses this pool. */
+  void StoreCreated(StoreImpl* store);
+
+  /** Called when a Store that uses this pool is closed. */
+  void StoreClosed(StoreImpl* store);
+
  private:
   /** Use PoolImpl::Create() to obtain PoolImpl instances. */
   PoolImpl(const PoolOptions& options);

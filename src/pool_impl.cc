@@ -25,7 +25,7 @@ PoolImpl* PoolImpl::Create(const PoolOptions& options) {
 }
 
 PoolImpl::PoolImpl(const PoolOptions& options)
-    : api_(), page_pool_(options.page_shift, options.page_pool_size),
+    : api_(), page_pool_(this, options.page_shift, options.page_pool_size),
       vfs_((options.vfs == nullptr) ? DefaultVfs() : options.vfs) {
 }
 
@@ -51,6 +51,19 @@ void PoolImpl::Release() {
   this->~PoolImpl();
   void* heap_block = static_cast<void*>(this);
   Deallocate(heap_block, sizeof(PoolImpl));
+}
+
+void PoolImpl::StoreClosed(StoreImpl* store) {
+  DCHECK(store != nullptr);
+  DCHECK(store->IsClosed());
+#if DCHECK_IS_ON()
+  DCHECK_EQ(this, store->page_pool()->pool());
+#endif  // DCHECK_IS_ON()
+
+  // TODO(pwnall): This probably needs the same open/closed/isClosing logic as
+  //               StoreImpl::TransactionClosed().
+
+  stores_.erase(store);
 }
 
 Status PoolImpl::OpenStore(
@@ -85,6 +98,13 @@ Status PoolImpl::OpenStore(
       data_file, data_file_size, log_file, log_file_size, &page_pool_, options);
 
   stores_.insert(store);
+
+  status = store->Initialize(options);
+  if (status != Status::kSuccess) {
+    store->Close();
+    return status;
+  }
+
   *result = store;
   return Status::kSuccess;
 }
