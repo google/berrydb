@@ -51,6 +51,10 @@ class PagePool {
    * The caller owns a pin of the page, and must remove the pin by calling
    * UnpinStorePage() after using the page.
    *
+   * If the desired fetch mode is kIgnorePageData, the returned page may or may
+   * not be marked dirty. Thus, callers that use kIgnorePageData must also call
+   * MarkDirty() on the result page.
+   *
    * @param  store      the store to fetch a page from
    * @param  page_id    the page that will be fetched from the store
    * @param  fetch_mode desired fetching behavior
@@ -67,10 +71,22 @@ class PagePool {
    *
    * The page might still be in the cache.
    *
-   * @param page a page that was previously obtained from this pool using
+   * @param  page a page that was previously obtained from this pool using
    *             StorePage()
    */
   void UnpinStorePage(Page* page);
+
+  /** Releases and writes back a dirty Page previously obtained by StorePage().
+   *
+   * This is similar to UnpinStorePage(), but the caller is supplying an extra
+   * hint that the page is dirty, and should be written back to the store's data
+   * file now. This is rather rare, as in general it is advantageous to batch
+   * writes, which implies hanging onto dirty pages for as long as possible.
+   *
+   * @param  page a dirty page that was previously obtained from this pool using
+   *             StorePage()
+   */
+  void UnpinAndWriteStorePage(Page* page);
 
   /** The base-2 log of the pool's page size. */
   inline size_t page_shift() const noexcept { return page_shift_; }
@@ -108,8 +124,8 @@ class PagePool {
    * Allocates a page and pins it.
    *
    * This method is intended for allocating pages that will end up holding log
-   * data, and for internal use. Store pages should be handled using Pin() and
-   * Unpin().
+   * data, and for internal use. Store pages should be handled using StorePage()
+   * and UnpinStorePage().
    *
    * The caller is responsible for reducing the page's pin count.
    *
@@ -145,16 +161,37 @@ class PagePool {
    * @param  store      the store to fetch a page from
    * @param  page_id    the page that will be fetched from the store
    * @param  fetch_mode desired fetching behavior
-   * @return            [description]
+   * @return            most likley kSuccess or kIoError
    */
   Status AssignPageToStore(
       Page* page, StoreImpl* store, size_t page_id, PageFetchMode fetch_mode);
 
   /** Frees up a page pool entry that is currently caching a store page.
    *
+   * Most callers should use UnpinStorePage() instead. This method guarantees
+   * that the pool entry will not be caching the store page.
+   *
    * @param page the page pool entry to be freed
    */
   void UnassignPageFromStore(Page* page);
+
+  /** Adds a pin to a pool entry that is currently caching a store page.
+   *
+   * This is intended for internal use and for testing.
+   *
+   * @param page the page pool entry that will receive an extra pin
+   */
+  void PinStorePage(Page* page);
+
+  /** Acquires pins on all the pages in a store's page list.
+   *
+   * After this method returns, the list of pages assigned to the store is
+   * guaranteed to be stable, assuming that the store refuses to fetch new
+   * pages.
+   *
+   * @param page_list the list of pages to acquire pins on
+   */
+  void PinStorePages(LinkedList<Page, Page::StoreLinkedListBridge>* page_list);
 
  private:
   /** Entries that belong to this page pool that are assigned to stores. */

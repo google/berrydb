@@ -6,7 +6,8 @@
 
 namespace berrydb {
 
-PoolOptions::PoolOptions() : page_shift(15), page_pool_size(), vfs(nullptr) { }
+PoolOptions::PoolOptions()
+    : page_shift(15), page_pool_size(256), vfs(nullptr) { }
 
 StoreOptions::StoreOptions()
     : create_if_missing(true), error_if_exists(false) { }

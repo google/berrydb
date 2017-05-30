@@ -10,7 +10,6 @@
 
 #include "berrydb/platform.h"
 #include "./util/linked_list.h"
-#include "./store_impl.h"  // Used in DCHECKs.
 
 namespace berrydb {
 
@@ -95,15 +94,20 @@ class Page {
    *
    * The page should not be in any list while a store page is loaded into it,
    * so Alloc() doesn't grab it. This also implies that the page must be pinned.
+   *
+   * The caller must immediately call StoreImpl::PageAssigned(). This method
+   * cannot make that call, due to header dependencies.
    */
   inline void AssignToStore(StoreImpl* store, size_t page_id) noexcept {
+    // NOTE: It'd be nice to DCHECK_EQ(page_pool_, store->page_pool()).
+    //       Unfortunately, that requires a dependency on store_impl.h, which
+    //       absolutely needs to include page.h.
 #if DCHECK_IS_ON()
-    DCHECK_EQ(page_pool_, store->page_pool());
     DCHECK(store_ == nullptr);
-    DCHECK(linked_list_node_.list() == nullptr);
+    DCHECK(store_list_node_.list_sentinel() == nullptr);
+    DCHECK(linked_list_node_.list_sentinel() == nullptr);
 #endif  // DCHECK_IS_ON()
     DCHECK(pin_count_ != 0);
-
     DCHECK(!is_dirty_);
 
     store_ = store;
@@ -113,13 +117,20 @@ class Page {
   /** Track the fact that the pool page no longer caches a store page.
    *
    * The page must be pinned, as it was caching a store page up until now. This
-   * also implies that the page cannot be on any list. */
+   * also implies that the page cannot be on any list.
+   *
+   * The caller must immediately call StoreImpl::PageUnassigned(). This method
+   * cannot make that call, due to header dependencies.
+   */
   inline void UnassignFromStore() noexcept {
     DCHECK(pin_count_ != 0);
     DCHECK(store_ != nullptr);
+#if DCHECK_IS_ON()
+    DCHECK(store_list_node_.list_sentinel() != nullptr);
+    DCHECK(linked_list_node_.list_sentinel() == nullptr);
+#endif  // DCHECK_IS_ON()
 
 #if DCHECK_IS_ON()
-    DCHECK(linked_list_node_.list() == nullptr);
     store_ = nullptr;
 #endif  // DCHECK_IS_ON()
   }
@@ -148,8 +159,11 @@ class Page {
   static constexpr size_t kMaxPinCount = ~static_cast<size_t>(0);
 #endif  // DCHECK_IS_ON()
 
-  friend class LinkedList<Page>;
+  friend class LinkedListBridge<Page>;
   LinkedList<Page>::Node linked_list_node_;
+
+  friend class StoreLinkedListBridge;
+  LinkedList<Page>::Node store_list_node_;
 
   StoreImpl* store_;
   size_t page_id_;
@@ -167,6 +181,24 @@ class Page {
 #if DCHECK_IS_ON()
   PagePool* const page_pool_;
 #endif  // DCHECK_IS_ON()
+
+ public:
+  /** Bridge for StoreImpl's LinkedList<Page>. Exposed for StoreImpl. */
+  class StoreLinkedListBridge {
+   public:
+    using Embedder = Page;
+    using Node = LinkedListNode<Page>;
+
+    static inline Node* NodeForHost(Embedder* host) noexcept {
+      return &host->store_list_node_;
+    }
+    static inline Embedder* HostForNode(Node* node) noexcept {
+      Embedder* host = reinterpret_cast<Embedder*>(
+          reinterpret_cast<char*>(node) - offsetof(Embedder, store_list_node_));
+      DCHECK_EQ(node, &host->store_list_node_);
+      return host;
+    }
+  };
 };
 
 }  // namespace berrydb

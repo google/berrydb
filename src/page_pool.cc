@@ -42,14 +42,43 @@ PagePool::~PagePool() {
 
 void PagePool::UnpinStorePage(Page* page) {
   DCHECK(page != nullptr);
+  DCHECK(page->store() != nullptr);
 #if DCHECK_IS_ON()
   DCHECK_EQ(this, page->page_pool());
 #endif  // DCHECK_IS_ON()
-  DCHECK(page->store() != nullptr);
 
   page->RemovePin();
   if (page->IsUnpinned())
     lru_list_.push_back(page);
+}
+
+void PagePool::UnpinAndWriteStorePage(Page* page) {
+  DCHECK(page != nullptr);
+  DCHECK(page->is_dirty());
+  DCHECK(page->store() != nullptr);
+#if DCHECK_IS_ON()
+  DCHECK_EQ(this, page->page_pool());
+#endif  // DCHECK_IS_ON()
+
+  // TODO(pwnall): After all the code is written, figure out if there's a more
+  //               compact version of this code, depending on where it is used.
+
+  page->RemovePin();
+  if (!page->IsUnpinned())
+    return;
+
+  Status write_status = page->store()->WritePage(page);
+  page->MarkDirty(false);
+  if (write_status != Status::kSuccess) {
+    // TODO(pwnall): Figure out the correct strategy for unassigning here.
+    StoreImpl* store = page->store();
+    page->UnassignFromStore();
+    store->PageUnassigned(page);
+    store->Close();
+    return;
+  }
+
+  lru_list_.push_back(page);
 }
 
 void PagePool::UnpinUnassignedPage(Page* page) {
@@ -66,21 +95,23 @@ void PagePool::UnpinUnassignedPage(Page* page) {
 
 void PagePool::UnassignPageFromStore(Page* page) {
   DCHECK(page != nullptr);
+  DCHECK(page->store() != nullptr);
 #if DCHECK_IS_ON()
   DCHECK_EQ(this, page->page_pool());
 #endif  // DCHECK_IS_ON()
-  DCHECK(page->store() != nullptr);
 
+  StoreImpl* store = page->store();
   if (page->is_dirty()) {
-    StoreImpl* store = page->store();
     Status write_status = store->WritePage(page);
     page->MarkDirty(false);
 
     page->UnassignFromStore();
+    store->PageUnassigned(page);
     if (write_status != Status::kSuccess)
       store->Close();
   } else {
     page->UnassignFromStore();
+    store->PageUnassigned(page);
   }
 }
 
@@ -99,14 +130,15 @@ Page* PagePool::AllocPage() {
   if (!lru_list_.empty()) {
     Page* page = lru_list_.front();
     lru_list_.pop_front();
-    DCHECK_EQ(1,
-      page_map_.count(std::make_pair(page->store(), page->page_id())));
+    DCHECK_EQ(
+        1, page_map_.count(std::make_pair(page->store(), page->page_id())));
     page_map_.erase(std::make_pair(page->store(), page->page_id()));
     page->AddPin();
     UnassignPageFromStore(page);
     return page;
   }
 
+  // TODO(pwnall): Prefer to grow the pool (up to capacity) to evicting existing pages.
   if (page_count_ < page_capacity_) {
     ++page_count_;
     Page* page = Page::Create(this);
@@ -118,10 +150,10 @@ Page* PagePool::AllocPage() {
 
 Status PagePool::FetchStorePage(Page *page, PageFetchMode fetch_mode) {
   DCHECK(page != nullptr);
+  DCHECK(page->store() != nullptr);
 #if DCHECK_IS_ON()
   DCHECK_EQ(this, page->page_pool());
 #endif  // DCHECK_IS_ON()
-  DCHECK(page->store() != nullptr);
 
   if (fetch_mode == PagePool::kFetchPageData)
     return page->store()->ReadPage(page);
@@ -141,12 +173,13 @@ Status PagePool::AssignPageToStore(
     Page* page, StoreImpl* store, size_t page_id, PageFetchMode fetch_mode) {
   DCHECK(page != nullptr);
   DCHECK(store != nullptr);
+  DCHECK(page->store() == nullptr);
 #if DCHECK_IS_ON()
   DCHECK_EQ(this, page->page_pool());
 #endif  // DCHECK_IS_ON()
-  DCHECK(page->store() == nullptr);
 
   page->AssignToStore(store, page_id);
+  store->PageAssigned(page);
   Status fetch_status = FetchStorePage(page, fetch_mode);
   if (fetch_status == Status::kSuccess) {
     page_map_[std::make_pair(store, page_id)] = page;
@@ -154,12 +187,40 @@ Status PagePool::AssignPageToStore(
   }
 
   page->UnassignFromStore();
+  store->PageUnassigned(page);
   // Calling UnpinUnassignedPage will perform an extra check compared to
   // inlining the code, because the inlined version would know that the page is
   // unpinned.
   UnpinUnassignedPage(page);
   DCHECK(page->IsUnpinned());
   return fetch_status;
+}
+
+void PagePool::PinStorePage(Page* page) {
+  DCHECK(page != nullptr);
+  DCHECK(page->store() != nullptr);
+#if DCHECK_IS_ON()
+  DCHECK_EQ(this, page->page_pool());
+#endif  // DCHECK_IS_ON()
+
+  // If the page is already pinned, it is not contained in any list. If the page
+  // has no pins, it must be in the LRU list.
+  if (page->IsUnpinned())
+    lru_list_.erase(page);
+  page->AddPin();
+}
+
+void PagePool::PinStorePages(
+    LinkedList<Page, Page::StoreLinkedListBridge> *page_list) {
+  DCHECK(page_list != nullptr);
+
+  for (Page* page : *page_list) {
+    DCHECK(page->store() != nullptr);
+#if DCHECK_IS_ON()
+    DCHECK_EQ(this, page->page_pool());
+#endif  // DCHECK_IS_ON()
+    PinStorePage(page);
+  }
 }
 
 Status PagePool::StorePage(
@@ -174,6 +235,8 @@ Status PagePool::StorePage(
 #if DCHECK_IS_ON()
     DCHECK_EQ(this, page->page_pool());
 #endif  // DCHECK_IS_ON()
+
+    PinStorePage(page);
     *result = page;
     return Status::kSuccess;
   }

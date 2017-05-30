@@ -38,7 +38,8 @@ StoreImpl::StoreImpl(
     RandomAccessFile* log_file, size_t log_file_size, PagePool* page_pool,
     const StoreOptions& options)
     : data_file_(data_file), log_file_(log_file), page_pool_(page_pool),
-      page_shift_(page_pool->page_shift()) {
+      header_(page_pool->page_shift(),
+              data_file_size >> page_pool->page_shift()) {
   DCHECK(data_file != nullptr);
   DCHECK(log_file != nullptr);
   DCHECK(page_pool != nullptr);
@@ -56,7 +57,54 @@ StoreImpl::~StoreImpl() {
 }
 
 Status StoreImpl::Initialize(const StoreOptions &options) {
-  UNUSED(options);
+  // TODO(pwnall): Check the log and attempt recovery.
+
+  if (options.create_if_missing && header_.page_count < 3) {
+    Status status = Bootstrap();
+    if (status != Status::kSuccess)
+      return status;
+  }
+
+  return Status::kSuccess;
+}
+
+Status StoreImpl::Bootstrap() {
+  Page* header_page;
+  Status fetch_status = page_pool_->StorePage(
+      this, 0, PagePool::PageFetchMode::kIgnorePageData, &header_page);
+  if (fetch_status != Status::kSuccess)
+    return fetch_status;
+
+  header_page->MarkDirty();
+  uint8_t* header_data = header_page->data();
+  std::memset(header_data, 0, 1 << header_.page_shift);
+  header_.free_list_head_page = 1;
+  header_.page_count = 3;
+  // header.page_shift is already set correctly by the constructor.
+  header_.Serialize(header_data);
+  page_pool_->UnpinAndWriteStorePage(header_page);
+
+  Page* free_list_head_page;
+  fetch_status = page_pool_->StorePage(
+      this, 1, PagePool::PageFetchMode::kIgnorePageData, &free_list_head_page);
+  if (fetch_status != Status::kSuccess)
+    return fetch_status;
+
+  free_list_head_page->MarkDirty();
+  std::memset(free_list_head_page->data(), 0, 1 << header_.page_shift);
+  // TODO(pwnall): Bootstrap the free page list here.
+  page_pool_->UnpinAndWriteStorePage(free_list_head_page);
+
+  Page* root_catalog_page;
+  fetch_status = page_pool_->StorePage(
+      this, 2, PagePool::PageFetchMode::kIgnorePageData, &root_catalog_page);
+  if (fetch_status != Status::kSuccess)
+    return fetch_status;
+
+  root_catalog_page->MarkDirty();
+  std::memset(root_catalog_page->data(), 0, 1 << header_.page_shift);
+  // TODO(pwnall): Bootstrap the root catalog here.
+  page_pool_->UnpinAndWriteStorePage(root_catalog_page);
 
   return Status::kSuccess;
 }
@@ -95,6 +143,19 @@ Status StoreImpl::Close() {
       result = rollback_status;
   }
 
+  // Unassign the pages that are assigned to this store.
+
+  page_pool_->PinStorePages(&pool_pages_);
+
+  // We cannot use C++11's range-based for loop because the iterator would get
+  // invalidated if we release the page it's pointing to.
+  for (auto it = pool_pages_.begin(); it != pool_pages_.end(); ) {
+    Page* page = *it;
+    ++it;
+    page_pool_->UnassignPageFromStore(page);
+    page_pool_->UnpinUnassignedPage(page);
+  }
+
   data_file_->Close();
   log_file_->Close();
 
@@ -109,16 +170,16 @@ Status StoreImpl::ReadPage(Page* page) {
   DCHECK_EQ(this, page->store());
   DCHECK(!page->is_dirty());
 
-  size_t file_offset = page->page_id() << page_shift_;
-  size_t page_size = 1 << page_shift_;
+  size_t file_offset = page->page_id() << header_.page_shift;
+  size_t page_size = 1 << header_.page_shift;
   return data_file_->Read(file_offset, page_size, page->data());
 }
 
 Status StoreImpl::WritePage(Page* page) {
   DCHECK_EQ(this, page->store());
 
-  size_t file_offset = page->page_id() << page_shift_;
-  size_t page_size = 1 << page_shift_;
+  size_t file_offset = page->page_id() << header_.page_shift;
+  size_t page_size = 1 << header_.page_shift;
   return data_file_->Write(page->data(), file_offset, page_size);
 }
 

@@ -44,10 +44,14 @@ TEST_F(PoolTest, CreateOptions) {
 
 TEST_F(PoolTest, ReleaseClosesStore) {
   PoolOptions pool_options;
+  pool_options.page_shift = 12;
+  pool_options.page_pool_size = 16;
   Pool* pool = Pool::Create(pool_options);
 
   Store* store = nullptr;
   StoreOptions options;
+  options.create_if_missing = true;
+  options.error_if_exists = false;
   ASSERT_EQ(Status::kSuccess, pool->OpenStore(kFileName, options, &store));
 
   EXPECT_FALSE(store->IsClosed());

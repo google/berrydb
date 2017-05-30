@@ -11,28 +11,31 @@
 namespace berrydb {
 
 TEST(StoreHeaderTest, SerializeDeserialize) {
-  alignas(8) uint8_t buffer[2 * StoreHeader::kSizeInBytes];
+  alignas(8) uint8_t buffer[2 * StoreHeader::kSerializedSize];
   std::memset(buffer, 0xCD, sizeof(buffer));
 
   StoreHeader header;
   header.page_shift = 12;
+  header.page_count = 0xc0decdef;
   header.free_list_head_page = 0x12345678;
   header.Serialize(buffer);
 
-  for (size_t i = StoreHeader::kSizeInBytes; i < sizeof(buffer); ++i)
+  for (size_t i = StoreHeader::kSerializedSize; i < sizeof(buffer); ++i)
     EXPECT_EQ(0xCD, buffer[i]);
 
   StoreHeader header2;
   EXPECT_EQ(true, header2.Deserialize(buffer));
   EXPECT_EQ(header.page_shift, header2.page_shift);
+  EXPECT_EQ(header.page_count, header2.page_count);
   EXPECT_EQ(header.free_list_head_page, header2.free_list_head_page);
 }
 
 TEST(StoreHeaderTest, HeaderErrors) {
-  alignas(8) uint8_t buffer[StoreHeader::kSizeInBytes];
+  alignas(8) uint8_t buffer[StoreHeader::kSerializedSize];
   StoreHeader header;
   header.page_shift = 12;
   header.free_list_head_page = 0x12345678;
+  header.page_count = 0xc0decdef;
   header.Serialize(buffer);
 
   StoreHeader header2;

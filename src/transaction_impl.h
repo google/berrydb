@@ -88,7 +88,7 @@ class TransactionImpl {
   /* The public API version of this class. */
   Transaction api_;  // Must be the first class member.
 
-  friend class LinkedList<TransactionImpl>;
+  friend class LinkedListBridge<TransactionImpl>;
   LinkedList<TransactionImpl>::Node linked_list_node_;
 
   /** The store this transaction runs against. */

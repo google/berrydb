@@ -96,7 +96,6 @@ Status PoolImpl::OpenStore(
 
   StoreImpl* store = StoreImpl::Create(
       data_file, data_file_size, log_file, log_file_size, &page_pool_, options);
-
   stores_.insert(store);
 
   status = store->Initialize(options);

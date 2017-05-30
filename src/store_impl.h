@@ -12,13 +12,14 @@
 #include "berrydb/pool.h"
 #include "berrydb/store.h"
 #include "berrydb/vfs.h"
+#include "./format/store_header.h"
+#include "./page.h"
 #include "./util/linked_list.h"
 
 namespace berrydb {
 
 class BlockAccessFile;
 class CatalogImpl;
-class Page;
 class PagePool;
 class PoolImpl;
 class TransactionImpl;
@@ -74,6 +75,9 @@ class StoreImpl {
    */
   Status Initialize(const StoreOptions& options);
 
+  /** Builds a new store on the currently opened files. */
+  Status Bootstrap();
+
   /** Reads a page from the store into the page pool.
    *
    * The page pool entry must have already been assigned to store, and must not
@@ -94,6 +98,33 @@ class StoreImpl {
    * @param transaction must be associated with this store, and closed */
   void TransactionClosed(TransactionImpl* transaction);
 
+  /** Called when a Page is assigned to this store.
+   *
+   * This method registers the page on the store's list of assigned pages, so
+   * the page can be unassigned when the store is closed. */
+  inline void PageAssigned(Page* page) noexcept {
+    DCHECK(page != nullptr);
+    DCHECK_EQ(this, page->store());
+#if DCHECK_IS_ON()
+    DCHECK_EQ(page_pool_, page->page_pool());
+#endif  // DCHECK_IS_ON()
+
+    pool_pages_.push_back(page);
+  }
+
+  /** Called when a Page is unassigned from this store.
+   *
+   * Calls to this method must be paired with PageAssigned() calls. */
+  inline void PageUnassigned(Page* page) noexcept {
+    DCHECK(page != nullptr);
+    DCHECK(page->store() == nullptr);
+#if DCHECK_IS_ON()
+    DCHECK_EQ(page_pool_, page->page_pool());
+#endif  // DCHECK_IS_ON()
+
+    pool_pages_.erase(page);
+  }
+
 #if DCHECK_IS_ON()
   /** The page pool used by this store. For use in DCHECKs only. */
   inline PagePool* page_pool() const noexcept { return page_pool_; }
@@ -111,7 +142,7 @@ class StoreImpl {
   enum class State {
     kOpen = 0,
     kClosing = 1,
-    kClosed = 2,
+    kClosed = 3,
   };
 
   /* The public API version of this class. */
@@ -126,11 +157,14 @@ class StoreImpl {
   /** The page pool used by this store to interact with its data file. */
   PagePool* const page_pool_;
 
-  /** The base-2 logarithm of the store's page size. */
-  const size_t page_shift_;
+  /** Metadata in the data file's header. */
+  StoreHeader header_;
 
   /** The transactions opened on this store. */
   LinkedList<TransactionImpl> transactions_;
+
+  /** Pages in the page pool assigned to this store. */
+  LinkedList<Page, Page::StoreLinkedListBridge> pool_pages_;
 
   State state_ = State::kOpen;
 };
