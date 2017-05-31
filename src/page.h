@@ -63,6 +63,16 @@ class Page {
     return page_id_;
   }
 
+  /** True if the page's data was modified since the page was read.
+   *
+   * This should only be true for pool pages that cache store pages. When a
+   * dirty page is removed from the pool, its content must be written to disk.
+   */
+  inline bool is_dirty() const noexcept {
+    DCHECK(!is_dirty_ || store_ != nullptr);
+    return is_dirty_;
+  }
+
   /** The page data held by this page. */
   inline uint8_t* data() noexcept {
     return reinterpret_cast<uint8_t*>(this + 1);
@@ -135,9 +145,6 @@ class Page {
 #endif  // DCHECK_IS_ON()
   }
 
-  /** The next page in the list that the page belongs to. */
-  inline bool is_dirty() const noexcept { return is_dirty_; }
-
   /** Changes the page's dirtiness status.
    *
    * The page must be assigned to store while its dirtiness is changed. */
@@ -170,12 +177,6 @@ class Page {
 
   /** Number of times the page was pinned. Very similar to a reference count. */
   size_t pin_count_;
-
-  /** True if the page's data was modified since the page was read.
-   *
-   * This should only be true for pool pages that cache store pages. When a
-   * dirty page is removed from the pool, its content must be written to disk.
-   */
   bool is_dirty_ = false;
 
 #if DCHECK_IS_ON()

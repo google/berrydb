@@ -173,6 +173,7 @@ Status StoreImpl::ReadPage(Page* page) {
   DCHECK(page != nullptr);
   DCHECK_EQ(this, page->store());
   DCHECK(!page->is_dirty());
+  DCHECK(!page->IsUnpinned());
 
   size_t file_offset = page->page_id() << header_.page_shift;
   size_t page_size = 1 << header_.page_shift;
@@ -180,7 +181,10 @@ Status StoreImpl::ReadPage(Page* page) {
 }
 
 Status StoreImpl::WritePage(Page* page) {
+  DCHECK(page != nullptr);
   DCHECK_EQ(this, page->store());
+  DCHECK(page->is_dirty());
+  //DCHECK(!page->IsUnpinned());
 
   size_t file_offset = page->page_id() << header_.page_shift;
   size_t page_size = 1 << header_.page_shift;

@@ -89,6 +89,9 @@ class StoreImpl {
 
   /** Writes a page to the store.
    *
+   * The page pool entry must be flagged as dirty. The caller is responsible for
+   * clearing the page entry's dirty flag if this method succeeds.
+   *
    * @param  page the page pool entry caching the store page to be written
    * @return      most likely kSuccess or kIoError */
   Status WritePage(Page* page);

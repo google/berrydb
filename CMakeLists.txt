@@ -142,6 +142,7 @@ if (BUILD_TESTS)
       "${PROJECT_SOURCE_DIR}/src/format/store_header_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/page_pool_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/page_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/store_impl_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/test/block_access_file_wrapper.cc"
       "${PROJECT_SOURCE_DIR}/src/test/block_access_file_wrapper.h"
       "${PROJECT_SOURCE_DIR}/src/test/test_main.cc"

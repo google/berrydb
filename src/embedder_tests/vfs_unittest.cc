@@ -26,6 +26,7 @@ class VfsTest : public ::testing::Test {
   }
 
   const std::string kFileName = "test_vfs.berry";
+  constexpr static size_t kBlockShift = 12;
   Vfs* vfs_;
   std::mt19937 rnd_;
 };
@@ -36,17 +37,15 @@ TEST_F(VfsTest, OpenForBlockAccessOptions) {
   size_t file_size = kInvalidSize;
 
   // Setup guarantees that the file does not exist.
-  ASSERT_NE(
-      Status::kSuccess,
-      vfs_->OpenForBlockAccess(kFileName, 12, false, false, &file, &file_size));
+  ASSERT_NE(Status::kSuccess, vfs_->OpenForBlockAccess(
+      kFileName, kBlockShift, false, false, &file, &file_size));
   EXPECT_EQ(nullptr, file);
   EXPECT_EQ(kInvalidSize, file_size);
 
   file = nullptr;
   file_size = kInvalidSize;
-  ASSERT_EQ(
-      Status::kSuccess,
-      vfs_->OpenForBlockAccess(kFileName, 12, true, true, &file, &file_size));
+  ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
+      kFileName, kBlockShift, true, true, &file, &file_size));
   ASSERT_NE(nullptr, file);
   EXPECT_EQ(0U, file_size);
   file->Close();
@@ -54,111 +53,123 @@ TEST_F(VfsTest, OpenForBlockAccessOptions) {
   // The ASSERT above guarantees that the file was created.
   file = nullptr;
   file_size = kInvalidSize;
-  ASSERT_NE(
-      Status::kSuccess,
-      vfs_->OpenForBlockAccess(kFileName, 12, true, true, &file, &file_size));
+  ASSERT_NE(Status::kSuccess, vfs_->OpenForBlockAccess(
+      kFileName, kBlockShift, true, true, &file, &file_size));
   EXPECT_EQ(nullptr, file);
   EXPECT_EQ(kInvalidSize, file_size);
 
   file = nullptr;
   file_size = kInvalidSize;
-  ASSERT_EQ(
-      Status::kSuccess,
-      vfs_->OpenForBlockAccess(kFileName, 12, true, false, &file, &file_size));
+  ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
+      kFileName, kBlockShift, true, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
   EXPECT_EQ(0U, file_size);
   file->Close();
 
   file = nullptr;
   file_size = kInvalidSize;
-  ASSERT_EQ(
-      Status::kSuccess,
-      vfs_->OpenForBlockAccess(kFileName, 12, false, false, &file, &file_size));
+  ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
+      kFileName, kBlockShift, false, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
   EXPECT_EQ(0U, file_size);
   file->Close();
 }
 
 TEST_F(VfsTest, BlockAccessFilePersistence) {
-  uint8_t buffer[1 << 12], read_buffer[1 << 12];
+  uint8_t buffer[1 << kBlockShift], read_buffer[1 << kBlockShift];
   BlockAccessFile* file = nullptr;
   const size_t kInvalidSize = 0x0badc0de;
   size_t file_size = kInvalidSize;
 
-  for (size_t i = 0; i < 1 << 12; ++i)
+  for (size_t i = 0; i < 1 << kBlockShift; ++i)
     buffer[i] = static_cast<uint8_t>(rnd_());
 
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
-      kFileName, 12, true, false, &file, &file_size));
+      kFileName, kBlockShift, true, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
   EXPECT_EQ(0U, file_size);
-  EXPECT_EQ(Status::kSuccess, file->Write(buffer, 0, 1 << 12));
+  EXPECT_EQ(Status::kSuccess, file->Write(buffer, 0, 1 << kBlockShift));
   EXPECT_EQ(Status::kSuccess, file->Close());
 
   file = nullptr;
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
-      kFileName, 12, false, false, &file, &file_size));
+      kFileName, kBlockShift, false, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
-  EXPECT_EQ(1U << 12, file_size);
-  EXPECT_EQ(Status::kSuccess, file->Read(0, 1 << 12, read_buffer));
+  EXPECT_EQ(1U << kBlockShift, file_size);
+  EXPECT_EQ(Status::kSuccess, file->Read(0, 1 << kBlockShift, read_buffer));
   EXPECT_EQ(Status::kSuccess, file->Close());
 
-  EXPECT_EQ(0, std::memcmp(buffer, read_buffer, 1 << 12));
+  EXPECT_EQ(0, std::memcmp(buffer, read_buffer, 1 << kBlockShift));
   EXPECT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));
 }
 
 TEST_F(VfsTest, BlockAccessFileReadWriteOffsets) {
-  uint8_t buffer[4][1 << 12], read_buffer[1 << 12];
+  uint8_t buffer[4][1 << kBlockShift], read_buffer[1 << kBlockShift];
   BlockAccessFile* file = nullptr;
   const size_t kInvalidSize = 0x0badc0de;
   size_t file_size = kInvalidSize;
 
   for (size_t i = 0; i < 4; ++i) {
-    for (size_t j = 0; j < 1 << 12; ++j)
+    for (size_t j = 0; j < 1 << kBlockShift; ++j)
       buffer[i][j] = static_cast<uint8_t>(rnd_());
   }
 
   ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
-      kFileName, 12, true, false, &file, &file_size));
+      kFileName, kBlockShift, true, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
   EXPECT_EQ(0U, file_size);
 
   // Fill up the file with blocks [2, 1, 3, 0].
-  EXPECT_EQ(Status::kSuccess, file->Write(buffer[2], 0 << 12, 1 << 12));
-  EXPECT_EQ(Status::kSuccess, file->Write(buffer[1], 1 << 12, 1 << 12));
-  EXPECT_EQ(Status::kSuccess, file->Write(buffer[3], 2 << 12, 1 << 12));
-  EXPECT_EQ(Status::kSuccess, file->Write(buffer[0], 3 << 12, 1 << 12));
+  EXPECT_EQ(Status::kSuccess, file->Write(
+      buffer[2], 0 << kBlockShift, 1 << kBlockShift));
+  EXPECT_EQ(Status::kSuccess, file->Write(
+      buffer[1], 1 << kBlockShift, 1 << kBlockShift));
+  EXPECT_EQ(Status::kSuccess, file->Write(
+      buffer[3], 2 << kBlockShift, 1 << kBlockShift));
+  EXPECT_EQ(Status::kSuccess, file->Write(
+      buffer[0], 3 << kBlockShift, 1 << kBlockShift));
 
   // Read the blocks back out of order.
-  EXPECT_EQ(Status::kSuccess, file->Read(2 << 12, 1 << 12, read_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[3], read_buffer, 1 << 12));
+  EXPECT_EQ(Status::kSuccess, file->Read(
+      2 << kBlockShift, 1 << kBlockShift, read_buffer));
+  EXPECT_EQ(0, std::memcmp(buffer[3], read_buffer, 1 << kBlockShift));
 
-  EXPECT_EQ(Status::kSuccess, file->Read(1 << 12, 1 << 12, read_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[1], read_buffer, 1 << 12));
+  EXPECT_EQ(Status::kSuccess, file->Read(
+      1 << kBlockShift, 1 << kBlockShift, read_buffer));
+  EXPECT_EQ(0, std::memcmp(buffer[1], read_buffer, 1 << kBlockShift));
 
-  EXPECT_EQ(Status::kSuccess, file->Read(0 << 12, 1 << 12, read_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[2], read_buffer, 1 << 12));
+  EXPECT_EQ(Status::kSuccess, file->Read(
+      0 << kBlockShift, 1 << kBlockShift, read_buffer));
+  EXPECT_EQ(0, std::memcmp(buffer[2], read_buffer, 1 << kBlockShift));
 
-  EXPECT_EQ(Status::kSuccess, file->Read(3 << 12, 1 << 12, read_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[0], read_buffer, 1 << 12));
+  EXPECT_EQ(Status::kSuccess, file->Read(
+      3 << kBlockShift, 1 << kBlockShift, read_buffer));
+  EXPECT_EQ(0, std::memcmp(buffer[0], read_buffer, 1 << kBlockShift));
 
   // Rewrite blocks 0, 2, and 3.
-  EXPECT_EQ(Status::kSuccess, file->Write(buffer[2], 2 << 12, 1 << 12));
-  EXPECT_EQ(Status::kSuccess, file->Write(buffer[0], 0 << 12, 1 << 12));
-  EXPECT_EQ(Status::kSuccess, file->Write(buffer[3], 3 << 12, 1 << 12));
+  EXPECT_EQ(Status::kSuccess, file->Write(
+      buffer[2], 2 << kBlockShift, 1 << kBlockShift));
+  EXPECT_EQ(Status::kSuccess, file->Write(
+      buffer[0], 0 << kBlockShift, 1 << kBlockShift));
+  EXPECT_EQ(Status::kSuccess, file->Write(
+      buffer[3], 3 << kBlockShift, 1 << kBlockShift));
 
   // Read the blocks back out of order.
-  EXPECT_EQ(Status::kSuccess, file->Read(1 << 12, 1 << 12, read_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[1], read_buffer, 1 << 12));
+  EXPECT_EQ(Status::kSuccess, file->Read(
+      1 << kBlockShift, 1 << kBlockShift, read_buffer));
+  EXPECT_EQ(0, std::memcmp(buffer[1], read_buffer, 1 << kBlockShift));
 
-  EXPECT_EQ(Status::kSuccess, file->Read(0 << 12, 1 << 12, read_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[0], read_buffer, 1 << 12));
+  EXPECT_EQ(Status::kSuccess, file->Read(
+      0 << kBlockShift, 1 << kBlockShift, read_buffer));
+  EXPECT_EQ(0, std::memcmp(buffer[0], read_buffer, 1 << kBlockShift));
 
-  EXPECT_EQ(Status::kSuccess, file->Read(3 << 12, 1 << 12, read_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[3], read_buffer, 1 << 12));
+  EXPECT_EQ(Status::kSuccess, file->Read(
+      3 << kBlockShift, 1 << kBlockShift, read_buffer));
+  EXPECT_EQ(0, std::memcmp(buffer[3], read_buffer, 1 << kBlockShift));
 
-  EXPECT_EQ(Status::kSuccess, file->Read(2 << 12, 1 << 12, read_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[2], read_buffer, 1 << 12));
+  EXPECT_EQ(Status::kSuccess, file->Read(
+      2 << kBlockShift, 1 << kBlockShift, read_buffer));
+  EXPECT_EQ(0, std::memcmp(buffer[2], read_buffer, 1 << kBlockShift));
 
   EXPECT_EQ(Status::kSuccess, file->Close());
   EXPECT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));

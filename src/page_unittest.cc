@@ -25,8 +25,8 @@ class PageTest : public ::testing::Test {
 
   void CreatePool(int page_shift, int page_capacity) {
     PoolOptions options;
-    options.page_shift = page_capacity;
-    options.page_pool_size = page_shift;
+    options.page_shift = page_shift;
+    options.page_pool_size = page_capacity;
     pool_ = PoolImpl::Create(options);
   }
 

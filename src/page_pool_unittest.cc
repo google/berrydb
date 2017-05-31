@@ -11,6 +11,7 @@
 #include "berrydb/options.h"
 #include "berrydb/store.h"
 #include "berrydb/vfs.h"
+#include "./page_pool.h"
 #include "./pool_impl.h"
 #include "./store_impl.h"
 #include "./test/block_access_file_wrapper.h"
@@ -31,8 +32,8 @@ class PagePoolTest : public ::testing::Test {
 
     ASSERT_EQ(
         Status::kSuccess,
-        vfs_->OpenForBlockAccess(kStoreFileName1, 12, true, false, &data_file1_,
-        &data_file1_size_));
+        vfs_->OpenForBlockAccess(kStoreFileName1, kStorePageShift, true, false,
+        &data_file1_, &data_file1_size_));
     ASSERT_EQ(
         Status::kSuccess,
         vfs_->OpenForRandomAccess(StoreImpl::LogFilePath(kStoreFileName1),
@@ -53,14 +54,15 @@ class PagePoolTest : public ::testing::Test {
 
   void CreatePool(int page_shift, int page_capacity) {
     PoolOptions options;
-    options.page_shift = page_capacity;
-    options.page_pool_size = page_shift;
+    options.page_shift = page_shift;
+    options.page_pool_size = page_capacity;
     pool_ = PoolImpl::Create(options);
   }
 
   const std::string kStoreFileName1 = "test_page_pool_1.berry";
   const std::string kStoreFileName2 = "test_page_pool_2.berry";
   const std::string kStoreFileName3 = "test_page_pool_3.berry";
+  const size_t kStorePageShift = 12;
 
   Vfs* vfs_;
   PoolImpl* pool_;
@@ -125,7 +127,7 @@ TEST_F(PagePoolTest, AllocUsesFreeList) {
 }
 
 TEST_F(PagePoolTest, AllocUsesLruList) {
-  CreatePool(12, 1);
+  CreatePool(kStorePageShift, 1);
   PagePool* page_pool = pool_->page_pool();
 
   EXPECT_EQ(0U, data_file1_size_);
@@ -162,7 +164,7 @@ TEST_F(PagePoolTest, AllocUsesLruList) {
 }
 
 TEST_F(PagePoolTest, UnassignFromStoreIoError) {
-  CreatePool(12, 1);
+  CreatePool(kStorePageShift, 1);
   PagePool* page_pool = pool_->page_pool();
 
   EXPECT_EQ(0U, data_file1_size_);
