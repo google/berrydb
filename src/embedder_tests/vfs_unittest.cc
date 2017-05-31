@@ -30,11 +30,7 @@ class VfsTest : public ::testing::Test {
   std::mt19937 rnd_;
 };
 
-#if defined(_WIN32) || defined(WIN32)
-TEST_F(VfsTest, DISABLED_OpenForBlockAccessOptions) {
-#else  // defined(_WIN32) || defined(WIN32)
 TEST_F(VfsTest, OpenForBlockAccessOptions) {
-#endif  // defined(_WIN32) || defined(WIN32)
   BlockAccessFile* file = nullptr;
   const size_t kInvalidSize = 0x0badc0de;
   size_t file_size = kInvalidSize;
@@ -168,11 +164,7 @@ TEST_F(VfsTest, BlockAccessFileReadWriteOffsets) {
   EXPECT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));
 }
 
-#if defined(_WIN32) || defined(WIN32)
-TEST_F(VfsTest, DISABLED_OpenForRandomAccessOptions) {
-#else  // defined(_WIN32) || defined(WIN32)
 TEST_F(VfsTest, OpenForRandomAccessOptions) {
-#endif  // defined(_WIN32) || defined(WIN32)
   RandomAccessFile* file = nullptr;
   const size_t kInvalidSize = 0x0badc0de;
   size_t file_size = kInvalidSize;

@@ -40,7 +40,8 @@ void StoreHeader::Serialize(uint8_t* to) {
 
   // This is guaranteed to set all the bytes 40..47 to 0.
   StoreUint64(0, to + 40);
-  to[40] = page_shift;
+  DCHECK_LT(page_shift, 32);
+  to[40] = static_cast<uint8_t>(page_shift);
 }
 
 bool StoreHeader::Deserialize(const uint8_t *from) {
@@ -57,14 +58,14 @@ bool StoreHeader::Deserialize(const uint8_t *from) {
     return false;
 
   uint64_t number = LoadUint64(from + 24);
-  page_count = number;
+  page_count = static_cast<size_t>(number);
   if (page_count != number) {
     // This can happen on 32-bit systems that try to load a large database.
     return false;
   }
 
   number = LoadUint64(from + 32);
-  free_list_head_page = number;
+  free_list_head_page = static_cast<size_t>(number);
   if (free_list_head_page != number) {
     // This should not happen if the size test above passed. Still, we currently
     // consider that the extra code size of the check is preferrable to data

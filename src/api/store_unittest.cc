@@ -39,14 +39,7 @@ class StoreTest : public ::testing::Test {
   Pool* pool_;
 };
 
-// TODO(pwnall): error_if_exists crashes on Windows because the VFS
-//               implementation assumes C11 support. This should be fixed by
-//               the migration to separate POSIX / Win32 VFSes.
-#if defined(_WIN32) || defined(WIN32)
-TEST_F(StoreTest, DISABLED_CreateOptions) {
-#else  // defined(_WIN32) || defined(WIN32)
 TEST_F(StoreTest, CreateOptions) {
-#endif  // defined(_WIN32) || defined(WIN32)
   Store* store = nullptr;
   StoreOptions options;
 

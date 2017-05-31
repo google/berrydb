@@ -4,6 +4,8 @@
 
 #include "./store_impl.h"
 
+#include <cstring>
+
 #include "berrydb/options.h"
 #include "berrydb/vfs.h"
 #include "./pool_impl.h"
@@ -46,7 +48,9 @@ StoreImpl::StoreImpl(
 
   // This will be used when we implement creating/loading the metadata page.
   UNUSED(options);
-  UNUSED(page_pool_);
+
+  // This will be used when we implement log recovery.
+  UNUSED(log_file_size);
 }
 
 StoreImpl::~StoreImpl() {

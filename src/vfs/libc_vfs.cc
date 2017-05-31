@@ -29,12 +29,21 @@ std::FILE* OpenLibcFile(
 
   FILE* fp;
   if (error_if_exists) {
+#if defined(_WIN32) || defined(WIN32)
+    fp = std::fopen(cpath, "rb");
+    if (fp != nullptr) {
+      std::fclose(fp);
+      return nullptr;
+    }
+    fp = std::fopen(cpath, "wb+");
+#else  // defined(_WIN32) || defined(WIN32)
     // NOTE: This relies on C2011.
     fp = std::fopen(cpath, "wb+x");
+#endif  // defined(_WIN32) || defined(WIN32)
   } else {
     if (create_if_missing) {
       // NOTE: It might be faster to freopen.
-      FILE* fp = std::fopen(cpath, "ab+");
+      fp = std::fopen(cpath, "ab+");
       if (fp != nullptr)
         std::fclose(fp);
     }
@@ -152,7 +161,7 @@ class LibcBlockAccessFile : public BlockAccessFile {
 
  protected:
   ~LibcBlockAccessFile() {
-    fclose(fp_);
+    std::fclose(fp_);
   }
 
  private:
@@ -193,7 +202,7 @@ class LibcRandomAccessFile : public RandomAccessFile {
 
  protected:
   ~LibcRandomAccessFile() {
-    fclose(fp_);
+    std::fclose(fp_);
   }
 
  private:

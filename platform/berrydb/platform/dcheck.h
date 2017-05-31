@@ -36,6 +36,8 @@
 #define DCHECK_GT(a, b)  DCHECK((a) > (b))
 /** Convenience wrapper over DCHECK. */
 #define DCHECK_LE(a, b)  DCHECK((a) <= (b))
+/** Convenience wrapper over DCHECK. */
+#define DCHECK_LT(a, b)  DCHECK((a) < (b))
 
 #endif  // defined(BERRYDB_PLATFORM_BUILT_WITH_GLOG)
 
