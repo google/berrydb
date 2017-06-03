@@ -17,12 +17,12 @@ namespace berrydb {
 
 class PoolTest : public ::testing::Test {
  protected:
-  virtual void SetUp() {
+  void SetUp() override {
     vfs_ = DefaultVfs();
     vfs_->DeleteFile(kFileName);
   }
 
-  virtual void TearDown() {
+  void TearDown() override {
     vfs_->DeleteFile(kFileName);
   }
 

@@ -16,7 +16,7 @@ namespace berrydb {
 class PagePool;
 class StoreImpl;
 
-/** Control block for an in-memory store page.
+/** Control block for a page pool entry, which can hold a store page in memory.
  *
  * Each page in a page pool has a control block (this class), which is laid out
  * in memory right before the buffer that holds the page data.
@@ -44,19 +44,29 @@ class Page {
    * The returned page has one pin on it, which is owned by the caller. */
   static Page* Create(PagePool* page_pool);
 
-  /**
-   * Releases the memory resources used up by this page.
+  /** Releases the memory resources used up by this page.
    *
    * The page must not be a list head sentinel. This method invalidates the Page
    * instance, so it must not be used afterwards. */
   void Release(PagePool* page_pool);
 
-  /** The store whose data is cached by this page. */
-  inline StoreImpl* store() const noexcept { return store_; }
+  /** The store whose data is cached by this page.
+   *
+   * When DCHECKs are enabled, this is null when the page is not assigned to a
+   * store. When DCHECKs are disabled, the value is undefined when the page is
+   * not assigend to a store.
+   */
+  inline StoreImpl* store() const noexcept {
+    // It is tempting to DCHECK that store_ is not nullptr, to make sure this
+    // getter isn't called when its value is undefined. However, DCHECKed builds
+    // _can_ call this when the page is not assigned to a store, for the purpose
+    // of higher level DCHECKs.
+    return store_;
+  }
 
   /** The page ID of the store page whose data is cached by this pool page.
    *
-   * This is nullptr if the pool page isn't storing a store page's data.
+   * This is undefined if the page pool entry isn't storing a store page's data.
    */
   inline size_t page_id() const noexcept {
     DCHECK(store_ != nullptr);

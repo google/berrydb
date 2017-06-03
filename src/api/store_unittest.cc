@@ -18,7 +18,7 @@ namespace berrydb {
 
 class StoreTest : public ::testing::Test {
  protected:
-  virtual void SetUp() {
+  void SetUp() override {
     vfs_ = DefaultVfs();
     vfs_->DeleteFile(kFileName);
     vfs_->DeleteFile(Store::LogFilePath(kFileName));
@@ -28,7 +28,7 @@ class StoreTest : public ::testing::Test {
     options.page_pool_size = 42;
     pool_ = Pool::Create(options);
   }
-  virtual void TearDown() {
+  void TearDown() override {
     pool_->Release();
     vfs_->DeleteFile(kFileName);
     vfs_->DeleteFile(Store::LogFilePath(kFileName));

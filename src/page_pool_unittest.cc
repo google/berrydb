@@ -20,7 +20,7 @@ namespace berrydb {
 
 class PagePoolTest : public ::testing::Test {
  protected:
-  virtual void SetUp() {
+  void SetUp() override {
     vfs_ = DefaultVfs();
     vfs_->DeleteFile(kStoreFileName1);
     vfs_->DeleteFile(StoreImpl::LogFilePath(kStoreFileName1));
@@ -40,7 +40,7 @@ class PagePoolTest : public ::testing::Test {
         true, false, &log_file1_, &log_file1_size_));
   }
 
-  virtual void TearDown() {
+  void TearDown() override {
     if (pool_ != nullptr)
       pool_->Release();
 

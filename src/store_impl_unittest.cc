@@ -10,6 +10,7 @@
 #include "gtest/gtest.h"
 
 #include "berrydb/options.h"
+#include "berrydb/vfs.h"
 #include "./page_pool.h"
 #include "./pool_impl.h"
 #include "./test/block_access_file_wrapper.h"
