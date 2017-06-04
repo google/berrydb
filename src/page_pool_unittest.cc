@@ -23,23 +23,15 @@ namespace berrydb {
 class PagePoolTest : public ::testing::Test {
  protected:
   PagePoolTest()
-      : data_file1_deleter_(kStoreFileName1),
+      : vfs_(DefaultVfs()), data_file1_deleter_(kStoreFileName1),
         log_file1_deleter_(StoreImpl::LogFilePath(kStoreFileName1)) { }
 
-  ~PagePoolTest() {
-    pool_.reset();  // The stores must be closed before their files are deleted.
-  }
-
   void SetUp() override {
-    vfs_ = DefaultVfs();
-    ASSERT_EQ(
-        Status::kSuccess,
-        vfs_->OpenForBlockAccess(data_file1_deleter_.path(), kStorePageShift,
-        true, false, &data_file1_, &data_file1_size_));
-    ASSERT_EQ(
-        Status::kSuccess,
-        vfs_->OpenForRandomAccess(log_file1_deleter_.path(), true, false,
-        &log_file1_, &log_file1_size_));
+    ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
+        data_file1_deleter_.path(), kStorePageShift, true, false, &data_file1_,
+        &data_file1_size_));
+    ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
+        log_file1_deleter_.path(), true, false, &log_file1_, &log_file1_size_));
   }
 
   void CreatePool(int page_shift, int page_capacity) {
@@ -50,11 +42,13 @@ class PagePoolTest : public ::testing::Test {
   }
 
   const std::string kStoreFileName1 = "test_page_pool_1.berry";
-  const size_t kStorePageShift = 12;
+  constexpr static size_t kStorePageShift = 12;
 
   Vfs* vfs_;
-  UniquePtr<PoolImpl> pool_;
   FileDeleter data_file1_deleter_, log_file1_deleter_;
+  // Must follow FileDeleter members, because stores must be closed before
+  // their files are deleted.
+  UniquePtr<PoolImpl> pool_;
   BlockAccessFile* data_file1_;
   size_t data_file1_size_;
   RandomAccessFile* log_file1_;
@@ -120,17 +114,16 @@ TEST_F(PagePoolTest, AllocUsesLruList) {
   PagePool* page_pool = pool_->page_pool();
 
   EXPECT_EQ(0U, data_file1_size_);
-  StoreImpl* store = StoreImpl::Create(
+  UniquePtr<StoreImpl> store(StoreImpl::Create(
       data_file1_, data_file1_size_, log_file1_, log_file1_size_, page_pool,
-      StoreOptions());
+      StoreOptions()));
 
   Page* page = page_pool->AllocPage();
   ASSERT_NE(nullptr, page);
 
-  ASSERT_EQ(
-      Status::kSuccess,
-      page_pool->AssignPageToStore(page, store, 0, PagePool::kIgnorePageData));
-  EXPECT_EQ(store, page->store());
+  ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
+      page, store.get(), 0, PagePool::kIgnorePageData));
+  EXPECT_EQ(store.get(), page->store());
 
   // Unset the page's dirty bit to avoid having the page written to the store
   // when it is evicted from the LRU list.
@@ -150,7 +143,6 @@ TEST_F(PagePoolTest, AllocUsesLruList) {
 #endif  // DCHECK_IS_ON()
 
   page_pool->UnpinUnassignedPage(page2);
-  store->Close();  // Necessary because we're not using Pool::OpenStore().
 }
 
 TEST_F(PagePoolTest, AllocPrefersFreeListToLruList) {
@@ -158,17 +150,16 @@ TEST_F(PagePoolTest, AllocPrefersFreeListToLruList) {
   PagePool* page_pool = pool_->page_pool();
 
   EXPECT_EQ(0U, data_file1_size_);
-  StoreImpl* store = StoreImpl::Create(
+  UniquePtr<StoreImpl> store(StoreImpl::Create(
       data_file1_, data_file1_size_, log_file1_, log_file1_size_, page_pool,
-      StoreOptions());
+      StoreOptions()));
 
   Page* page = page_pool->AllocPage();
   ASSERT_NE(nullptr, page);
 
-  ASSERT_EQ(
-      Status::kSuccess,
-      page_pool->AssignPageToStore(page, store, 0, PagePool::kIgnorePageData));
-  EXPECT_EQ(store, page->store());
+  ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
+      page, store.get(), 0, PagePool::kIgnorePageData));
+  EXPECT_EQ(store.get(), page->store());
 #if DCHECK_IS_ON()
   EXPECT_EQ(1U, store->AssignedPageCount());
 #endif  // DCHECK_IS_ON()
@@ -192,8 +183,6 @@ TEST_F(PagePoolTest, AllocPrefersFreeListToLruList) {
 #endif  // DCHECK_IS_ON()
 
   page_pool->UnpinUnassignedPage(page2);
-  store->Close();  // Necessary because we're not using Pool::OpenStore().
-  store->Release();
 }
 
 TEST_F(PagePoolTest, UnassignFromStoreIoError) {
@@ -202,16 +191,15 @@ TEST_F(PagePoolTest, UnassignFromStoreIoError) {
 
   EXPECT_EQ(0U, data_file1_size_);
   BlockAccessFileWrapper data_file_wrapper(data_file1_);
-  StoreImpl* store = StoreImpl::Create(
+  UniquePtr<StoreImpl> store(StoreImpl::Create(
       &data_file_wrapper, data_file1_size_, log_file1_, log_file1_size_,
-      page_pool, StoreOptions());
+      page_pool, StoreOptions()));
 
   Page* page = page_pool->AllocPage();
   ASSERT_NE(nullptr, page);
-  ASSERT_EQ(
-      Status::kSuccess,
-      page_pool->AssignPageToStore(page, store, 0, PagePool::kIgnorePageData));
-  EXPECT_EQ(store, page->store());
+  ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
+      page, store.get(), 0, PagePool::kIgnorePageData));
+  EXPECT_EQ(store.get(), page->store());
 
   data_file_wrapper.SetAccessError(Status::kIoError);
   page_pool->UnassignPageFromStore(page);
@@ -221,8 +209,6 @@ TEST_F(PagePoolTest, UnassignFromStoreIoError) {
   EXPECT_EQ(true, store->IsClosed());
 
   page_pool->UnpinUnassignedPage(page);
-  store->Close();  // Necessary because we're not using Pool::OpenStore().
-  store->Release();
 }
 
 TEST_F(PagePoolTest, AssignToStoreSuccess) {

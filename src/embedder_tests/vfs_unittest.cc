@@ -11,23 +11,18 @@
 #include "gtest/gtest.h"
 
 #include "berrydb/status.h"
+#include "../test/file_deleter.h"
 
 namespace berrydb {
 
 class VfsTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    vfs_ = DefaultVfs();
-    vfs_->DeleteFile(kFileName);
-  }
-
-  void TearDown() override {
-    vfs_->DeleteFile(kFileName);
-  }
+  VfsTest() : vfs_(DefaultVfs()), file_deleter_(kFileName) { }
 
   const std::string kFileName = "test_vfs.berry";
   constexpr static size_t kBlockShift = 12;
   Vfs* vfs_;
+  FileDeleter file_deleter_;
   std::mt19937 rnd_;
 };
 

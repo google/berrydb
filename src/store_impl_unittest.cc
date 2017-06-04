@@ -6,6 +6,7 @@
 
 #include <cstring>
 #include <random>
+#include <string>
 
 #include "gtest/gtest.h"
 
@@ -14,35 +15,26 @@
 #include "./page_pool.h"
 #include "./pool_impl.h"
 #include "./test/block_access_file_wrapper.h"
+#include "./test/file_deleter.h"
+#include "./util/unique_ptr.h"
 
 namespace berrydb {
 
 class StoreImplTest : public ::testing::Test {
  protected:
+  StoreImplTest()
+      : vfs_(DefaultVfs()), data_file_deleter_(kStoreFileName),
+        log_file_deleter_(StoreImpl::LogFilePath(kStoreFileName)) { }
 
-  virtual void SetUp() {
-    vfs_ = DefaultVfs();
-    vfs_->DeleteFile(kStoreFileName);
-    vfs_->DeleteFile(StoreImpl::LogFilePath(kStoreFileName));
-    pool_ = nullptr;
-
+  void SetUp() override {
     ASSERT_EQ(
         Status::kSuccess,
-        vfs_->OpenForBlockAccess(kStoreFileName, kStorePageShift, true, false,
-        &data_file_, &data_file_size_));
+        vfs_->OpenForBlockAccess(data_file_deleter_.path(), kStorePageShift,
+        true, false, &data_file_, &data_file_size_));
     ASSERT_EQ(
         Status::kSuccess,
-        vfs_->OpenForRandomAccess(StoreImpl::LogFilePath(kStoreFileName),
-        true, false, &log_file_, &log_file_size_));
-  }
-
-  virtual void TearDown() {
-    if (pool_ != nullptr)
-      pool_->Release();
-
-    vfs_->DeleteFile(kStoreFileName);
-    vfs_->DeleteFile(StoreImpl::LogFilePath(kStoreFileName));
-
+        vfs_->OpenForRandomAccess(log_file_deleter_.path(), true, false,
+        &log_file_, &log_file_size_));
   }
 
   const std::string kStoreFileName = "test_store_impl.berry";
@@ -52,11 +44,14 @@ class StoreImplTest : public ::testing::Test {
     PoolOptions options;
     options.page_shift = page_shift;
     options.page_pool_size = page_capacity;
-    pool_ = PoolImpl::Create(options);
+    pool_.reset(PoolImpl::Create(options));
   }
 
   Vfs* vfs_;
-  PoolImpl* pool_;
+  FileDeleter data_file_deleter_, log_file_deleter_;
+  // Must follow FileDeleter members, because stores must be closed before
+  // their files are deleted.
+  UniquePtr<PoolImpl> pool_;
   BlockAccessFile* data_file_;
   size_t data_file_size_;
   RandomAccessFile* log_file_;
@@ -87,16 +82,16 @@ TEST_F(StoreImplTest, WriteReadPage) {
 
   CreatePool(kStorePageShift, 2);
   PagePool* page_pool = pool_->page_pool();
-  StoreImpl* store = StoreImpl::Create(
+  UniquePtr<StoreImpl> store(StoreImpl::Create(
       data_file_, data_file_size_, log_file_, log_file_size_, page_pool,
-      StoreOptions());
+      StoreOptions()));
 
   Page* page = page_pool->AllocPage();
   ASSERT_TRUE(page != nullptr);
 
   for (size_t i = 0; i < 4; ++i) {
     ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
-        page, store, i, PagePool::PageFetchMode::kIgnorePageData));
+        page, store.get(), i, PagePool::PageFetchMode::kIgnorePageData));
     page->MarkDirty();
     std::memcpy(
         page->data(), buffer + (i << kStorePageShift), 1 << kStorePageShift);
@@ -116,7 +111,7 @@ TEST_F(StoreImplTest, WriteReadPage) {
 
   for (size_t i = 0; i < 4; ++i) {
     ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
-        page, store, i, PagePool::PageFetchMode::kIgnorePageData));
+        page, store.get(), i, PagePool::PageFetchMode::kIgnorePageData));
     page->MarkDirty();
 
     // Clear the page to make sure ReadPage fetches the correct content.
@@ -135,15 +130,14 @@ TEST_F(StoreImplTest, WriteReadPage) {
 
   page_pool->UnpinUnassignedPage(page);
   EXPECT_TRUE(page->IsUnpinned());
-  store->Release();
 }
 
 TEST_F(StoreImplTest, CloseUnassignsPages) {
   CreatePool(kStorePageShift, 16);
   PagePool* page_pool = pool_->page_pool();
-  StoreImpl* store = StoreImpl::Create(
+  UniquePtr<StoreImpl> store(StoreImpl::Create(
       data_file_, data_file_size_, log_file_, log_file_size_, page_pool,
-      StoreOptions());
+      StoreOptions()));
 
   Page* page[4];
   for (size_t i = 0; i < 4; ++i) {
@@ -153,7 +147,7 @@ TEST_F(StoreImplTest, CloseUnassignsPages) {
 
   for (size_t i = 0; i < 4; ++i) {
     ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
-        page[i], store, i, PagePool::PageFetchMode::kIgnorePageData));
+        page[i], store.get(), i, PagePool::PageFetchMode::kIgnorePageData));
     page[i]->MarkDirty(false);  // Avoid writing the page to disk.
 
     page_pool->UnpinStorePage(page[i]);
@@ -168,8 +162,6 @@ TEST_F(StoreImplTest, CloseUnassignsPages) {
   EXPECT_EQ(4U, page_pool->allocated_pages());
   EXPECT_EQ(4U, page_pool->unused_pages());
   EXPECT_EQ(0U, page_pool->pinned_pages());
-
-  store->Release();
 }
 
 }  // namespace berrydb
