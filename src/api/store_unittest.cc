@@ -13,6 +13,7 @@
 #include "berrydb/status.h"
 #include "berrydb/transaction.h"
 #include "berrydb/vfs.h"
+#include "../util/unique_ptr.h"
 
 namespace berrydb {
 
@@ -26,20 +27,22 @@ class StoreTest : public ::testing::Test {
     PoolOptions options;
     options.page_shift = 12;
     options.page_pool_size = 42;
-    pool_ = Pool::Create(options);
+    pool_.reset(Pool::Create(options));
   }
   void TearDown() override {
-    pool_->Release();
+    pool_.reset();  // Must happen before the file is deleted.
     vfs_->DeleteFile(kFileName);
     vfs_->DeleteFile(Store::LogFilePath(kFileName));
   }
 
   const std::string kFileName = "test_store.berry";
   Vfs* vfs_;
-  Pool* pool_;
+  UniquePtr<Pool> pool_;
 };
 
 TEST_F(StoreTest, CreateOptions) {
+  // This test case doesn't use UniquePtr because the wrapping code would make
+  // the test case double in size.
   Store* store = nullptr;
   StoreOptions options;
 
@@ -50,7 +53,9 @@ TEST_F(StoreTest, CreateOptions) {
 
   options.create_if_missing = true;
   options.error_if_exists = true;
+  store = nullptr;
   ASSERT_EQ(Status::kSuccess, pool_->OpenStore(kFileName, options, &store));
+  ASSERT_NE(nullptr, store);
   store->Release();
 
   // The ASSERT above guarantees that the store was created.
@@ -59,25 +64,30 @@ TEST_F(StoreTest, CreateOptions) {
   EXPECT_EQ(nullptr, store);
 
   options.error_if_exists = false;
+  store = nullptr;
   ASSERT_EQ(Status::kSuccess, pool_->OpenStore(kFileName, options, &store));
+  ASSERT_NE(nullptr, store);
   store->Release();
 
   options.create_if_missing = false;
+  store = nullptr;
   ASSERT_EQ(Status::kSuccess, pool_->OpenStore(kFileName, options, &store));
+  ASSERT_NE(nullptr, store);
   store->Release();
 }
 
 TEST_F(StoreTest, CloseAbortsTransaction) {
-  Store* store = nullptr;
+  Store* raw_store = nullptr;
   StoreOptions options;
-  ASSERT_EQ(Status::kSuccess, pool_->OpenStore(kFileName, options, &store));
+  ASSERT_EQ(Status::kSuccess, pool_->OpenStore(kFileName, options, &raw_store));
+  UniquePtr<Store> store(raw_store);
 
-  Transaction* transaction = store->CreateTransaction();
+  UniquePtr<Transaction> transaction(store->CreateTransaction());
   EXPECT_FALSE(transaction->IsCommitted());
   EXPECT_FALSE(transaction->IsRolledBack());
   EXPECT_FALSE(transaction->IsClosed());
 
-  store->Release();
+  store.reset();
   EXPECT_FALSE(transaction->IsCommitted());
   EXPECT_TRUE(transaction->IsRolledBack());
   EXPECT_TRUE(transaction->IsClosed());

@@ -95,6 +95,8 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/src/transaction_impl.h"
     "${PROJECT_SOURCE_DIR}/src/util/linked_list.h"
     "${PROJECT_SOURCE_DIR}/src/util/platform_allocator.h"
+    "${PROJECT_SOURCE_DIR}/src/util/platform_deleter.h"
+    "${PROJECT_SOURCE_DIR}/src/util/unique_ptr.h"
     "${PROJECT_SOURCE_DIR}/src/vfs/libc_vfs.cc"
   PUBLIC
     "${PROJECT_BINARY_DIR}/platform/berrydb/platform/config.h"
@@ -145,9 +147,14 @@ if (BUILD_TESTS)
       "${PROJECT_SOURCE_DIR}/src/store_impl_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/test/block_access_file_wrapper.cc"
       "${PROJECT_SOURCE_DIR}/src/test/block_access_file_wrapper.h"
+      "${PROJECT_SOURCE_DIR}/src/test/file_deleter.cc"
+      "${PROJECT_SOURCE_DIR}/src/test/file_deleter.h"
+      "${PROJECT_SOURCE_DIR}/src/test/file_deleter_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/test/test_main.cc"
       "${PROJECT_SOURCE_DIR}/src/util/linked_list_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/util/platform_allocator_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/util/platform_deleter_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/util/unique_ptr_unittest.cc"
     )
 
   target_link_libraries (berrydb_tests berrydb gtest)

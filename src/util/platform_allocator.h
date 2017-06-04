@@ -5,17 +5,27 @@
 #ifndef BERRYDB_UTIL_PLATFORM_ALLOCATOR_H_
 #define BERRYDB_UTIL_PLATFORM_ALLOCATOR_H_
 
-#include "berrydb/platform.h"
-
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
 
+#include "berrydb/platform.h"
+
 namespace berrydb {
 
-/** std::allocator variant that proxies to BerryDB's platform.
+/** std::allocator variant that proxies to the memory allocator in platform.h.
  *
- * Implemented for use with the standard library's containers. */
+ * Implemented for use with the standard library's containers.
+ *
+ * This can (and must) be used with any standard library type that takes an
+ * Allocator type argument. PlatformAllocator has no state, so it does not add a
+ * memory tax to types that were designed to take advantage of the empty base
+ * optimization.
+ *
+ * Example:
+ *    DO NOT use: std::vector<Page>
+ *    DO use:     std::vector<Page, PlatformAllocator<Page>>
+ */
 template<typename T>
 struct PlatformAllocator {
   typedef T value_type;

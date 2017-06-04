@@ -69,7 +69,18 @@ class PagePool {
 
   /** Releases a Page previously obtained by StorePage().
    *
-   * The page might still be in the cache.
+   * The method removes the caller's pin from this pool page entry. The page
+   * entry might still be pinned by other entities. For example, a cursor from
+   * the same transaction would hold a pin to its current page. Furthermore,
+   * readonly transactions can happen concurrently, so a page entry might be
+   * used by cursors from multiple readonly transactions.
+   *
+   * If the last pin is removed, the page entry will eventually cache another
+   * store page. However, for a short while, the entry will end up in the LRU
+   * queue, and remain associated with the store. Sadly, this means that the
+   * calling code may be able to access the page entry's data without errors.
+   * Nevertheless, the caller must not use the page entry anymore after
+   * releasing its pin.
    *
    * @param  page a page that was previously obtained from this pool using
    *             StorePage()
@@ -79,9 +90,10 @@ class PagePool {
   /** Releases and writes back a dirty Page previously obtained by StorePage().
    *
    * This is similar to UnpinStorePage(), but the caller is supplying an extra
-   * hint that the page is dirty, and should be written back to the store's data
+   * hint that the page is dirty, and must be written back to the store's data
    * file now. This is rather rare, as in general it is advantageous to batch
-   * writes, which implies hanging onto dirty pages for as long as possible.
+   * writes, which implies keeping dirty pages in the LRU cache for as long as
+   * possible.
    *
    * @param  page a dirty page that was previously obtained from this pool using
    *             StorePage()

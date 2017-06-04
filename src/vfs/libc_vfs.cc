@@ -25,6 +25,8 @@ namespace {
 std::FILE* OpenLibcFile(
     const std::string& file_path, bool create_if_missing,
     bool error_if_exists, size_t* file_size) {
+  DCHECK(!error_if_exists || create_if_missing);
+
   const char* cpath = file_path.c_str();
 
   FILE* fp;

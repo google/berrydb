@@ -131,6 +131,13 @@ class StoreImpl {
 #if DCHECK_IS_ON()
   /** The page pool used by this store. For use in DCHECKs only. */
   inline PagePool* page_pool() const noexcept { return page_pool_; }
+
+  /** Number of pool pages assigned to this store. For use in DCHECKs only.
+   *
+   * This includes pinned pages and pages in the LRU list. */
+  inline size_t AssignedPageCount() const noexcept {
+    return pool_pages_.size();
+  }
 #endif  // DCHECK_IS_ON()
 
  private:

@@ -74,6 +74,7 @@ void PagePool::UnpinAndWriteStorePage(Page* page) {
     StoreImpl* store = page->store();
     page->UnassignFromStore();
     store->PageUnassigned(page);
+    free_list_.push_back(page);
     store->Close();
     return;
   }
@@ -127,6 +128,12 @@ Page* PagePool::AllocPage() {
     return page;
   }
 
+  if (page_count_ < page_capacity_) {
+    ++page_count_;
+    Page* page = Page::Create(this);
+    return page;
+  }
+
   if (!lru_list_.empty()) {
     Page* page = lru_list_.front();
     lru_list_.pop_front();
@@ -135,13 +142,6 @@ Page* PagePool::AllocPage() {
     page_map_.erase(std::make_pair(page->store(), page->page_id()));
     page->AddPin();
     UnassignPageFromStore(page);
-    return page;
-  }
-
-  // TODO(pwnall): Prefer to grow the pool (up to capacity) to evicting existing pages.
-  if (page_count_ < page_capacity_) {
-    ++page_count_;
-    Page* page = Page::Create(this);
     return page;
   }
 

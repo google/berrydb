@@ -5,9 +5,9 @@
 #ifndef BERRYDB_UTIL_LINKED_LIST_H_
 #define BERRYDB_UTIL_LINKED_LIST_H_
 
-#include "berrydb/platform.h"
-
 #include <utility>
+
+#include "berrydb/platform.h"
 
 namespace berrydb {
 

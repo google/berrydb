@@ -12,6 +12,7 @@
 #include "berrydb/status.h"
 #include "berrydb/store.h"
 #include "berrydb/vfs.h"
+#include "../util/unique_ptr.h"
 
 namespace berrydb {
 
@@ -35,28 +36,27 @@ TEST_F(PoolTest, CreateOptions) {
   options.page_shift = 12;
   options.page_pool_size = 42;
 
-  Pool* pool = Pool::Create(options);
+  UniquePtr<Pool> pool(Pool::Create(options));
   EXPECT_EQ(4096U, pool->page_size());
   EXPECT_EQ(42U, pool->page_pool_size());
-
-  pool->Release();
 }
 
 TEST_F(PoolTest, ReleaseClosesStore) {
   PoolOptions pool_options;
   pool_options.page_shift = 12;
   pool_options.page_pool_size = 16;
-  Pool* pool = Pool::Create(pool_options);
+  UniquePtr<Pool> pool(Pool::Create(pool_options));
 
-  Store* store = nullptr;
+  Store* raw_store = nullptr;
   StoreOptions options;
   options.create_if_missing = true;
   options.error_if_exists = false;
-  ASSERT_EQ(Status::kSuccess, pool->OpenStore(kFileName, options, &store));
+  ASSERT_EQ(Status::kSuccess, pool->OpenStore(kFileName, options, &raw_store));
+  UniquePtr<Store> store(raw_store);
 
   EXPECT_FALSE(store->IsClosed());
 
-  pool->Release();
+  pool.reset();
   EXPECT_TRUE(store->IsClosed());
 }
 

@@ -24,14 +24,21 @@ class Vfs {
    *
    * This method is used for transaction logs.
    *
-   * @param file_path the file to be opened or created
-   * @param file      if the call succeeds, populated with a RandomAccessFile*
-   *                  that can be used to access the file
-   * @param file_size the number of bytes contained by the file when it is
-   *                  opened
-   * @return          attempting to open a non-existing file may result in
-   *                  kIoError or kNotFound; all other errors will result in
-   *                  kIoError
+   * @param  file_path         the file to be opened or created
+   * @param  create_if_missing if true, a new empty file will be created if
+   *                           necessary
+   * @param  error_if_exists   if true, the call will not succeed if a file
+   *                           already exists; create_if_missing must be also
+   *                           true if this is true
+   * @param  file              if the call succeeds, populated with a
+   *                           RandomAccessFile* that can be used to access the
+   *                           file
+   * @param  file_size         the number of bytes contained by the file when it
+   *                           is opened; the caller is responsible for tracking
+   *                           file size changes coming from the caller's code
+   * @return                   attempting to open a non-existing file may result
+   *                           in kIoError or kNotFound; all other errors will
+   *                           result in kIoError
    */
   virtual Status OpenForRandomAccess(
       const std::string& file_path,
@@ -42,17 +49,23 @@ class Vfs {
    *
    * This method is used for the store data files.
    *
-   * @param file_path   the file to be opened or created
-   * @param block_shift log2(block size); the block size can be computed as
-   *                    1 << block_shift
-   * @param file        if the call succeeds, populated with a BlockAccessFile*
-   *                    that can be used to access the file
-   * @param file_size   the number of bytes contained by the file when it is
-   *                    opened; the size cannot be assumed to be a multiple of
-   *                    the file's block size
-   * @return            attempting to open a non-existing file may result in
-   *                    kIoError or kNotFound; all other errors will result in
-   *                    kIoError
+   * @param  file_path         the file to be opened or created
+   * @param block_shift        log2(block size); the block size can be computed
+   *                           as 1 << block_shift
+   * @param  create_if_missing if true, a new empty file will be created if
+   *                           necessary
+   * @param  error_if_exists   if true, the call will not succeed if a file
+   *                           already exists; create_if_missing must be also
+   *                           true if this is true
+   * @param  file              if the call succeeds, populated with a
+   *                           RandomAccessFile* that can be used to access the
+   *                           file
+   * @param  file_size         the number of bytes contained by the file when it
+   *                           is opened; the caller is responsible for tracking
+   *                           file size changes coming from the caller's code
+   * @return                   attempting to open a non-existing file may result
+   *                           in kIoError or kNotFound; all other errors will
+   *                           result in kIoError
    */
   virtual Status OpenForBlockAccess(
       const std::string& file_path, size_t block_shift,
@@ -126,6 +139,13 @@ class RandomAccessFile {
    */
   virtual Status Close() = 0;
 
+  /** Alias for Close().
+   *
+   * The alias is introduced so RandomAccessFile behaves like other API objects,
+   * which have a Release() method that deallocates their memory.
+   */
+  inline void Release() { Close(); }
+
  protected:
   /** Instances must be created using Vfs::OpenForRandomAccess(). */
   RandomAccessFile();
@@ -196,6 +216,13 @@ class BlockAccessFile {
    * all references to the file.
    */
   virtual Status Close() = 0;
+
+  /** Alias for Close().
+   *
+   * The alias is introduced so RandomAccessFile behaves like other API objects,
+   * which have a Release() method that deallocates their memory.
+   */
+  inline void Release() { Close(); }
 
  protected:
   /** Instances must be created using Vfs::OpenForBlockAccess(). */

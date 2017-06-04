@@ -5,6 +5,7 @@
 #include "./platform_allocator.h"
 
 #include <cstring>
+#include <type_traits>
 
 #include "gtest/gtest.h"
 

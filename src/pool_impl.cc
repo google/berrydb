@@ -44,8 +44,8 @@ void PoolImpl::Release() {
   // closed.
   DCHECK_EQ(0, page_pool_.pinned_pages());
 
-  // The difference between allocated pages and unused pages is pages in the MRU
-  // queue. All the stores should have been closed, so the MRU should be empty.
+  // The difference between allocated pages and unused pages is pages in the LRU
+  // queue. All the stores should have been closed, so the LRU should be empty.
   DCHECK_EQ(page_pool_.allocated_pages(), page_pool_.unused_pages());
 
   this->~PoolImpl();
