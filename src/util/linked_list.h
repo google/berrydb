@@ -12,31 +12,7 @@
 namespace berrydb {
 
 template<typename Embedder> class LinkedListNode;
-
-template<typename Embedder>
-class LinkedListBridge {
- public:
-  /** Extracts the LinkedListNode from an embedder object. */
-  static inline LinkedListNode<Embedder>* NodeForHost(Embedder* host) noexcept {
-    return &host->linked_list_node_;
-  }
-
-  /** Converts a LinkedListNode pointer back to an embedder pointer. */
-  static inline Embedder* HostForNode(LinkedListNode<Embedder>* node) noexcept {
-    static_assert(
-        std::is_standard_layout<Embedder>::value,
-        "Linked list embedders must be standard layout types");
-#if DCHECK_IS_ON()
-    DCHECK(!node->is_sentinel());
-#endif  // DCHECK_IS_ON()
-
-    Embedder* host = reinterpret_cast<Embedder*>(
-        reinterpret_cast<char*>(node) -
-        offsetof(Embedder, linked_list_node_));
-    DCHECK_EQ(node, &host->linked_list_node_);
-    return host;
-  }
-};
+template<typename Embedder> class LinkedListBridge;
 
 /**
  * A doubly linked list with embeddable nodes.
@@ -157,6 +133,10 @@ class LinkedList {
     --size_;
   }
 
+  /** Like std::erase(value_type), but the value must be in the list.
+   *
+   * This method has undefiend results if this list does not contain the given
+   * value. */
   inline void erase(value_type value) noexcept {
     Node* node = Bridge::NodeForHost(value);
 
@@ -315,6 +295,9 @@ class LinkedListNode {
   template<typename AnyEmbedder, typename Bridge> friend class LinkedList;
   template<typename AnyEmbedder, typename Bridge> friend class iterator;
 
+  /** The node's successor in the linked list.
+   *
+   * This must not be called while the node is not in a linked list. */
   inline LinkedListNode* next() const noexcept {
 #if DCHECK_IS_ON()
     DCHECK(list_sentinel_ != nullptr);
@@ -326,6 +309,10 @@ class LinkedListNode {
 
     return next_;
   }
+
+  /** The node's predecessor in the linked list.
+   *
+   * This must not be called while the node is not in a linked list. */
   inline LinkedListNode* prev() const noexcept {
 #if DCHECK_IS_ON()
     DCHECK(list_sentinel_ != nullptr);
@@ -338,13 +325,17 @@ class LinkedListNode {
     return prev_;
   }
 
-  /** Inserts this node in a list, before a given node. */
+  /** Inserts this node in a list, before a given node.
+   *
+   * The node must not already be in a list. */
   inline void InsertBefore(LinkedListNode* next) noexcept {
 #if DCHECK_IS_ON()
     DCHECK(!is_sentinel());
     DCHECK(list_sentinel_ == nullptr);  // The node cannot already be in a list.
 
-    // Redundant with check above, might trigger if memory gets corrupted.
+    // Redundant with check above, might trigger if memory gets corrupted. These
+    // are not outside the DCHECK_IS_ON() block because they're only guaranteed
+    // to be valid when DCHECKs are enabled.
     DCHECK(next_ == nullptr);
     DCHECK(prev_ == nullptr);
 
@@ -363,7 +354,9 @@ class LinkedListNode {
     next->prev_ = this;
   }
 
-  /** Removes this node from the list that it is in. */
+  /** Removes this node from the list that it is in.
+   *
+   * The node must be in a list. */
   inline void Remove() noexcept {
 #if DCHECK_IS_ON()
     DCHECK(!is_sentinel());
@@ -384,6 +377,10 @@ class LinkedListNode {
 #endif  // DCHECK_IS_ON()
   }
 
+  // When DCHECKs are enabled, these fields are guaranteed to be null when the
+  // node is not in a list. When DCHECKs are disabled, the fields are only
+  // written when the node is added to a list, so their values are undefined
+  // while the node is not in a list.
   LinkedListNode* next_;
   LinkedListNode* prev_;
 
@@ -396,6 +393,32 @@ class LinkedListNode {
    * LinkedListNode depend on the bridge type. */
   LinkedListNode* list_sentinel_;
 #endif  // DCHECK_IS_ON()
+};
+
+/** Bridge that extracts the linked_list_node_ field from the embedder. */
+template<typename Embedder>
+class LinkedListBridge {
+ public:
+  /** Extracts the LinkedListNode from an embedder object. */
+  static inline LinkedListNode<Embedder>* NodeForHost(Embedder* host) noexcept {
+    return &host->linked_list_node_;
+  }
+
+  /** Converts a LinkedListNode pointer back to an embedder pointer. */
+  static inline Embedder* HostForNode(LinkedListNode<Embedder>* node) noexcept {
+    static_assert(
+        std::is_standard_layout<Embedder>::value,
+        "Linked list embedders must be standard layout types");
+#if DCHECK_IS_ON()
+    DCHECK(!node->is_sentinel());
+#endif  // DCHECK_IS_ON()
+
+    Embedder* host = reinterpret_cast<Embedder*>(
+        reinterpret_cast<char*>(node) -
+        offsetof(Embedder, linked_list_node_));
+    DCHECK_EQ(node, &host->linked_list_node_);
+    return host;
+  }
 };
 
 }  // namespace berrydb

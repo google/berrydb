@@ -29,11 +29,16 @@ class PagePoolTest : public ::testing::Test {
         log_file1_deleter_(StoreImpl::LogFilePath(kStoreFileName1)) { }
 
   void SetUp() override {
+    BlockAccessFile* raw_data_file1;
     ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
-        data_file1_deleter_.path(), kStorePageShift, true, false, &data_file1_,
-        &data_file1_size_));
+        data_file1_deleter_.path(), kStorePageShift, true, false,
+        &raw_data_file1, &data_file1_size_));
+    data_file1_.reset(raw_data_file1);
+    RandomAccessFile* raw_log_file1;
     ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
-        log_file1_deleter_.path(), true, false, &log_file1_, &log_file1_size_));
+        log_file1_deleter_.path(), true, false, &raw_log_file1,
+        &log_file1_size_));
+    log_file1_.reset(raw_log_file1);
   }
 
   void CreatePool(int page_shift, int page_capacity) {
@@ -63,13 +68,14 @@ class PagePoolTest : public ::testing::Test {
   constexpr static size_t kStorePageShift = 12;
 
   Vfs* vfs_;
+  // Must precede UniquePtr members, because on Windows all file handles must be
+  // closed before the files can be deleted.
   FileDeleter data_file1_deleter_, log_file1_deleter_;
-  // Must follow FileDeleter members, because stores must be closed before
-  // their files are deleted.
+
   UniquePtr<PoolImpl> pool_;
-  BlockAccessFile* data_file1_;
+  UniquePtr<BlockAccessFile> data_file1_;
   size_t data_file1_size_;
-  RandomAccessFile* log_file1_;
+  UniquePtr<RandomAccessFile> log_file1_;
   size_t log_file1_size_;
   std::mt19937 rnd_;
 };
@@ -154,8 +160,8 @@ TEST_F(PagePoolTest, AllocUsesLruList) {
 
   EXPECT_EQ(0U, data_file1_size_);
   UniquePtr<StoreImpl> store(StoreImpl::Create(
-      data_file1_, data_file1_size_, log_file1_, log_file1_size_, page_pool,
-      StoreOptions()));
+      data_file1_.release(), data_file1_size_, log_file1_.release(),
+      log_file1_size_, page_pool, StoreOptions()));
 
   Page* page = page_pool->AllocPage();
   ASSERT_NE(nullptr, page);
@@ -190,8 +196,8 @@ TEST_F(PagePoolTest, AllocPrefersFreeListToLruList) {
 
   EXPECT_EQ(0U, data_file1_size_);
   UniquePtr<StoreImpl> store(StoreImpl::Create(
-      data_file1_, data_file1_size_, log_file1_, log_file1_size_, page_pool,
-      StoreOptions()));
+      data_file1_.release(), data_file1_size_, log_file1_.release(),
+      log_file1_size_, page_pool, StoreOptions()));
 
   Page* page = page_pool->AllocPage();
   ASSERT_NE(nullptr, page);
@@ -230,8 +236,8 @@ TEST_F(PagePoolTest, UnassignPageFromStoreState) {
 
   EXPECT_EQ(0U, data_file1_size_);
   UniquePtr<StoreImpl> store(StoreImpl::Create(
-      data_file1_, data_file1_size_, log_file1_, log_file1_size_, page_pool,
-      StoreOptions()));
+      data_file1_.release(), data_file1_size_, log_file1_.release(),
+      log_file1_size_, page_pool, StoreOptions()));
 
   Page* page = page_pool->AllocPage();
   ASSERT_NE(nullptr, page);
@@ -260,10 +266,10 @@ TEST_F(PagePoolTest, UnassignPageFromStoreIoError) {
   PagePool* page_pool = pool_->page_pool();
 
   EXPECT_EQ(0U, data_file1_size_);
-  BlockAccessFileWrapper data_file_wrapper(data_file1_);
+  BlockAccessFileWrapper data_file_wrapper(data_file1_.release());
   UniquePtr<StoreImpl> store(StoreImpl::Create(
-      &data_file_wrapper, data_file1_size_, log_file1_, log_file1_size_,
-      page_pool, StoreOptions()));
+      &data_file_wrapper, data_file1_size_, log_file1_.release(),
+      log_file1_size_, page_pool, StoreOptions()));
 
   Page* page = page_pool->AllocPage();
   ASSERT_NE(nullptr, page);
@@ -296,8 +302,8 @@ TEST_F(PagePoolTest, AssignPageToStoreSuccess) {
   CreatePool(kStorePageShift, 1);
   PagePool* page_pool = pool_->page_pool();
   UniquePtr<StoreImpl> store(StoreImpl::Create(
-      data_file1_, data_file1_size_, log_file1_, log_file1_size_, page_pool,
-      StoreOptions()));
+      data_file1_.release(), data_file1_size_, log_file1_.release(),
+      log_file1_size_, page_pool, StoreOptions()));
 
   for (size_t i = 0; i < 4; ++i)
     WriteStorePage(store.get(), i, buffer + (i << kStorePageShift));
@@ -324,10 +330,10 @@ TEST_F(PagePoolTest, AssignPageToStoreIoError) {
 
   CreatePool(kStorePageShift, 1);
   PagePool* page_pool = pool_->page_pool();
-  BlockAccessFileWrapper data_file_wrapper(data_file1_);
+  BlockAccessFileWrapper data_file_wrapper(data_file1_.release());
   UniquePtr<StoreImpl> store(StoreImpl::Create(
-      &data_file_wrapper, data_file1_size_, log_file1_, log_file1_size_,
-      page_pool, StoreOptions()));
+      &data_file_wrapper, data_file1_size_, log_file1_.release(),
+      log_file1_size_, page_pool, StoreOptions()));
 
   for (size_t i = 0; i < 2; ++i)
     WriteStorePage(store.get(), i, buffer + (i << kStorePageShift));
@@ -381,10 +387,10 @@ TEST_F(PagePoolTest, PinUnpinStorePage) {
 
   CreatePool(kStorePageShift, 1);
   PagePool* page_pool = pool_->page_pool();
-  BlockAccessFileWrapper data_file_wrapper(data_file1_);
+  BlockAccessFileWrapper data_file_wrapper(data_file1_.release());
   UniquePtr<StoreImpl> store(StoreImpl::Create(
-      &data_file_wrapper, data_file1_size_, log_file1_, log_file1_size_,
-      page_pool, StoreOptions()));
+      &data_file_wrapper, data_file1_size_, log_file1_.release(),
+      log_file1_size_, page_pool, StoreOptions()));
 
   Page* page = page_pool->AllocPage();
   ASSERT_NE(nullptr, page);
@@ -444,10 +450,10 @@ TEST_F(PagePoolTest, StorePage) {
 
   CreatePool(kStorePageShift, 2);
   PagePool* page_pool = pool_->page_pool();
-  BlockAccessFileWrapper data_file_wrapper(data_file1_);
+  BlockAccessFileWrapper data_file_wrapper(data_file1_.release());
   UniquePtr<StoreImpl> store(StoreImpl::Create(
-      &data_file_wrapper, data_file1_size_, log_file1_, log_file1_size_,
-      page_pool, StoreOptions()));
+      &data_file_wrapper, data_file1_size_, log_file1_.release(),
+      log_file1_size_, page_pool, StoreOptions()));
 
   for (size_t i = 0; i < 4; ++i)
     WriteStorePage(store.get(), i, buffer + (i << kStorePageShift));

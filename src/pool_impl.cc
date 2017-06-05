@@ -53,6 +53,16 @@ void PoolImpl::Release() {
   Deallocate(heap_block, sizeof(PoolImpl));
 }
 
+void PoolImpl::StoreCreated(StoreImpl* store) {
+  DCHECK(store != nullptr);
+  DCHECK(!store->IsClosed());
+#if DCHECK_IS_ON()
+  DCHECK_EQ(this, store->page_pool()->pool());
+#endif  // DCHECK_IS_ON()
+
+  // stores_.insert(store);
+}
+
 void PoolImpl::StoreClosed(StoreImpl* store) {
   DCHECK(store != nullptr);
   DCHECK(store->IsClosed());

@@ -43,7 +43,7 @@ TEST_F(VfsTest, OpenForBlockAccessOptions) {
       kFileName, kBlockShift, true, true, &file, &file_size));
   ASSERT_NE(nullptr, file);
   EXPECT_EQ(0U, file_size);
-  file->Close();
+  EXPECT_EQ(Status::kSuccess, file->Close());
 
   // The ASSERT above guarantees that the file was created.
   file = nullptr;
@@ -59,7 +59,7 @@ TEST_F(VfsTest, OpenForBlockAccessOptions) {
       kFileName, kBlockShift, true, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
   EXPECT_EQ(0U, file_size);
-  file->Close();
+  EXPECT_EQ(Status::kSuccess, file->Close());
 
   file = nullptr;
   file_size = kInvalidSize;
@@ -67,7 +67,7 @@ TEST_F(VfsTest, OpenForBlockAccessOptions) {
       kFileName, kBlockShift, false, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
   EXPECT_EQ(0U, file_size);
-  file->Close();
+  EXPECT_EQ(Status::kSuccess, file->Close());
 }
 
 TEST_F(VfsTest, BlockAccessFilePersistence) {
@@ -189,7 +189,7 @@ TEST_F(VfsTest, OpenForRandomAccessOptions) {
       vfs_->OpenForRandomAccess(kFileName, true, true, &file, &file_size));
   ASSERT_NE(nullptr, file);
   EXPECT_EQ(0U, file_size);
-  file->Close();
+  EXPECT_EQ(Status::kSuccess, file->Close());
 
   // The ASSERT above guarantees that the file was created.
   file = nullptr;
@@ -207,7 +207,7 @@ TEST_F(VfsTest, OpenForRandomAccessOptions) {
       vfs_->OpenForRandomAccess(kFileName, true, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
   EXPECT_EQ(0U, file_size);
-  file->Close();
+  EXPECT_EQ(Status::kSuccess, file->Close());
 
   file = nullptr;
   file_size = kInvalidSize;
@@ -216,7 +216,7 @@ TEST_F(VfsTest, OpenForRandomAccessOptions) {
       vfs_->OpenForRandomAccess(kFileName, false, false, &file, &file_size));
   ASSERT_NE(nullptr, file);
   EXPECT_EQ(0U, file_size);
-  file->Close();
+  EXPECT_EQ(Status::kSuccess, file->Close());
 }
 
 TEST_F(VfsTest, RandomAccessFilePersistence) {
@@ -312,6 +312,25 @@ TEST_F(VfsTest, RandomAccessFileReadWriteOffsets) {
 
   EXPECT_EQ(Status::kSuccess, file->Close());
   EXPECT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));
+}
+
+TEST_F(VfsTest, DeleteFile) {
+  RandomAccessFile* file = nullptr;
+  const size_t kInvalidSize = 0x0badc0de;
+  size_t file_size = kInvalidSize;
+
+  ASSERT_EQ(
+      Status::kSuccess,
+      vfs_->OpenForRandomAccess(kFileName, true, true, &file, &file_size));
+  ASSERT_NE(nullptr, file);
+  EXPECT_EQ(0U, file_size);
+  EXPECT_EQ(Status::kSuccess, file->Close());
+
+  ASSERT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));
+
+  ASSERT_NE(
+      Status::kSuccess,
+      vfs_->OpenForRandomAccess(kFileName, false, false, &file, &file_size));
 }
 
 }  // namespace berrydb

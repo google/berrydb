@@ -12,23 +12,22 @@
 #include "berrydb/status.h"
 #include "berrydb/store.h"
 #include "berrydb/vfs.h"
+#include "../test/file_deleter.h"
 #include "../util/unique_ptr.h"
 
 namespace berrydb {
 
 class PoolTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    vfs_ = DefaultVfs();
-    vfs_->DeleteFile(kFileName);
-  }
-
-  void TearDown() override {
-    vfs_->DeleteFile(kFileName);
-  }
+  PoolTest()
+      : vfs_(DefaultVfs()), data_file_deleter_(kFileName),
+        log_file_deleter_(Store::LogFilePath(kFileName)) { }
 
   const std::string kFileName = "test_pool.berry";
   Vfs* vfs_;
+  // Must precede UniquePtr members, because on Windows all file handles must be
+  // closed before the files can be deleted.
+  FileDeleter data_file_deleter_, log_file_deleter_;
 };
 
 TEST_F(PoolTest, CreateOptions) {

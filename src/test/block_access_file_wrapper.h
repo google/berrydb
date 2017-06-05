@@ -47,6 +47,7 @@ class BlockAccessFileWrapper : public BlockAccessFile {
   BlockAccessFile* const file_;
   Status access_error_;
   bool is_closed_ = false;
+  bool wrapped_file_is_closed_ = false;
 };
 
 }  // namespace berrydb

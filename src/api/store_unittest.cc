@@ -13,30 +13,30 @@
 #include "berrydb/status.h"
 #include "berrydb/transaction.h"
 #include "berrydb/vfs.h"
+#include "../test/file_deleter.h"
 #include "../util/unique_ptr.h"
 
 namespace berrydb {
 
 class StoreTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    vfs_ = DefaultVfs();
-    vfs_->DeleteFile(kFileName);
-    vfs_->DeleteFile(Store::LogFilePath(kFileName));
+  StoreTest()
+      : vfs_(DefaultVfs()), data_file_deleter_(kFileName),
+        log_file_deleter_(Store::LogFilePath(kFileName)) { }
 
+  void SetUp() override {
     PoolOptions options;
     options.page_shift = 12;
     options.page_pool_size = 42;
     pool_.reset(Pool::Create(options));
   }
-  void TearDown() override {
-    pool_.reset();  // Must happen before the file is deleted.
-    vfs_->DeleteFile(kFileName);
-    vfs_->DeleteFile(Store::LogFilePath(kFileName));
-  }
 
   const std::string kFileName = "test_store.berry";
   Vfs* vfs_;
+  // Must precede UniquePtr members, because on Windows all file handles must be
+  // closed before the files can be deleted.
+  FileDeleter data_file_deleter_, log_file_deleter_;
+
   UniquePtr<Pool> pool_;
 };
 
@@ -56,6 +56,7 @@ TEST_F(StoreTest, CreateOptions) {
   store = nullptr;
   ASSERT_EQ(Status::kSuccess, pool_->OpenStore(kFileName, options, &store));
   ASSERT_NE(nullptr, store);
+  EXPECT_EQ(Status::kSuccess, store->Close());
   store->Release();
 
   // The ASSERT above guarantees that the store was created.
@@ -67,12 +68,14 @@ TEST_F(StoreTest, CreateOptions) {
   store = nullptr;
   ASSERT_EQ(Status::kSuccess, pool_->OpenStore(kFileName, options, &store));
   ASSERT_NE(nullptr, store);
+  EXPECT_EQ(Status::kSuccess, store->Close());
   store->Release();
 
   options.create_if_missing = false;
   store = nullptr;
   ASSERT_EQ(Status::kSuccess, pool_->OpenStore(kFileName, options, &store));
   ASSERT_NE(nullptr, store);
+  EXPECT_EQ(Status::kSuccess, store->Close());
   store->Release();
 }
 

@@ -26,6 +26,7 @@ StoreImpl* StoreImpl::Create(
       data_file, data_file_size, log_file, log_file_size, page_pool, options);
   DCHECK_EQ(heap_block, static_cast<void*>(store));
 
+  page_pool->pool()->StoreCreated(store);
   return store;
 }
 

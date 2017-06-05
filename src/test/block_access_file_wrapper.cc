@@ -12,7 +12,7 @@ BlockAccessFileWrapper::BlockAccessFileWrapper(BlockAccessFile* file)
     : file_(file), access_error_(Status::kSuccess) { }
 
 BlockAccessFileWrapper::~BlockAccessFileWrapper() {
-  if (!is_closed_)
+  if (!wrapped_file_is_closed_)
     file_->Close();
 }
 
@@ -53,6 +53,8 @@ Status BlockAccessFileWrapper::Close() {
 
   if (access_error_ != Status::kSuccess)
     return access_error_;
+
+  wrapped_file_is_closed_ = true;
   return file_->Close();
 }
 

@@ -25,11 +25,15 @@ class PageTest : public ::testing::Test {
         log_file_deleter_(StoreImpl::LogFilePath(kStoreFileName)) { }
 
   void SetUp() override {
+    BlockAccessFile* raw_data_file;
     ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
-        data_file_deleter_.path(), kStorePageShift, true, false, &data_file_,
+        data_file_deleter_.path(), kStorePageShift, true, false, &raw_data_file,
         &data_file_size_));
+    data_file_.reset(raw_data_file);
+    RandomAccessFile* raw_log_file;
     ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
-        log_file_deleter_.path(), true, false, &log_file_, &log_file_size_));
+        log_file_deleter_.path(), true, false, &raw_log_file, &log_file_size_));
+    log_file_.reset(raw_log_file);
   }
 
   void CreatePool(int page_shift, int page_capacity) {
@@ -47,9 +51,9 @@ class PageTest : public ::testing::Test {
   // Must follow FileDeleter members, because stores must be closed before
   // their files are deleted.
   UniquePtr<PoolImpl> pool_;
-  BlockAccessFile* data_file_;
+  UniquePtr<BlockAccessFile> data_file_;
   size_t data_file_size_;
-  RandomAccessFile* log_file_;
+  UniquePtr<RandomAccessFile> log_file_;
   size_t log_file_size_;
 };
 
@@ -101,8 +105,8 @@ TEST_F(PageTest, AssignToStoreUnassignFromStore) {
   CreatePool(kStorePageShift, 42);
   PagePool* page_pool = pool_->page_pool();
   UniquePtr<StoreImpl> store(StoreImpl::Create(
-      data_file_, data_file_size_, log_file_, log_file_size_, page_pool,
-      StoreOptions()));
+      data_file_.release(), data_file_size_, log_file_.release(),
+      log_file_size_, page_pool, StoreOptions()));
 
   Page* page = Page::Create(page_pool);
   ASSERT_TRUE(!page->IsUnpinned());
