@@ -58,6 +58,7 @@ TEST_F(PageTest, CreateRelease) {
   PagePool page_pool(pool_.get(), 12, 42);
 
   Page* page = Page::Create(&page_pool);
+  EXPECT_NE(nullptr, page->data());
 #if DCHECK_IS_ON()
   EXPECT_EQ(nullptr, page->store());
   EXPECT_EQ(&page_pool, page->page_pool());

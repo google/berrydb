@@ -13,11 +13,18 @@ namespace berrydb {
  *
  * The wrapper forwards I/O calls to the underlying BlockAccessFile until
  * SetAccessError() is called. Afterwards, I/O calls are not forwarded, and
- * instead immediately return the status given to SetAccessError(). */
+ * instead immediately return the status given to SetAccessError().
+ *
+ * The wrapper automatically closes the underlying BlockAccessFile on
+ * destruction, if it hasn't been closed already. The wrapper effectively takes
+ * ownership of the BlockAccessFile given to it, because is designed to be used
+ * with StoreImpl, which follows the same model.
+ */
 class BlockAccessFileWrapper : public BlockAccessFile {
  public:
   /** Creates a wrapper for a file. */
   BlockAccessFileWrapper(BlockAccessFile* file);
+  /** Destroys the wrapper, closes the underlying file if necessary. */
   ~BlockAccessFileWrapper();
 
   /** Inject errors in I/O calls.

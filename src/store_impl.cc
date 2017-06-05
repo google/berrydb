@@ -75,7 +75,7 @@ Status StoreImpl::Initialize(const StoreOptions &options) {
 Status StoreImpl::Bootstrap() {
   Page* header_page;
   Status fetch_status = page_pool_->StorePage(
-      this, 0, PagePool::PageFetchMode::kIgnorePageData, &header_page);
+      this, 0, PagePool::kIgnorePageData, &header_page);
   if (fetch_status != Status::kSuccess)
     return fetch_status;
 
@@ -90,7 +90,7 @@ Status StoreImpl::Bootstrap() {
 
   Page* free_list_head_page;
   fetch_status = page_pool_->StorePage(
-      this, 1, PagePool::PageFetchMode::kIgnorePageData, &free_list_head_page);
+      this, 1, PagePool::kIgnorePageData, &free_list_head_page);
   if (fetch_status != Status::kSuccess)
     return fetch_status;
 
@@ -101,7 +101,7 @@ Status StoreImpl::Bootstrap() {
 
   Page* root_catalog_page;
   fetch_status = page_pool_->StorePage(
-      this, 2, PagePool::PageFetchMode::kIgnorePageData, &root_catalog_page);
+      this, 2, PagePool::kIgnorePageData, &root_catalog_page);
   if (fetch_status != Status::kSuccess)
     return fetch_status;
 

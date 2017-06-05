@@ -4,6 +4,8 @@
 
 #include "./page_pool.h"
 
+#include <cstring>
+#include <random>
 #include <string>
 
 #include "gtest/gtest.h"
@@ -41,6 +43,22 @@ class PagePoolTest : public ::testing::Test {
     pool_.reset(PoolImpl::Create(options));
   }
 
+  void WriteStorePage(StoreImpl* store, size_t page_id, const uint8_t* data) {
+    ASSERT_TRUE(pool_.get() != nullptr);
+    PagePool* page_pool = pool_->page_pool();
+    Page* page = page_pool->AllocPage();
+    ASSERT_TRUE(page != nullptr);
+
+    ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
+        page, store, page_id, PagePool::kIgnorePageData));
+    page->MarkDirty();
+    std::memcpy(page->data(), data, 1 << kStorePageShift);
+    ASSERT_EQ(Status::kSuccess, store->WritePage(page));
+    page->MarkDirty(false);
+    page_pool->UnassignPageFromStore(page);
+    page_pool->UnpinUnassignedPage(page);
+  }
+
   const std::string kStoreFileName1 = "test_page_pool_1.berry";
   constexpr static size_t kStorePageShift = 12;
 
@@ -53,6 +71,7 @@ class PagePoolTest : public ::testing::Test {
   size_t data_file1_size_;
   RandomAccessFile* log_file1_;
   size_t log_file1_size_;
+  std::mt19937 rnd_;
 };
 
 TEST_F(PagePoolTest, Constructor) {
@@ -65,6 +84,26 @@ TEST_F(PagePoolTest, Constructor) {
   EXPECT_EQ(0U, page_pool.allocated_pages());
   EXPECT_EQ(0U, page_pool.unused_pages());
   EXPECT_EQ(0U, page_pool.pinned_pages());
+}
+
+TEST_F(PagePoolTest, AllocPageState) {
+  CreatePool(12, 1);
+  PagePool page_pool(pool_.get(), 12, 1);
+
+  Page* page = page_pool.AllocPage();
+  ASSERT_NE(nullptr, page);
+  EXPECT_NE(nullptr, page->data());
+  EXPECT_EQ(1U, page_pool.allocated_pages());
+  EXPECT_EQ(0U, page_pool.unused_pages());
+  EXPECT_EQ(1U, page_pool.pinned_pages());
+
+  EXPECT_FALSE(page->is_dirty());
+  EXPECT_FALSE(page->IsUnpinned());
+#if DCHECK_IS_ON()
+  EXPECT_EQ(nullptr, page->store());
+#endif  // DCHECK_IS_ON()
+
+  page_pool.UnpinUnassignedPage(page);
 }
 
 TEST_F(PagePoolTest, AllocRespectsCapacity) {
@@ -185,7 +224,38 @@ TEST_F(PagePoolTest, AllocPrefersFreeListToLruList) {
   page_pool->UnpinUnassignedPage(page2);
 }
 
-TEST_F(PagePoolTest, UnassignFromStoreIoError) {
+TEST_F(PagePoolTest, UnassignPageFromStoreState) {
+  CreatePool(kStorePageShift, 1);
+  PagePool* page_pool = pool_->page_pool();
+
+  EXPECT_EQ(0U, data_file1_size_);
+  UniquePtr<StoreImpl> store(StoreImpl::Create(
+      data_file1_, data_file1_size_, log_file1_, log_file1_size_, page_pool,
+      StoreOptions()));
+
+  Page* page = page_pool->AllocPage();
+  ASSERT_NE(nullptr, page);
+  ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
+      page, store.get(), 0, PagePool::kIgnorePageData));
+  EXPECT_EQ(store.get(), page->store());
+
+  page->MarkDirty(true);
+  uint8_t* data = page->data();
+  ASSERT_NE(nullptr, data);
+  std::memset(data, 0, 1 << kStorePageShift);
+
+  page_pool->UnassignPageFromStore(page);
+  EXPECT_FALSE(page->is_dirty());
+  EXPECT_FALSE(page->IsUnpinned());
+#if DCHECK_IS_ON()
+  EXPECT_EQ(nullptr, page->store());
+#endif  // DCHECK_IS_ON()
+  EXPECT_FALSE(store->IsClosed());
+
+  page_pool->UnpinUnassignedPage(page);
+}
+
+TEST_F(PagePoolTest, UnassignPageFromStoreIoError) {
   CreatePool(kStorePageShift, 1);
   PagePool* page_pool = pool_->page_pool();
 
@@ -201,8 +271,15 @@ TEST_F(PagePoolTest, UnassignFromStoreIoError) {
       page, store.get(), 0, PagePool::kIgnorePageData));
   EXPECT_EQ(store.get(), page->store());
 
+  page->MarkDirty(true);
+  uint8_t* data = page->data();
+  ASSERT_NE(nullptr, data);
+  std::memset(data, 0, 1 << kStorePageShift);
+
   data_file_wrapper.SetAccessError(Status::kIoError);
   page_pool->UnassignPageFromStore(page);
+  EXPECT_FALSE(page->is_dirty());
+  EXPECT_FALSE(page->IsUnpinned());
 #if DCHECK_IS_ON()
   EXPECT_EQ(nullptr, page->store());
 #endif  // DCHECK_IS_ON()
@@ -211,12 +288,224 @@ TEST_F(PagePoolTest, UnassignFromStoreIoError) {
   page_pool->UnpinUnassignedPage(page);
 }
 
-TEST_F(PagePoolTest, AssignToStoreSuccess) {
+TEST_F(PagePoolTest, AssignPageToStoreSuccess) {
+  uint8_t buffer[4 << kStorePageShift];
+  for(size_t i = 0; i < sizeof(buffer); ++i)
+    buffer[i] = static_cast<uint8_t>(rnd_());
 
+  CreatePool(kStorePageShift, 1);
+  PagePool* page_pool = pool_->page_pool();
+  UniquePtr<StoreImpl> store(StoreImpl::Create(
+      data_file1_, data_file1_size_, log_file1_, log_file1_size_, page_pool,
+      StoreOptions()));
+
+  for (size_t i = 0; i < 4; ++i)
+    WriteStorePage(store.get(), i, buffer + (i << kStorePageShift));
+
+  for (size_t i = 0; i < 4; ++i) {
+    Page* page = page_pool->AllocPage();
+    ASSERT_NE(nullptr, page);
+    EXPECT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
+        page, store.get(), i, PagePool::kFetchPageData));
+    EXPECT_FALSE(page->is_dirty());
+    EXPECT_FALSE(page->IsUnpinned());
+    EXPECT_EQ(store.get(), page->store());
+    EXPECT_EQ(i, page->page_id());
+    EXPECT_EQ(0, std::memcmp(
+        page->data(), buffer + (i << kStorePageShift), 1 << kStorePageShift));
+    page_pool->UnpinStorePage(page);
+  }
 }
 
-TEST_F(PagePoolTest, AssignToStoreIoError) {
+TEST_F(PagePoolTest, AssignPageToStoreIoError) {
+  uint8_t buffer[2 << kStorePageShift];
+  for(size_t i = 0; i < sizeof(buffer); ++i)
+    buffer[i] = static_cast<uint8_t>(rnd_());
 
+  CreatePool(kStorePageShift, 1);
+  PagePool* page_pool = pool_->page_pool();
+  BlockAccessFileWrapper data_file_wrapper(data_file1_);
+  UniquePtr<StoreImpl> store(StoreImpl::Create(
+      &data_file_wrapper, data_file1_size_, log_file1_, log_file1_size_,
+      page_pool, StoreOptions()));
+
+  for (size_t i = 0; i < 2; ++i)
+    WriteStorePage(store.get(), i, buffer + (i << kStorePageShift));
+
+  Page* page = page_pool->AllocPage();
+  ASSERT_NE(nullptr, page);
+  EXPECT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
+      page, store.get(), 1, PagePool::kFetchPageData));
+  page_pool->UnpinStorePage(page);
+
+  data_file_wrapper.SetAccessError(Status::kIoError);
+  page = page_pool->AllocPage();
+  ASSERT_NE(nullptr, page);
+  EXPECT_EQ(Status::kIoError, page_pool->AssignPageToStore(
+      page, store.get(), 1, PagePool::kFetchPageData));
+  EXPECT_FALSE(page->is_dirty());
+  EXPECT_FALSE(page->IsUnpinned());
+#if DCHECK_IS_ON()
+  EXPECT_EQ(nullptr, page->store());
+#endif  // DCHECK_IS_ON()
+
+  page_pool->UnpinUnassignedPage(page);
+}
+
+TEST_F(PagePoolTest, UnpinUnassignedPageState) {
+  CreatePool(12, 1);
+  PagePool page_pool(pool_.get(), 12, 1);
+
+  Page* page = page_pool.AllocPage();
+  ASSERT_NE(nullptr, page);
+  EXPECT_EQ(1U, page_pool.allocated_pages());
+  EXPECT_EQ(0U, page_pool.unused_pages());
+  EXPECT_EQ(1U, page_pool.pinned_pages());
+
+  page_pool.UnpinUnassignedPage(page);
+  EXPECT_EQ(1U, page_pool.allocated_pages());
+  EXPECT_EQ(1U, page_pool.unused_pages());
+  EXPECT_EQ(0U, page_pool.pinned_pages());
+
+  EXPECT_FALSE(page->is_dirty());
+  EXPECT_TRUE(page->IsUnpinned());
+#if DCHECK_IS_ON()
+  EXPECT_EQ(nullptr, page->store());
+#endif  // DCHECK_IS_ON()
+}
+
+TEST_F(PagePoolTest, PinUnpinStorePage) {
+  uint8_t buffer[4 << kStorePageShift];
+  for(size_t i = 0; i < sizeof(buffer); ++i)
+    buffer[i] = static_cast<uint8_t>(rnd_());
+
+  CreatePool(kStorePageShift, 1);
+  PagePool* page_pool = pool_->page_pool();
+  BlockAccessFileWrapper data_file_wrapper(data_file1_);
+  UniquePtr<StoreImpl> store(StoreImpl::Create(
+      &data_file_wrapper, data_file1_size_, log_file1_, log_file1_size_,
+      page_pool, StoreOptions()));
+
+  Page* page = page_pool->AllocPage();
+  ASSERT_NE(nullptr, page);
+  ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
+      page, store.get(), 42, PagePool::kIgnorePageData));
+  EXPECT_EQ(store.get(), page->store());
+
+  page->MarkDirty(false);
+
+  // Should add a pin to the page.
+  page_pool->PinStorePage(page);
+  EXPECT_FALSE(page->is_dirty());
+  EXPECT_FALSE(page->IsUnpinned());
+  EXPECT_EQ(42U, page->page_id());
+  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(1U, page_pool->allocated_pages());
+  EXPECT_EQ(0U, page_pool->unused_pages());
+  EXPECT_EQ(1U, page_pool->pinned_pages());
+
+  // Should remove one of the pins from the page.
+  page_pool->UnpinStorePage(page);
+  EXPECT_FALSE(page->is_dirty());
+  EXPECT_FALSE(page->IsUnpinned());
+  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(42U, page->page_id());
+  EXPECT_EQ(1U, page_pool->allocated_pages());
+  EXPECT_EQ(0U, page_pool->unused_pages());
+  EXPECT_EQ(1U, page_pool->pinned_pages());
+
+  // Should remove the last pin and add the page to the LRU list.
+  page_pool->UnpinStorePage(page);
+  EXPECT_FALSE(page->is_dirty());
+  EXPECT_TRUE(page->IsUnpinned());
+  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(42U, page->page_id());
+  EXPECT_EQ(1U, page_pool->allocated_pages());
+  EXPECT_EQ(0U, page_pool->unused_pages());
+  EXPECT_EQ(0U, page_pool->pinned_pages());
+
+  // Should remove the page from the LRU list.
+  page_pool->PinStorePage(page);
+  EXPECT_FALSE(page->is_dirty());
+  EXPECT_FALSE(page->IsUnpinned());
+  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(42U, page->page_id());
+  EXPECT_EQ(1U, page_pool->allocated_pages());
+  EXPECT_EQ(0U, page_pool->unused_pages());
+  EXPECT_EQ(1U, page_pool->pinned_pages());
+
+  page_pool->UnpinStorePage(page);
+}
+
+TEST_F(PagePoolTest, StorePage) {
+  uint8_t buffer[4 << kStorePageShift];
+  for(size_t i = 0; i < sizeof(buffer); ++i)
+    buffer[i] = static_cast<uint8_t>(rnd_());
+
+  CreatePool(kStorePageShift, 2);
+  PagePool* page_pool = pool_->page_pool();
+  BlockAccessFileWrapper data_file_wrapper(data_file1_);
+  UniquePtr<StoreImpl> store(StoreImpl::Create(
+      &data_file_wrapper, data_file1_size_, log_file1_, log_file1_size_,
+      page_pool, StoreOptions()));
+
+  for (size_t i = 0; i < 4; ++i)
+    WriteStorePage(store.get(), i, buffer + (i << kStorePageShift));
+
+  Page* page;
+  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
+      store.get(), 2, PagePool::kFetchPageData, &page));
+
+  ASSERT_TRUE(page != nullptr);
+  EXPECT_FALSE(page->is_dirty());
+  EXPECT_FALSE(page->IsUnpinned());
+  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(2U, page->page_id());
+  EXPECT_EQ(0, std::memcmp(
+      page->data(), buffer + (2 << kStorePageShift), 1 << kStorePageShift));
+
+  Page* page2;
+  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
+      store.get(), 2, PagePool::kFetchPageData, &page2));
+  EXPECT_EQ(page, page2);
+  EXPECT_FALSE(page2->is_dirty());
+  EXPECT_FALSE(page2->IsUnpinned());
+  EXPECT_EQ(store.get(), page2->store());
+  EXPECT_EQ(2U, page2->page_id());
+  EXPECT_EQ(0, std::memcmp(
+      page2->data(), buffer + (2 << kStorePageShift), 1 << kStorePageShift));
+  EXPECT_EQ(1U, page_pool->allocated_pages());
+  EXPECT_EQ(0U, page_pool->unused_pages());
+  EXPECT_EQ(1U, page_pool->pinned_pages());
+
+  page_pool->UnpinStorePage(page2);
+  EXPECT_FALSE(page->is_dirty());
+  EXPECT_FALSE(page->IsUnpinned());
+  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(2U, page->page_id());
+  EXPECT_EQ(1U, page_pool->allocated_pages());
+  EXPECT_EQ(0U, page_pool->unused_pages());
+  EXPECT_EQ(1U, page_pool->pinned_pages());
+
+  page_pool->UnassignPageFromStore(page);
+  page_pool->UnpinUnassignedPage(page);
+  EXPECT_FALSE(page->is_dirty());
+  EXPECT_TRUE(page->IsUnpinned());
+#if DCHECK_IS_ON()
+  EXPECT_EQ(nullptr, page->store());
+#endif  // DCHECK_IS_ON()
+  EXPECT_EQ(1U, page_pool->allocated_pages());
+  EXPECT_EQ(1U, page_pool->unused_pages());
+  EXPECT_EQ(0U, page_pool->pinned_pages());
+
+  data_file_wrapper.SetAccessError(Status::kIoError);
+  page = nullptr;
+  EXPECT_EQ(Status::kIoError, page_pool->StorePage(
+      store.get(), 2, PagePool::kFetchPageData, &page));
+  EXPECT_EQ(nullptr, page);
+  EXPECT_EQ(1U, page_pool->allocated_pages());
+  EXPECT_EQ(1U, page_pool->unused_pages());
+  EXPECT_EQ(0U, page_pool->pinned_pages());
 }
 
 }  // namespace berrydb

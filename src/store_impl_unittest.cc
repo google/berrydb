@@ -91,7 +91,7 @@ TEST_F(StoreImplTest, WriteReadPage) {
 
   for (size_t i = 0; i < 4; ++i) {
     ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
-        page, store.get(), i, PagePool::PageFetchMode::kIgnorePageData));
+        page, store.get(), i, PagePool::kIgnorePageData));
     page->MarkDirty();
     std::memcpy(
         page->data(), buffer + (i << kStorePageShift), 1 << kStorePageShift);
@@ -111,7 +111,7 @@ TEST_F(StoreImplTest, WriteReadPage) {
 
   for (size_t i = 0; i < 4; ++i) {
     ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
-        page, store.get(), i, PagePool::PageFetchMode::kIgnorePageData));
+        page, store.get(), i, PagePool::kIgnorePageData));
     page->MarkDirty();
 
     // Clear the page to make sure ReadPage fetches the correct content.
@@ -147,7 +147,7 @@ TEST_F(StoreImplTest, CloseUnassignsPages) {
 
   for (size_t i = 0; i < 4; ++i) {
     ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
-        page[i], store.get(), i, PagePool::PageFetchMode::kIgnorePageData));
+        page[i], store.get(), i, PagePool::kIgnorePageData));
     page[i]->MarkDirty(false);  // Avoid writing the page to disk.
 
     page_pool->UnpinStorePage(page[i]);

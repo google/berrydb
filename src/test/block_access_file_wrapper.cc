@@ -11,7 +11,10 @@ namespace berrydb {
 BlockAccessFileWrapper::BlockAccessFileWrapper(BlockAccessFile* file)
     : file_(file), access_error_(Status::kSuccess) { }
 
-BlockAccessFileWrapper::~BlockAccessFileWrapper() = default;
+BlockAccessFileWrapper::~BlockAccessFileWrapper() {
+  if (!is_closed_)
+    file_->Close();
+}
 
 Status BlockAccessFileWrapper::Read(
     size_t offset, size_t byte_count, uint8_t* buffer) {

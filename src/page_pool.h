@@ -166,8 +166,9 @@ class PagePool {
 
   /** Assigns a page pool entry to cache a store page.
    *
-   * The store page must not already be cached in this page pool. This method is
-   * intended for internal and testing use.
+   * The store page must not already be cached in this page pool. The caller
+   * must have a pin on the page pool entry. This method is intended for
+   * internal and testing use.
    *
    * @param  page       a page pool entry that is not associated with a store
    * @param  store      the store to fetch a page from

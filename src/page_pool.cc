@@ -102,6 +102,8 @@ void PagePool::UnassignPageFromStore(Page* page) {
 #endif  // DCHECK_IS_ON()
 
   StoreImpl* store = page->store();
+  DCHECK_EQ(1U, page_map_.count(std::make_pair(store, page->page_id())));
+  page_map_.erase(std::make_pair(store, page->page_id()));
   if (page->is_dirty()) {
     Status write_status = store->WritePage(page);
     page->MarkDirty(false);
@@ -136,11 +138,8 @@ Page* PagePool::AllocPage() {
 
   if (!lru_list_.empty()) {
     Page* page = lru_list_.front();
-    lru_list_.pop_front();
-    DCHECK_EQ(
-        1, page_map_.count(std::make_pair(page->store(), page->page_id())));
-    page_map_.erase(std::make_pair(page->store(), page->page_id()));
     page->AddPin();
+    lru_list_.pop_front();
     UnassignPageFromStore(page);
     return page;
   }
@@ -158,7 +157,10 @@ Status PagePool::FetchStorePage(Page *page, PageFetchMode fetch_mode) {
   if (fetch_mode == PagePool::kFetchPageData)
     return page->store()->ReadPage(page);
 
-  page->MarkDirty(true);
+  // Technically, the page should be marked dirty here, to reflect the fact that
+  // the in-memory data does not match the on-disk page content. However,
+  // fetch_mode must be PagePool::kIgnorePageData, so the caller will mark the
+  // page dirty anyway.
 
 #if DCHECK_IS_ON()
   // Fill the page with recognizable garbage (as opposed to random garbage), to
@@ -188,11 +190,6 @@ Status PagePool::AssignPageToStore(
 
   page->UnassignFromStore();
   store->PageUnassigned(page);
-  // Calling UnpinUnassignedPage will perform an extra check compared to
-  // inlining the code, because the inlined version would know that the page is
-  // unpinned.
-  UnpinUnassignedPage(page);
-  DCHECK(page->IsUnpinned());
   return fetch_status;
 }
 
@@ -236,6 +233,9 @@ Status PagePool::StorePage(
     DCHECK_EQ(this, page->page_pool());
 #endif  // DCHECK_IS_ON()
 
+    // The page can either be pinned (by another transaction/cursor) or unpinned
+    // and waiting in the LRU list. The check in PinStorePage() is needed for
+    // correctness.
     PinStorePage(page);
     *result = page;
     return Status::kSuccess;
@@ -249,8 +249,16 @@ Status PagePool::StorePage(
 #endif  // DCHECK_IS_ON()
 
   Status status = AssignPageToStore(page, store, page_id, fetch_mode);
-  if (status == Status::kSuccess)
+  if (status == Status::kSuccess) {
     *result = page;
+  } else {
+    // Calling UnpinUnassignedPage will perform an extra check compared to
+    // inlining the code, because the inlined version would know that the page
+    // is unpinned. We favor code size over speed here because this is an error
+    // condition.
+    UnpinUnassignedPage(page);
+    DCHECK(page->IsUnpinned());
+  }
   return status;
 }
 
