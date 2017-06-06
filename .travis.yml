@@ -1,7 +1,6 @@
 # Build matrix / environment variable are explained on:
 # http://about.travis-ci.org/docs/user/build-configuration/
-# This file can be validated on:
-# http://lint.travis-ci.org/
+# This file can be validated on: http://lint.travis-ci.org/
 
 sudo: false
 dist: trusty
