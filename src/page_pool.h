@@ -22,7 +22,7 @@ class PoolImpl;
 class Store;
 class StoreImpl;
 
-/** In-memory page cache. */
+/** Manages buffers used as scratch pad and cache for a store's data pages. */
 class PagePool {
  public:
   /** Desired outcome if a requested store page is not already in the pool. */

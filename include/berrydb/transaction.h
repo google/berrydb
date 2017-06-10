@@ -17,9 +17,10 @@ enum class Status : int;
  * An atomic and durable (once committed) unit of database operations.
  *
  * Transactions should use an external synchronization mechanism to avoid
- * read-write conflicts. Specifically, if a transaction writes to a Space, its
- * lifetime must not overlap with the lifetime of any other transaction that
- * either reads from or writes to the same Space.
+ * read-write conflicts. Specifically, if a transaction writes to a catalog or
+ * to a (key-value name)space, its lifetime must not overlap with the lifetime
+ * of any other transaction that either reads from or writes to the same catalog
+ * or space.
  */
 class Transaction {
  public:

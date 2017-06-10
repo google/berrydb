@@ -14,7 +14,32 @@ enum class Status : int;
 class Catalog;
 class Transaction;
 
-/** A key-value store. */
+/**
+ * An autonomous unit of storage, holding a tree of key-value stores.
+ *
+ * A store has a distinct physical representation on disk as a collection of
+ * files. Stores can be used and deleted independently of each other. Corruption
+ * in a store's data can impact the entire store's content, but will not impact
+ * other stores.
+ *
+ * A store is made up of spaces, which store user data. "Space" stands for
+ * key-value namespace, and is a mapping (function) from strings to strings. In
+ * other words, a space can have at most one value associated with a given key.
+ *
+ * For the purposes here, "string" is used in the C++ sense of std::string, so a
+ * string is actually a sequence of bytes, not a sequence of (most likely
+ * Unicode) codepoints or characters.
+ *
+ * Spaces are connected by catalogs. A catalog is a key-value namespace where
+ * the keys are strings and the values are either stores or catalogs. A catalog
+ * is similar to a directory in a file-system, which can be seen as is a
+ * collection of named references to other directories (catalogs) or files
+ * (spaces).
+ *
+ * In other words, a store is a tree whose inner nodes are catalogs, and whose
+ * leaves are spaces. Edges are labeled using strings, and all the edges
+ * connected a node to its children have different labels.
+ */
 class Store {
  public:
   /** The path of the log file associated with a store file.
