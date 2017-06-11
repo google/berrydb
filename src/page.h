@@ -16,17 +16,24 @@ namespace berrydb {
 class PagePool;
 class StoreImpl;
 
-/** Control block for a page pool entry, which can hold a store page in memory.
+/** Control block for a page pool entry, which caches a store page.
  *
- * Each page in a page pool has a control block (this class), which is laid out
- * in memory right before the buffer that holds the page data.
+ * Although this class represents a page pool entry, it is simply named Page,
+ * because most of the system only cares about the store page cached into the
+ * entry's buffer.
  *
- * A page belongs to the same PagePool for its entire lifetime. The page does
- * not hold a reference to the pool (in release mode) to save space.
+ * Each entry in a page pool has a control block (the members of this class),
+ * which is laid out in memory right before the buffer that holds the content of
+ * of the cached store page.
  *
- * Each page has a pin count. This is very similar to a reference count. While a
- * page is pinned, its contents cannot be replaced. Therefore, pinned pages
- * must not be in the pool's LRU queue.
+ * An entry belongs to the same PagePool for its entire lifetime. The entry's
+ * control block does not hold a reference to the pool (in release mode) to save
+ * memory.
+ *
+ * Each page pool entry has a pin count, which works like a reference count.
+ * While an entry is pinned (has at least one pin), it will not be evicted.
+ * Conversely, unpinned entries may be evicted and assigned to cache different
+ * store pages at any time.
  *
  * Most pages will be stored in a doubly linked list used to implement the LRU
  * eviction policy. To reduce memory allocations, the list nodes are embedded in

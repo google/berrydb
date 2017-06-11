@@ -22,7 +22,66 @@ class PoolImpl;
 class Store;
 class StoreImpl;
 
-/** Manages buffers used as scratch pad and cache for a store's data pages. */
+/**
+ * Manages buffers used as scratch pad and cache for a store's data pages.
+ *
+ * A store's data is distributed across equally-sized pages. The page size is a
+ * power of two, so a page is guaranteed to contain an integer number of cache
+ * lines and disk sectors.
+ *
+ * Access method algorithms that operate on store pages assume fast random
+ * access to the data inside a page. This assumption is satisfied by copying the
+ * pages whose contents needs to be accessed from disk into scratch buffers,
+ * running the access method algorithms on the data in the scratch buffers, and
+ * then writing any modified scratch buffer content back to disk.
+ *
+ * Reading page data from disk and writing it back to disk are both expensive
+ * (time-consuming) operations, so it is desirable to amortize the operations'
+ * costs over multiple access method algorithm invocations. This is accomplished
+ * by holding onto page data into scratch buffers for as long as possible, which
+ * effectively turns the buffers into a cache.
+ *
+ * Taking the above into consideration, a page pool is a specialized cache
+ * memory whose entries are buffers that cache on-disk pages. A page pool can
+ * cache pages from any number of different stores, as long as the stores have
+ * the same page size. In fact, an application aiming for maximum efficiency
+ * given a fixed memory budget will use a single page pool for all its open
+ * stores.
+ *
+ * To speed up initialization, a page pool does not allocate memory for its
+ * entire capacity when it is created. Instead, the entries are allocated as
+ * they are needed. Conversely, when a store is closed, this frees up all the
+ * entries caching the store's pages. To avoid heap churn, the free entries'
+ * memory is not returned to the memory allocator. Instead, the page pool holds
+ * onto these entries in an unused entry list, and reuses them.
+ *
+ * To make sure we don't evict the data in buffers that are currently used as
+ * scratch space by some part of the system, every page pool user (component
+ * that calls into PagePool) is responsible for maintaining a pin on the entries
+ * that are used as scratch space. Page pool entries that have at least one pin
+ * on them are pinned. Unpinned entries are tracked in an LRU cache, and can be
+ * evicted at any time so, once a user releases its pin on an entry, it must not
+ * touch that entry again.
+ *
+ * Page pool users are required to notify the pool when they modify a page pool
+ * entry's data. Notifying is accomplished by marking the entry as dirty. The
+ * page pool relies on the entries' dirty status to decide which entries have
+ * their buffer contents written back to disk when they are evicted.
+ *
+ * The class representing a page pool entry is simply called Page, reflecting
+ * the fact that most of the system only cares about the content of the entry's
+ * buffer.
+ *
+ * Users call StorePage() to obtain a Page whose buffer holds the desired store
+ * page. Users who intend to modify the Page's buffer call MarkDirty() _before_
+ * making any changes to the buffer. When a user is done with a Page buffer, it
+ * calls UnpinStorePage(), so the page pool entry can become eligible for
+ * eviction again.
+ *
+ * Bootstrapping code may call UnpinAndWriteStorePage() instead of the usual
+ * UnpinStorePage(), which hints the page pool that the entry should be evicted
+ * immediately.
+ */
 class PagePool {
  public:
   /** Desired outcome if a requested store page is not already in the pool. */
