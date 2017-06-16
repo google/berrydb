@@ -1,7 +1,14 @@
-# BerryDB
+# BerryDB - An Experimental Key-Value Store
 
 [![Build Status](https://travis-ci.org/google/berrydb.svg?branch=master)](https://travis-ci.org/google/berrydb)
 [![Build Status](https://ci.appveyor.com/api/projects/status/399bd926yvoe67o5/branch/master?svg=true)](https://ci.appveyor.com/project/pwnall/berrydb)
+
+**This is not an official Google product.**
+[LevelDB](https://github.com/google/leveldb) is a stable key-value store that is
+widely used at Google.
+
+This is an experimental implementation of a key-value store.
+
 
 ## Prerequisites
 
@@ -22,6 +29,7 @@ apm install autocomplete-clang build build-cmake clang-format docblockr \
     language-cmake linter linter-clang
 ```
 
+
 ## Building
 
 The following commands build the project.
@@ -31,6 +39,7 @@ mkdir out
 cd out
 cmake .. && cmake --build .
 ```
+
 
 ## Development
 
