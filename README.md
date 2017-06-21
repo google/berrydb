@@ -1,7 +1,7 @@
 # BerryDB - An Experimental Key-Value Store
 
 [![Build Status](https://travis-ci.org/google/berrydb.svg?branch=master)](https://travis-ci.org/google/berrydb)
-[![Build Status](https://ci.appveyor.com/api/projects/status/399bd926yvoe67o5/branch/master?svg=true)](https://ci.appveyor.com/project/pwnall/berrydb)
+[![Build Status](https://ci.appveyor.com/api/projects/status/rcys8rqbjpymauuu/branch/master?svg=true)](https://ci.appveyor.com/project/pwnall/berrydb)
 
 **This is not an official Google product.**
 [LevelDB](https://github.com/google/leveldb) is a stable key-value store that is
@@ -49,3 +49,6 @@ runs the tests.
 ```bash
 cmake .. && cmake --build . && ctest --output-on-failure
 ```
+
+Most third-party libraries used by this project can only be used in specific components. `CMakeLists.txt` enforces these constraints, and  [third_party/README.md](./third_party/README.md) describes the motivations
+behind them.
