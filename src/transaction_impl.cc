@@ -5,6 +5,7 @@
 #include "./transaction_impl.h"
 
 #include "berrydb/status.h"
+#include "./page_pool.h"
 #include "./store_impl.h"
 
 namespace berrydb {
@@ -26,13 +27,38 @@ void TransactionImpl::Release() {
   Deallocate(heap_block, sizeof(TransactionImpl));
 }
 
-TransactionImpl::TransactionImpl(StoreImpl* store) : store_(store) {
+TransactionImpl::TransactionImpl(StoreImpl* store)
+    : store_(store)
+#if DCHECK_IS_ON()
+    , is_init_(false)
+#endif  // DCHECK_IS_ON()
+    {
   DCHECK(store != nullptr);
 }
+
+TransactionImpl::TransactionImpl(StoreImpl* store, bool is_init)
+    : store_(store)
+#if DCHECK_IS_ON()
+    , is_init_(true)
+#endif  // DCHECK_IS_ON()
+    {
+  DCHECK(store != nullptr);
+  DCHECK(is_init == true);
+  UNUSED(is_init);
+}
+
 TransactionImpl::~TransactionImpl() {
   if (!is_closed_)
     Rollback();
 }
+
+
+#if DCHECK_IS_ON()
+void TransactionImpl::DcheckPageBelongsToTransaction(Page* page) {
+  DCHECK(page != nullptr);
+  DCHECK_EQ(store_->page_pool(), page->page_pool());
+}
+#endif  // DCHECK_IS_ON()
 
 Status TransactionImpl::Get(Space* space, string_view key, string_view* value) {
   if (is_closed_)
@@ -67,6 +93,21 @@ Status TransactionImpl::Close() {
   DCHECK(!is_closed_);
 
   is_closed_ = true;
+
+  // Unassign the pages that are assigned to this transaction.
+
+  PagePool* page_pool = store_->page_pool();
+  page_pool->PinTransactionPages(&pool_pages_);
+
+  // We cannot use C++11's range-based for loop because the iterator would get
+  // invalidated if we release the page it's pointing to.
+  for (auto it = pool_pages_.begin(); it != pool_pages_.end(); ) {
+    Page* page = *it;
+    ++it;
+    page_pool->UnassignPageFromStore(page);
+    page_pool->UnpinUnassignedPage(page);
+  }
+
   store_->TransactionClosed(this);
   return Status::kSuccess;
 }

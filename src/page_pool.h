@@ -255,15 +255,16 @@ class PagePool {
    */
   void PinStorePage(Page* page);
 
-  /** Acquires pins on all the pages in a store's page list.
+  /** Acquires pins on all the pages in a transaction's page list.
    *
-   * After this method returns, the list of pages assigned to the store is
-   * guaranteed to be stable, assuming that the store refuses to fetch new
+   * After this method returns, the list of pages assigned to the transaction is
+   * guaranteed to be stable, assuming that the transaction refuses to fetch new
    * pages.
    *
    * @param page_list the list of pages to acquire pins on
    */
-  void PinStorePages(LinkedList<Page, Page::StoreLinkedListBridge>* page_list);
+  void PinTransactionPages(
+      LinkedList<Page, Page::TransactionLinkedListBridge>* page_list);
 
  private:
   /** Entries that belong to this page pool that are assigned to stores. */

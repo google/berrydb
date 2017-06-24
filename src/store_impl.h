@@ -14,6 +14,7 @@
 #include "berrydb/vfs.h"
 #include "./format/store_header.h"
 #include "./page.h"
+#include "./transaction_impl.h"
 #include "./util/linked_list.h"
 
 namespace berrydb {
@@ -22,7 +23,6 @@ class BlockAccessFile;
 class CatalogImpl;
 class PagePool;
 class PoolImpl;
-class TransactionImpl;
 
 /** Internal representation for the Store class in the public API. */
 class StoreImpl {
@@ -53,6 +53,18 @@ class StoreImpl {
 
   /** Computes the public API representation for this store. */
   inline Store* ToApi() noexcept { return &api_; }
+
+  /** The store's init transaction.
+   *
+   * This method is not const because callers may need to modify the init
+   * transaction. For example, assigning a page to a transaction inserts it into
+   * a linked list, and therefore modifies the transaction. */
+  inline TransactionImpl* init_transaction() noexcept {
+    return &init_transaction_;
+  }
+
+  /** The page pool used by this store. */
+  inline PagePool* page_pool() const noexcept { return page_pool_; }
 
   // See the public API documention for details.
   static std::string LogFilePath(const std::string& store_path);
@@ -101,43 +113,11 @@ class StoreImpl {
    * @param transaction must be associated with this store, and closed */
   void TransactionClosed(TransactionImpl* transaction);
 
-  /** Called when a Page is assigned to this store.
-   *
-   * This method registers the page on the store's list of assigned pages, so
-   * the page can be unassigned when the store is closed. */
-  inline void PageAssigned(Page* page) noexcept {
-    DCHECK(page != nullptr);
-    DCHECK_EQ(this, page->store());
 #if DCHECK_IS_ON()
-    DCHECK_EQ(page_pool_, page->page_pool());
-#endif  // DCHECK_IS_ON()
-
-    pool_pages_.push_back(page);
-  }
-
-  /** Called when a Page is unassigned from this store.
-   *
-   * Calls to this method must be paired with PageAssigned() calls. */
-  inline void PageUnassigned(Page* page) noexcept {
-    DCHECK(page != nullptr);
-    DCHECK(page->store() == nullptr);
-#if DCHECK_IS_ON()
-    DCHECK_EQ(page_pool_, page->page_pool());
-#endif  // DCHECK_IS_ON()
-
-    pool_pages_.erase(page);
-  }
-
-#if DCHECK_IS_ON()
-  /** The page pool used by this store. For use in DCHECKs only. */
-  inline PagePool* page_pool() const noexcept { return page_pool_; }
-
   /** Number of pool pages assigned to this store. For use in DCHECKs only.
    *
    * This includes pinned pages and pages in the LRU list. */
-  inline size_t AssignedPageCount() const noexcept {
-    return pool_pages_.size();
-  }
+  size_t AssignedPageCount() noexcept;
 #endif  // DCHECK_IS_ON()
 
  private:
@@ -167,14 +147,20 @@ class StoreImpl {
   /** The page pool used by this store to interact with its data file. */
   PagePool* const page_pool_;
 
-  /** Metadata in the data file's header. */
-  StoreHeader header_;
-
   /** The transactions opened on this store. */
   LinkedList<TransactionImpl> transactions_;
 
-  /** Pages in the page pool assigned to this store. */
-  LinkedList<Page, Page::StoreLinkedListBridge> pool_pages_;
+  /** The store's init transaction.
+   *
+   * Each store has a transaction that plays a similar role to the init process
+   * (PID 0) in a UNIX system. The transaction is used to create the store's
+   * initial pages, and owns the page pool entries that are assigned to the
+   * store, but are not tracked by another transaction.
+   */
+  TransactionImpl init_transaction_;
+
+  /** Metadata in the data file's header. */
+  StoreHeader header_;
 
   State state_ = State::kOpen;
 };

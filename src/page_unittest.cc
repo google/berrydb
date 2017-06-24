@@ -64,7 +64,7 @@ TEST_F(PageTest, CreateRelease) {
   Page* page = Page::Create(&page_pool);
   EXPECT_NE(nullptr, page->data());
 #if DCHECK_IS_ON()
-  EXPECT_EQ(nullptr, page->store());
+  EXPECT_EQ(nullptr, page->transaction());
   EXPECT_EQ(&page_pool, page->page_pool());
 #endif  // DCHECK_IS_ON()
 
@@ -111,15 +111,16 @@ TEST_F(PageTest, AssignToStoreUnassignFromStore) {
   Page* page = Page::Create(page_pool);
   ASSERT_TRUE(!page->IsUnpinned());
 
-  page->AssignToStore(store.get(), 1337);
-  store->PageAssigned(page);
-  EXPECT_EQ(store.get(), page->store());
+  TransactionImpl* transaction = store->init_transaction();
+  page->Assign(transaction, 1337);
+  transaction->PageAssigned(page);
+  EXPECT_EQ(transaction, page->transaction());
   EXPECT_EQ(1337U, page->page_id());
 
   page->UnassignFromStore();
-  store->PageUnassigned(page);
+  transaction->PageUnassigned(page);
 #if DCHECK_IS_ON()
-  EXPECT_EQ(nullptr, page->store());
+  EXPECT_EQ(nullptr, page->transaction());
 #endif  // DCHECK_IS_ON()
 
   page->Release(page_pool);

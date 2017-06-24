@@ -41,8 +41,8 @@ StoreImpl::StoreImpl(
     RandomAccessFile* log_file, size_t log_file_size, PagePool* page_pool,
     const StoreOptions& options)
     : data_file_(data_file), log_file_(log_file), page_pool_(page_pool),
-      header_(page_pool->page_shift(),
-              data_file_size >> page_pool->page_shift()) {
+      init_transaction_(this, true), header_(
+          page_pool->page_shift(), data_file_size >> page_pool->page_shift()) {
   DCHECK(data_file != nullptr);
   DCHECK(log_file != nullptr);
   DCHECK(page_pool != nullptr);
@@ -148,18 +148,10 @@ Status StoreImpl::Close() {
       result = rollback_status;
   }
 
-  // Unassign the pages that are assigned to this store.
-
-  page_pool_->PinStorePages(&pool_pages_);
-
-  // We cannot use C++11's range-based for loop because the iterator would get
-  // invalidated if we release the page it's pointing to.
-  for (auto it = pool_pages_.begin(); it != pool_pages_.end(); ) {
-    Page* page = *it;
-    ++it;
-    page_pool_->UnassignPageFromStore(page);
-    page_pool_->UnpinUnassignedPage(page);
-  }
+  // Rollback the init transaction to get the store's pages released.
+  Status rollback_status = init_transaction_.Rollback();
+  if (rollback_status != Status::kSuccess && result == Status::kSuccess)
+    result = rollback_status;
 
   data_file_->Close();
   log_file_->Close();
@@ -172,7 +164,8 @@ Status StoreImpl::Close() {
 
 Status StoreImpl::ReadPage(Page* page) {
   DCHECK(page != nullptr);
-  DCHECK_EQ(this, page->store());
+  DCHECK(page->transaction() != nullptr);
+  DCHECK_EQ(this, page->transaction()->store());
   DCHECK(!page->is_dirty());
   DCHECK(!page->IsUnpinned());
 
@@ -183,7 +176,8 @@ Status StoreImpl::ReadPage(Page* page) {
 
 Status StoreImpl::WritePage(Page* page) {
   DCHECK(page != nullptr);
-  DCHECK_EQ(this, page->store());
+  DCHECK(page->transaction() != nullptr);
+  DCHECK_EQ(this, page->transaction()->store());
   DCHECK(page->is_dirty());
   //DCHECK(!page->IsUnpinned());
 
@@ -211,5 +205,14 @@ std::string StoreImpl::LogFilePath(const std::string& store_path) {
   log_path.append(".log", 4);
   return log_path;
 }
+
+#if DCHECK_IS_ON()
+size_t StoreImpl::AssignedPageCount() noexcept {
+  size_t count = init_transaction_.AssignedPageCount();
+  for (TransactionImpl* transaction : transactions_)
+    count += transaction->AssignedPageCount();
+  return count;
+}
+#endif  // DCHECK_IS_ON()
 
 }  // namespace berrydb

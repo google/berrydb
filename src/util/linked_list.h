@@ -96,7 +96,7 @@ class LinkedList {
   LinkedList(const LinkedList&) = delete;
   LinkedList& operator=(const LinkedList&) = delete;
 
-  inline bool empty() const noexcept { return size_ == 0; }
+  inline bool empty() const noexcept { return sentinel_.next() == &sentinel_; }
   inline size_t size() const noexcept { return size_; }
 
   inline iterator begin() noexcept {
@@ -217,6 +217,9 @@ class LinkedList {
  private:
 
   Node sentinel_;
+  // TODO(pwnall): Consider making size_ and size() DCHECK-only. If we can get
+  //               away with it, this would shave some code and Transaction
+  //               memory, and would improve cache locality.
   size_t size_;
 };
 

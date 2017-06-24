@@ -106,7 +106,7 @@ TEST_F(PagePoolTest, AllocPageState) {
   EXPECT_FALSE(page->is_dirty());
   EXPECT_FALSE(page->IsUnpinned());
 #if DCHECK_IS_ON()
-  EXPECT_EQ(nullptr, page->store());
+  EXPECT_EQ(nullptr, page->transaction());
 #endif  // DCHECK_IS_ON()
 
   page_pool.UnpinUnassignedPage(page);
@@ -168,7 +168,7 @@ TEST_F(PagePoolTest, AllocUsesLruList) {
 
   ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
       page, store.get(), 0, PagePool::kIgnorePageData));
-  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(store->init_transaction(), page->transaction());
 
   // Unset the page's dirty bit to avoid having the page written to the store
   // when it is evicted from the LRU list.
@@ -184,7 +184,7 @@ TEST_F(PagePoolTest, AllocUsesLruList) {
   EXPECT_EQ(0U, page_pool->unused_pages());
   EXPECT_EQ(1U, page_pool->pinned_pages());
 #if DCHECK_IS_ON()
-  EXPECT_EQ(nullptr, page2->store());
+  EXPECT_EQ(nullptr, page2->transaction());
 #endif  // DCHECK_IS_ON()
 
   page_pool->UnpinUnassignedPage(page2);
@@ -204,7 +204,7 @@ TEST_F(PagePoolTest, AllocPrefersFreeListToLruList) {
 
   ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
       page, store.get(), 0, PagePool::kIgnorePageData));
-  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(store->init_transaction(), page->transaction());
 #if DCHECK_IS_ON()
   EXPECT_EQ(1U, store->AssignedPageCount());
 #endif  // DCHECK_IS_ON()
@@ -223,7 +223,7 @@ TEST_F(PagePoolTest, AllocPrefersFreeListToLruList) {
   EXPECT_EQ(0U, page_pool->unused_pages());
   EXPECT_EQ(1U, page_pool->pinned_pages());
 #if DCHECK_IS_ON()
-  EXPECT_EQ(nullptr, page2->store());
+  EXPECT_EQ(nullptr, page2->transaction());
   EXPECT_EQ(1U, store->AssignedPageCount());
 #endif  // DCHECK_IS_ON()
 
@@ -243,7 +243,7 @@ TEST_F(PagePoolTest, UnassignPageFromStoreState) {
   ASSERT_NE(nullptr, page);
   ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
       page, store.get(), 0, PagePool::kIgnorePageData));
-  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(store->init_transaction(), page->transaction());
 
   page->MarkDirty(true);
   uint8_t* data = page->data();
@@ -254,7 +254,7 @@ TEST_F(PagePoolTest, UnassignPageFromStoreState) {
   EXPECT_FALSE(page->is_dirty());
   EXPECT_FALSE(page->IsUnpinned());
 #if DCHECK_IS_ON()
-  EXPECT_EQ(nullptr, page->store());
+  EXPECT_EQ(nullptr, page->transaction());
 #endif  // DCHECK_IS_ON()
   EXPECT_FALSE(store->IsClosed());
 
@@ -275,7 +275,7 @@ TEST_F(PagePoolTest, UnassignPageFromStoreIoError) {
   ASSERT_NE(nullptr, page);
   ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
       page, store.get(), 0, PagePool::kIgnorePageData));
-  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(store->init_transaction(), page->transaction());
 
   page->MarkDirty(true);
   uint8_t* data = page->data();
@@ -287,7 +287,7 @@ TEST_F(PagePoolTest, UnassignPageFromStoreIoError) {
   EXPECT_FALSE(page->is_dirty());
   EXPECT_FALSE(page->IsUnpinned());
 #if DCHECK_IS_ON()
-  EXPECT_EQ(nullptr, page->store());
+  EXPECT_EQ(nullptr, page->transaction());
 #endif  // DCHECK_IS_ON()
   EXPECT_EQ(true, store->IsClosed());
 
@@ -315,7 +315,7 @@ TEST_F(PagePoolTest, AssignPageToStoreSuccess) {
         page, store.get(), i, PagePool::kFetchPageData));
     EXPECT_FALSE(page->is_dirty());
     EXPECT_FALSE(page->IsUnpinned());
-    EXPECT_EQ(store.get(), page->store());
+    EXPECT_EQ(store->init_transaction(), page->transaction());
     EXPECT_EQ(i, page->page_id());
     EXPECT_EQ(0, std::memcmp(
         page->data(), buffer + (i << kStorePageShift), 1 << kStorePageShift));
@@ -352,7 +352,7 @@ TEST_F(PagePoolTest, AssignPageToStoreIoError) {
   EXPECT_FALSE(page->is_dirty());
   EXPECT_FALSE(page->IsUnpinned());
 #if DCHECK_IS_ON()
-  EXPECT_EQ(nullptr, page->store());
+  EXPECT_EQ(nullptr, page->transaction());
 #endif  // DCHECK_IS_ON()
 
   page_pool->UnpinUnassignedPage(page);
@@ -376,7 +376,7 @@ TEST_F(PagePoolTest, UnpinUnassignedPageState) {
   EXPECT_FALSE(page->is_dirty());
   EXPECT_TRUE(page->IsUnpinned());
 #if DCHECK_IS_ON()
-  EXPECT_EQ(nullptr, page->store());
+  EXPECT_EQ(nullptr, page->transaction());
 #endif  // DCHECK_IS_ON()
 }
 
@@ -396,7 +396,7 @@ TEST_F(PagePoolTest, PinUnpinStorePage) {
   ASSERT_NE(nullptr, page);
   ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
       page, store.get(), 42, PagePool::kIgnorePageData));
-  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(store->init_transaction(), page->transaction());
 
   page->MarkDirty(false);
 
@@ -405,7 +405,7 @@ TEST_F(PagePoolTest, PinUnpinStorePage) {
   EXPECT_FALSE(page->is_dirty());
   EXPECT_FALSE(page->IsUnpinned());
   EXPECT_EQ(42U, page->page_id());
-  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(store->init_transaction(), page->transaction());
   EXPECT_EQ(1U, page_pool->allocated_pages());
   EXPECT_EQ(0U, page_pool->unused_pages());
   EXPECT_EQ(1U, page_pool->pinned_pages());
@@ -414,7 +414,7 @@ TEST_F(PagePoolTest, PinUnpinStorePage) {
   page_pool->UnpinStorePage(page);
   EXPECT_FALSE(page->is_dirty());
   EXPECT_FALSE(page->IsUnpinned());
-  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(store->init_transaction(), page->transaction());
   EXPECT_EQ(42U, page->page_id());
   EXPECT_EQ(1U, page_pool->allocated_pages());
   EXPECT_EQ(0U, page_pool->unused_pages());
@@ -424,7 +424,7 @@ TEST_F(PagePoolTest, PinUnpinStorePage) {
   page_pool->UnpinStorePage(page);
   EXPECT_FALSE(page->is_dirty());
   EXPECT_TRUE(page->IsUnpinned());
-  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(store->init_transaction(), page->transaction());
   EXPECT_EQ(42U, page->page_id());
   EXPECT_EQ(1U, page_pool->allocated_pages());
   EXPECT_EQ(0U, page_pool->unused_pages());
@@ -434,7 +434,7 @@ TEST_F(PagePoolTest, PinUnpinStorePage) {
   page_pool->PinStorePage(page);
   EXPECT_FALSE(page->is_dirty());
   EXPECT_FALSE(page->IsUnpinned());
-  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(store->init_transaction(), page->transaction());
   EXPECT_EQ(42U, page->page_id());
   EXPECT_EQ(1U, page_pool->allocated_pages());
   EXPECT_EQ(0U, page_pool->unused_pages());
@@ -465,7 +465,7 @@ TEST_F(PagePoolTest, StorePage) {
   ASSERT_TRUE(page != nullptr);
   EXPECT_FALSE(page->is_dirty());
   EXPECT_FALSE(page->IsUnpinned());
-  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(store->init_transaction(), page->transaction());
   EXPECT_EQ(2U, page->page_id());
   EXPECT_EQ(0, std::memcmp(
       page->data(), buffer + (2 << kStorePageShift), 1 << kStorePageShift));
@@ -476,7 +476,7 @@ TEST_F(PagePoolTest, StorePage) {
   EXPECT_EQ(page, page2);
   EXPECT_FALSE(page2->is_dirty());
   EXPECT_FALSE(page2->IsUnpinned());
-  EXPECT_EQ(store.get(), page2->store());
+  EXPECT_EQ(store->init_transaction(), page->transaction());
   EXPECT_EQ(2U, page2->page_id());
   EXPECT_EQ(0, std::memcmp(
       page2->data(), buffer + (2 << kStorePageShift), 1 << kStorePageShift));
@@ -487,7 +487,7 @@ TEST_F(PagePoolTest, StorePage) {
   page_pool->UnpinStorePage(page2);
   EXPECT_FALSE(page->is_dirty());
   EXPECT_FALSE(page->IsUnpinned());
-  EXPECT_EQ(store.get(), page->store());
+  EXPECT_EQ(store->init_transaction(), page->transaction());
   EXPECT_EQ(2U, page->page_id());
   EXPECT_EQ(1U, page_pool->allocated_pages());
   EXPECT_EQ(0U, page_pool->unused_pages());
@@ -498,7 +498,7 @@ TEST_F(PagePoolTest, StorePage) {
   EXPECT_FALSE(page->is_dirty());
   EXPECT_TRUE(page->IsUnpinned());
 #if DCHECK_IS_ON()
-  EXPECT_EQ(nullptr, page->store());
+  EXPECT_EQ(nullptr, page->transaction());
 #endif  // DCHECK_IS_ON()
   EXPECT_EQ(1U, page_pool->allocated_pages());
   EXPECT_EQ(1U, page_pool->unused_pages());

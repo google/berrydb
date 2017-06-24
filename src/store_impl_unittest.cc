@@ -71,6 +71,7 @@ TEST_F(StoreImplTest, Constructor) {
 
   EXPECT_FALSE(store->IsClosed());
   EXPECT_EQ(0U, page_pool->allocated_pages());
+  EXPECT_EQ(page_pool, store->page_pool());
 
   EXPECT_EQ(Status::kSuccess, store->Close());
   EXPECT_TRUE(store->IsClosed());

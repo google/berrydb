@@ -42,7 +42,8 @@ PagePool::~PagePool() {
 
 void PagePool::UnpinStorePage(Page* page) {
   DCHECK(page != nullptr);
-  DCHECK(page->store() != nullptr);
+  DCHECK(page->transaction() != nullptr);
+  DCHECK(page->transaction()->store() != nullptr);
 #if DCHECK_IS_ON()
   DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
@@ -55,7 +56,8 @@ void PagePool::UnpinStorePage(Page* page) {
 void PagePool::UnpinAndWriteStorePage(Page* page) {
   DCHECK(page != nullptr);
   DCHECK(page->is_dirty());
-  DCHECK(page->store() != nullptr);
+  DCHECK(page->transaction() != nullptr);
+  DCHECK(page->transaction()->store() != nullptr);
 #if DCHECK_IS_ON()
   DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
@@ -67,13 +69,15 @@ void PagePool::UnpinAndWriteStorePage(Page* page) {
   if (!page->IsUnpinned())
     return;
 
-  Status write_status = page->store()->WritePage(page);
+  TransactionImpl* transaction = page->transaction();
+  StoreImpl* store = transaction->store();
+  Status write_status = store->WritePage(page);
+  // TODO(pwnall): Reassign the Page to the store's init transaction.
   page->MarkDirty(false);
   if (write_status != Status::kSuccess) {
     // TODO(pwnall): Figure out the correct strategy for unassigning here.
-    StoreImpl* store = page->store();
     page->UnassignFromStore();
-    store->PageUnassigned(page);
+    transaction->PageUnassigned(page);
     free_list_.push_back(page);
     store->Close();
     return;
@@ -87,7 +91,7 @@ void PagePool::UnpinUnassignedPage(Page* page) {
 #if DCHECK_IS_ON()
   DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
-  DCHECK(page->store() == nullptr);
+  DCHECK(page->transaction() == nullptr);
 
   page->RemovePin();
   if (page->IsUnpinned())
@@ -96,12 +100,14 @@ void PagePool::UnpinUnassignedPage(Page* page) {
 
 void PagePool::UnassignPageFromStore(Page* page) {
   DCHECK(page != nullptr);
-  DCHECK(page->store() != nullptr);
+  DCHECK(page->transaction() != nullptr);
+  DCHECK(page->transaction()->store() != nullptr);
 #if DCHECK_IS_ON()
   DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
 
-  StoreImpl* store = page->store();
+  TransactionImpl* transaction = page->transaction();
+  StoreImpl* store = transaction->store();
   DCHECK_EQ(1U, page_map_.count(std::make_pair(store, page->page_id())));
   page_map_.erase(std::make_pair(store, page->page_id()));
   if (page->is_dirty()) {
@@ -109,12 +115,12 @@ void PagePool::UnassignPageFromStore(Page* page) {
     page->MarkDirty(false);
 
     page->UnassignFromStore();
-    store->PageUnassigned(page);
+    transaction->PageUnassigned(page);
     if (write_status != Status::kSuccess)
       store->Close();
   } else {
     page->UnassignFromStore();
-    store->PageUnassigned(page);
+    transaction->PageUnassigned(page);
   }
 }
 
@@ -125,7 +131,7 @@ Page* PagePool::AllocPage() {
     Page* page = free_list_.front();
     free_list_.pop_front();
     page->AddPin();
-    DCHECK(page->store() == nullptr);
+    DCHECK(page->transaction() == nullptr);
     DCHECK(!page->is_dirty());
     return page;
   }
@@ -149,13 +155,14 @@ Page* PagePool::AllocPage() {
 
 Status PagePool::FetchStorePage(Page *page, PageFetchMode fetch_mode) {
   DCHECK(page != nullptr);
-  DCHECK(page->store() != nullptr);
+  DCHECK(page->transaction() != nullptr);
+  DCHECK(page->transaction()->store() != nullptr);
 #if DCHECK_IS_ON()
   DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
 
   if (fetch_mode == PagePool::kFetchPageData)
-    return page->store()->ReadPage(page);
+    return page->transaction()->store()->ReadPage(page);
 
   // Technically, the page should be marked dirty here, to reflect the fact that
   // the in-memory data does not match the on-disk page content. However,
@@ -175,13 +182,14 @@ Status PagePool::AssignPageToStore(
     Page* page, StoreImpl* store, size_t page_id, PageFetchMode fetch_mode) {
   DCHECK(page != nullptr);
   DCHECK(store != nullptr);
-  DCHECK(page->store() == nullptr);
+  DCHECK(page->transaction() == nullptr);
 #if DCHECK_IS_ON()
   DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
 
-  page->AssignToStore(store, page_id);
-  store->PageAssigned(page);
+  TransactionImpl* transaction = store->init_transaction();
+  page->Assign(transaction, page_id);
+  transaction->PageAssigned(page);
   Status fetch_status = FetchStorePage(page, fetch_mode);
   if (fetch_status == Status::kSuccess) {
     page_map_[std::make_pair(store, page_id)] = page;
@@ -189,13 +197,13 @@ Status PagePool::AssignPageToStore(
   }
 
   page->UnassignFromStore();
-  store->PageUnassigned(page);
+  transaction->PageUnassigned(page);
   return fetch_status;
 }
 
 void PagePool::PinStorePage(Page* page) {
   DCHECK(page != nullptr);
-  DCHECK(page->store() != nullptr);
+  DCHECK(page->transaction() != nullptr);
 #if DCHECK_IS_ON()
   DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
@@ -207,12 +215,12 @@ void PagePool::PinStorePage(Page* page) {
   page->AddPin();
 }
 
-void PagePool::PinStorePages(
-    LinkedList<Page, Page::StoreLinkedListBridge> *page_list) {
+void PagePool::PinTransactionPages(
+    LinkedList<Page, Page::TransactionLinkedListBridge> *page_list) {
   DCHECK(page_list != nullptr);
 
   for (Page* page : *page_list) {
-    DCHECK(page->store() != nullptr);
+    DCHECK(page->transaction() != nullptr);
 #if DCHECK_IS_ON()
     DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
@@ -227,7 +235,7 @@ Status PagePool::StorePage(
   const auto& it = page_map_.find(std::make_pair(store, page_id));
   if (it != page_map_.end()) {
     Page* page = it->second;
-    DCHECK_EQ(store, page->store());
+    DCHECK_EQ(store, page->transaction()->store());
     DCHECK_EQ(page_id, page->page_id());
 #if DCHECK_IS_ON()
     DCHECK_EQ(page->page_pool(), this);

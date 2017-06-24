@@ -44,8 +44,12 @@ Page::Page(PagePool* page_pool)
   UNUSED(page_pool);
 
 #if DCHECK_IS_ON()
-  store_ = nullptr;
+  transaction_ = nullptr;
 #endif
+}
+
+Page::~Page() {
+  DCHECK(transaction_ == nullptr);
 }
 
 }  // namespace berrydb

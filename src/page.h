@@ -15,6 +15,7 @@ namespace berrydb {
 
 class PagePool;
 class StoreImpl;
+class TransactionImpl;
 
 /** Control block for a page pool entry, which caches a store page.
  *
@@ -46,37 +47,38 @@ class Page {
   enum class Status;
 
  public:
-  /** Allocates a page that will belong to the given pool.
+  /** Allocates an entry that will belong to the given page pool.
    *
    * The returned page has one pin on it, which is owned by the caller. */
   static Page* Create(PagePool* page_pool);
 
-  /** Releases the memory resources used up by this page.
+  /** Releases the memory resources used up by this page pool entry.
    *
-   * The page must not be a list head sentinel. This method invalidates the Page
-   * instance, so it must not be used afterwards. */
+   * This method invalidates the Page instance, so it must not be used
+   * afterwards. */
   void Release(PagePool* page_pool);
 
-  /** The store whose data is cached by this page.
+  /** The transaction that this page pool entry is assigned to.
+   *
+   * Each page pool entry that has been modified by an uncommitted transaction
+   * is assigned to that transaction. Other page pool entries that cache a
+   * store's pages are assigned to the store's init transaction. This
+   * relationship is well defined because, according to the concurrency model,
+   * no two concurrent transactions may modify the same Space, and each page
+   * belongs at most one space.
    *
    * When DCHECKs are enabled, this is null when the page is not assigned to a
-   * store. When DCHECKs are disabled, the value is undefined when the page is
-   * not assigend to a store.
+   * transaction. When DCHECKs are disabled, the value is undefined when the
+   * page is not assigend to a transaction.
    */
-  inline StoreImpl* store() const noexcept {
-    // It is tempting to DCHECK that store_ is not nullptr, to make sure this
-    // getter isn't called when its value is undefined. However, DCHECKed builds
-    // _can_ call this when the page is not assigned to a store, for the purpose
-    // of higher level DCHECKs.
-    return store_;
-  }
+  inline TransactionImpl* transaction() const noexcept { return transaction_; }
 
   /** The page ID of the store page whose data is cached by this pool page.
    *
    * This is undefined if the page pool entry isn't storing a store page's data.
    */
   inline size_t page_id() const noexcept {
-    DCHECK(store_ != nullptr);
+    DCHECK(transaction_ != nullptr);
     return page_id_;
   }
 
@@ -86,7 +88,7 @@ class Page {
    * dirty page is removed from the pool, its content must be written to disk.
    */
   inline bool is_dirty() const noexcept {
-    DCHECK(!is_dirty_ || store_ != nullptr);
+    DCHECK(!is_dirty_ || transaction_ != nullptr);
     return is_dirty_;
   }
 
@@ -122,22 +124,22 @@ class Page {
    * The page should not be in any list while a store page is loaded into it,
    * so Alloc() doesn't grab it. This also implies that the page must be pinned.
    *
-   * The caller must immediately call StoreImpl::PageAssigned(). This method
-   * cannot make that call, due to header dependencies.
+   * The caller must immediately call TransactionImpl::PageAssigned(). This
+   * method cannot make that call, due to header dependencies.
    */
-  inline void AssignToStore(StoreImpl* store, size_t page_id) noexcept {
+  inline void Assign(TransactionImpl* transaction, size_t page_id) noexcept {
     // NOTE: It'd be nice to DCHECK_EQ(page_pool_, store->page_pool()).
     //       Unfortunately, that requires a dependency on store_impl.h, which
     //       absolutely needs to include page.h.
 #if DCHECK_IS_ON()
-    DCHECK(store_ == nullptr);
-    DCHECK(store_list_node_.list_sentinel() == nullptr);
+    DCHECK(transaction_ == nullptr);
+    DCHECK(transaction_list_node_.list_sentinel() == nullptr);
     DCHECK(linked_list_node_.list_sentinel() == nullptr);
 #endif  // DCHECK_IS_ON()
     DCHECK(pin_count_ != 0);
     DCHECK(!is_dirty_);
 
-    store_ = store;
+    transaction_ = transaction;
     page_id_ = page_id;
   }
 
@@ -151,14 +153,14 @@ class Page {
    */
   inline void UnassignFromStore() noexcept {
     DCHECK(pin_count_ != 0);
-    DCHECK(store_ != nullptr);
+    DCHECK(transaction_ != nullptr);
 #if DCHECK_IS_ON()
-    DCHECK(store_list_node_.list_sentinel() != nullptr);
+    DCHECK(transaction_list_node_.list_sentinel() != nullptr);
     DCHECK(linked_list_node_.list_sentinel() == nullptr);
 #endif  // DCHECK_IS_ON()
 
 #if DCHECK_IS_ON()
-    store_ = nullptr;
+    transaction_ = nullptr;
 #endif  // DCHECK_IS_ON()
   }
 
@@ -166,13 +168,14 @@ class Page {
    *
    * The page must be assigned to store while its dirtiness is changed. */
   inline void MarkDirty(bool will_be_dirty = true) noexcept {
-    DCHECK(store_ != nullptr);
+    DCHECK(transaction_ != nullptr);
     is_dirty_ = will_be_dirty;
   }
 
  private:
    /** Use Page::Create() to construct Page instances. */
    Page(PagePool* page);
+   ~Page();
 
 #if DCHECK_IS_ON()
   /** The maximum value that pin_count_ can hold.
@@ -186,11 +189,18 @@ class Page {
   friend class LinkedListBridge<Page>;
   LinkedList<Page>::Node linked_list_node_;
 
-  friend class StoreLinkedListBridge;
-  LinkedList<Page>::Node store_list_node_;
+  friend class TransactionLinkedListBridge;
+  LinkedList<Page>::Node transaction_list_node_;
 
-  StoreImpl* store_;
+  TransactionImpl* transaction_;
+
+  /** The cached page ID, for pool entries that are caching a store's pages.
+   *
+   * This member's memory is available for use (perhaps via an union) by
+   * unassigned pages.
+   */
   size_t page_id_;
+
 
   /** Number of times the page was pinned. Very similar to a reference count. */
   size_t pin_count_;
@@ -201,19 +211,22 @@ class Page {
 #endif  // DCHECK_IS_ON()
 
  public:
-  /** Bridge for StoreImpl's LinkedList<Page>. Exposed for StoreImpl. */
-  class StoreLinkedListBridge {
+  /** Bridge for TransactionImpl's LinkedList<Page>.
+   *
+   * This is public for TransactionImpl's use. */
+  class TransactionLinkedListBridge {
    public:
     using Embedder = Page;
     using Node = LinkedListNode<Page>;
 
     static inline Node* NodeForHost(Embedder* host) noexcept {
-      return &host->store_list_node_;
+      return &host->transaction_list_node_;
     }
     static inline Embedder* HostForNode(Node* node) noexcept {
       Embedder* host = reinterpret_cast<Embedder*>(
-          reinterpret_cast<char*>(node) - offsetof(Embedder, store_list_node_));
-      DCHECK_EQ(node, &host->store_list_node_);
+          reinterpret_cast<char*>(node) - offsetof(
+              Embedder, transaction_list_node_));
+      DCHECK_EQ(node, &host->transaction_list_node_);
       return host;
     }
   };
