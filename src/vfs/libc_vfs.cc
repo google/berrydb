@@ -129,8 +129,8 @@ class LibcBlockAccessFile : public BlockAccessFile {
 
   Status Read(size_t offset, size_t byte_count, uint8_t* buffer) override {
 #if DCHECK_IS_ON()
-    DCHECK_EQ(offset & (block_size_ - 1), 0);
-    DCHECK_EQ(byte_count & (block_size_ - 1), 0);
+    DCHECK_EQ(offset & (block_size_ - 1), 0U);
+    DCHECK_EQ(byte_count & (block_size_ - 1), 0U);
 #endif  // DCHECK_IS_ON()
 
     return ReadLibcFile(fp_, offset, byte_count, buffer);
@@ -138,8 +138,8 @@ class LibcBlockAccessFile : public BlockAccessFile {
 
   Status Write(uint8_t* buffer, size_t offset, size_t byte_count) override {
 #if DCHECK_IS_ON()
-    DCHECK_EQ(offset & (block_size_ - 1), 0);
-    DCHECK_EQ(byte_count & (block_size_ - 1), 0);
+    DCHECK_EQ(offset & (block_size_ - 1), 0U);
+    DCHECK_EQ(byte_count & (block_size_ - 1), 0U);
 #endif  // DCHECK_IS_ON()
 
     return WriteLibcFile(fp_, buffer, offset, byte_count);

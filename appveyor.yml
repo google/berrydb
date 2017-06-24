@@ -30,7 +30,7 @@ build_script:
   - git submodule update --init --recursive
   - mkdir out
   - cd out
-  - cmake .. -G "%CMAKE_GENERATOR%" -DWITH_GLOG=0
+  - cmake .. -G "%CMAKE_GENERATOR%" -DBERRYDB_USE_GLOG=0
       -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
   - cmake --build . --config %CONFIGURATION%
 

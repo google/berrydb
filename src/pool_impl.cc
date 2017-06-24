@@ -42,7 +42,7 @@ void PoolImpl::Release() {
   // The existence of pinned pages implies that some transactions are still
   // running. This should not be the case, as all the stores should have been
   // closed.
-  DCHECK_EQ(0, page_pool_.pinned_pages());
+  DCHECK_EQ(page_pool_.pinned_pages(), 0U);
 
   // The difference between allocated pages and unused pages is pages in the LRU
   // queue. All the stores should have been closed, so the LRU should be empty.

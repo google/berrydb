@@ -40,7 +40,7 @@ void StoreHeader::Serialize(uint8_t* to) {
 
   // This is guaranteed to set all the bytes 40..47 to 0.
   StoreUint64(0, to + 40);
-  DCHECK_LT(page_shift, 32);
+  DCHECK_LT(page_shift, 32U);
   to[40] = static_cast<uint8_t>(page_shift);
 }
 

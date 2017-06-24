@@ -20,7 +20,7 @@ Page* Page::Create(PagePool* page_pool) {
   DCHECK_EQ(reinterpret_cast<void*>(page), page_block);
 
   // Make sure that page data is 8-byte aligned.
-  DCHECK_EQ(reinterpret_cast<uintptr_t>(page->data()) & 0x07, 0);
+  DCHECK_EQ(reinterpret_cast<uintptr_t>(page->data()) & 0x07, 0U);
 
   return page;
 }

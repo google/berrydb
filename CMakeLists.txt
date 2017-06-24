@@ -44,17 +44,38 @@ else (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   STRING(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 endif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
-option (BUILD_TESTS "Build BerryDB's unit tests" ON)
-option (BUILD_CLI "Build CLI for demo" ON)
-option (WITH_GLOG "Build with Google Logging" ON)
+option (BERRYDB_BUILD_TESTS "Build BerryDB's unit tests" ON)
+option (BERRYDB_BUILD_CLI "Build CLI for demo" ON)
+option (BERRYDB_USE_GLOG "Build with Google Logging" ON)
 
 include (CheckIncludeFiles)
-check_include_files (string_view BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW)
+include (CheckIncludeFileCXX)
+check_include_file_cxx ("string_view" BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW)
 
-if (WITH_GLOG)
-  find_package (glog 0.3.4 REQUIRED PATH third_party/glog)
+if (BERRYDB_USE_GLOG)
+  # glog's test targets trigger deprecation warnings, and compiling them burns
+  # CPU cycles on the CI.
+  set (BUILD_TESTING_SAVED "${BUILD_TESTING}")
+  set (BUILD_TESTING OFF CACHE BOOL "" FORCE)
+  add_subdirectory ("${PROJECT_SOURCE_DIR}/third_party/glog" EXCLUDE_FROM_ALL)
+  set (BUILD_TESTING "${BUILD_TESTING_SAVED}" CACHE BOOL "" FORCE)
+
+  # glog triggers deprecation warnings on OSX.
+  # https://github.com/google/glog/issues/185
+  include (CheckCXXCompilerFlag)
+  check_cxx_compiler_flag (-Wdeprecated BERRYDB_HAVE_NO_DEPRECATED)
+  if (BERRYDB_HAVE_NO_DEPRECATED)
+    set_property (TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-deprecated)
+  endif (BERRYDB_HAVE_NO_DEPRECATED)
+
+  # glog triggers sign comparison warnings on gcc.
+  check_cxx_compiler_flag (-Wdeprecated BERRYDB_HAVE_NO_SIGN_COMPARE)
+  if (BERRYDB_HAVE_NO_SIGN_COMPARE)
+    set_property (TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-sign-compare)
+  endif (BERRYDB_HAVE_NO_SIGN_COMPARE)
+
   set (BERRYDB_PLATFORM_BUILT_WITH_GLOG 1)
-endif (WITH_GLOG)
+endif (BERRYDB_USE_GLOG)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/config.h.in"
@@ -118,18 +139,18 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/include/berrydb/vfs.h"
   )
 
-if (WITH_GLOG)
-  target_link_libraries (berrydb glog::glog)
-endif (WITH_GLOG)
+if (BERRYDB_USE_GLOG)
+  target_link_libraries (berrydb glog)
+endif (BERRYDB_USE_GLOG)
 
-if (BUILD_TESTS)
+if (BERRYDB_BUILD_TESTS)
   enable_testing()
 
   # Prevent overriding the parent project's compiler/linker settings on Windows.
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
   # This project is tested using GoogleTest.
-  add_subdirectory (third_party/googletest)
+  add_subdirectory ("${PROJECT_SOURCE_DIR}/third_party/googletest")
 
   add_executable (berrydb_tests "")
   target_sources (berrydb_tests
@@ -158,14 +179,14 @@ if (BUILD_TESTS)
     )
 
   target_link_libraries (berrydb_tests berrydb gtest)
-  if (WITH_GLOG)
-    target_link_libraries (berrydb_tests glog::glog)
-  endif (WITH_GLOG)
+  if (BERRYDB_USE_GLOG)
+    target_link_libraries (berrydb_tests glog)
+  endif (BERRYDB_USE_GLOG)
 
   add_test (NAME berrydb_tests COMMAND berrydb_tests)
-endif (BUILD_TESTS)
+endif (BERRYDB_BUILD_TESTS)
 
-if (BUILD_CLI)
+if (BERRYDB_BUILD_CLI)
   set (BOOST_ROOT "third_party/")
 
   add_executable (berrydb_cli "")
@@ -188,7 +209,7 @@ if (BUILD_CLI)
       "${PROJECT_SOURCE_DIR}/src/cli/cli.cc"
   )
   target_link_libraries (berrydb_cli berrydb)
-  if (WITH_GLOG)
-    target_link_libraries (berrydb_cli glog::glog)
-  endif (WITH_GLOG)
-endif (BUILD_CLI)
+  if (BERRYDB_USE_GLOG)
+    target_link_libraries (berrydb_cli glog)
+  endif (BERRYDB_USE_GLOG)
+endif (BERRYDB_BUILD_CLI)

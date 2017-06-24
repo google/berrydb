@@ -16,11 +16,11 @@ PagePool::PagePool(PoolImpl* pool, size_t page_shift, size_t page_capacity)
       page_capacity_(page_capacity), pool_(pool), free_list_(), lru_list_(),
       log_list_() {
   // The page size should be a power of two.
-  DCHECK_EQ(page_size_ & (page_size_ - 1), 0);
+  DCHECK_EQ(page_size_ & (page_size_ - 1), 0U);
 }
 
 PagePool::~PagePool() {
-  DCHECK_EQ(0, pinned_pages());
+  DCHECK_EQ(pinned_pages(), 0U);
 
   // We cannot use C++11's range-based for loop because the iterator would get
   // invalidated if we release the page it's pointing to.
@@ -44,7 +44,7 @@ void PagePool::UnpinStorePage(Page* page) {
   DCHECK(page != nullptr);
   DCHECK(page->store() != nullptr);
 #if DCHECK_IS_ON()
-  DCHECK_EQ(this, page->page_pool());
+  DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
 
   page->RemovePin();
@@ -57,7 +57,7 @@ void PagePool::UnpinAndWriteStorePage(Page* page) {
   DCHECK(page->is_dirty());
   DCHECK(page->store() != nullptr);
 #if DCHECK_IS_ON()
-  DCHECK_EQ(this, page->page_pool());
+  DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
 
   // TODO(pwnall): After all the code is written, figure out if there's a more
@@ -85,7 +85,7 @@ void PagePool::UnpinAndWriteStorePage(Page* page) {
 void PagePool::UnpinUnassignedPage(Page* page) {
   DCHECK(page != nullptr);
 #if DCHECK_IS_ON()
-  DCHECK_EQ(this, page->page_pool());
+  DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
   DCHECK(page->store() == nullptr);
 
@@ -98,7 +98,7 @@ void PagePool::UnassignPageFromStore(Page* page) {
   DCHECK(page != nullptr);
   DCHECK(page->store() != nullptr);
 #if DCHECK_IS_ON()
-  DCHECK_EQ(this, page->page_pool());
+  DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
 
   StoreImpl* store = page->store();
@@ -151,7 +151,7 @@ Status PagePool::FetchStorePage(Page *page, PageFetchMode fetch_mode) {
   DCHECK(page != nullptr);
   DCHECK(page->store() != nullptr);
 #if DCHECK_IS_ON()
-  DCHECK_EQ(this, page->page_pool());
+  DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
 
   if (fetch_mode == PagePool::kFetchPageData)
@@ -177,7 +177,7 @@ Status PagePool::AssignPageToStore(
   DCHECK(store != nullptr);
   DCHECK(page->store() == nullptr);
 #if DCHECK_IS_ON()
-  DCHECK_EQ(this, page->page_pool());
+  DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
 
   page->AssignToStore(store, page_id);
@@ -197,7 +197,7 @@ void PagePool::PinStorePage(Page* page) {
   DCHECK(page != nullptr);
   DCHECK(page->store() != nullptr);
 #if DCHECK_IS_ON()
-  DCHECK_EQ(this, page->page_pool());
+  DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
 
   // If the page is already pinned, it is not contained in any list. If the page
@@ -214,7 +214,7 @@ void PagePool::PinStorePages(
   for (Page* page : *page_list) {
     DCHECK(page->store() != nullptr);
 #if DCHECK_IS_ON()
-    DCHECK_EQ(this, page->page_pool());
+    DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
     PinStorePage(page);
   }
@@ -230,7 +230,7 @@ Status PagePool::StorePage(
     DCHECK_EQ(store, page->store());
     DCHECK_EQ(page_id, page->page_id());
 #if DCHECK_IS_ON()
-    DCHECK_EQ(this, page->page_pool());
+    DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
 
     // The page can either be pinned (by another transaction/cursor) or unpinned
@@ -245,7 +245,7 @@ Status PagePool::StorePage(
   if (page == nullptr)
     return Status::kPoolFull;
 #if DCHECK_IS_ON()
-  DCHECK_EQ(this, page->page_pool());
+  DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
 
   Status status = AssignPageToStore(page, store, page_id, fetch_mode);

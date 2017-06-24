@@ -14,11 +14,10 @@ os:
   - osx
 
 env:
+  - GLOG=1 BUILD_TYPE=Debug
+  - GLOG=1 BUILD_TYPE=RelWithDebInfo
   - GLOG=0 BUILD_TYPE=Debug
   - GLOG=0 BUILD_TYPE=RelWithDebInfo
-  # TODO(pwnall): Fix up the way we use glog so we can get stack traces when
-  #               things crash on Travis.
-  # - GLOG=1 BUILD_TYPE=Debug
 
 addons:
   apt:
@@ -48,5 +47,5 @@ install:
 
 script:
 - mkdir -p out && cd out &&
-      cmake .. -DWITH_GLOG=$GLOG -DCMAKE_BUILD_TYPE=$BUILD_TYPE &&
+      cmake .. -DBERRYDB_USE_GLOG=$GLOG -DCMAKE_BUILD_TYPE=$BUILD_TYPE &&
       CTEST_OUTPUT_ON_FAILURE=1 make all test
