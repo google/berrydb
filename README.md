@@ -29,6 +29,15 @@ apm install autocomplete-clang build build-cmake clang-format docblockr \
     language-cmake linter linter-clang
 ```
 
+If you don't mind more setup in return for more speed, replace
+`autocomplete-clang` and `linter-clang` with `you-complete-me`. This requires
+[setting up ycmd](https://github.com/Valloric/ycmd#building).
+
+```bash
+apm install autocomplete-plus build build-cmake clang-format docblockr \
+    language-cmake linter you-complete-me
+```
+
 
 ## Building
 
