@@ -31,6 +31,12 @@ enum class Status : int {
 
   // The underlying data was corrupted.
   kDataCorrupted = 7,
+
+  // A large database was opened on a computer with a 32-bit CPU.
+  //
+  // This error can only occur when a database used on a 64-bit CPU is opened on
+  // a 32-bit CPU.
+  kDatabaseTooLarge = 8,
 };
 
 }  // namespace berrydb

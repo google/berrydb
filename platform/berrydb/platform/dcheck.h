@@ -33,6 +33,8 @@
 /** Convenience wrapper over DCHECK. */
 #define DCHECK_NE(a, b)  DCHECK((a) != (b))
 /** Convenience wrapper over DCHECK. */
+#define DCHECK_GE(a, b)  DCHECK((a) >= (b))
+/** Convenience wrapper over DCHECK. */
 #define DCHECK_GT(a, b)  DCHECK((a) > (b))
 /** Convenience wrapper over DCHECK. */
 #define DCHECK_LE(a, b)  DCHECK((a) <= (b))
