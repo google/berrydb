@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "berrydb/status.h"
+#include "./free_page_list_format.h"
 #include "./page_pool.h"
 #include "./page.h"
 #include "./store_impl.h"
@@ -36,49 +37,41 @@ Status FreePageList::Pop(TransactionImpl* transaction, size_t* page_id) {
     return status;
 
   uint8_t* head_page_data = head_page->data();
-  // Casting is safe because the page size must be smaller than size_t. The next
-  // entry offset must be at most page_size, so it must be smaller than size_t.
   size_t next_entry_offset =
-      static_cast<size_t>(LoadUint64(head_page_data + kNextEntryOffset));
-  if (next_entry_offset == kFirstEntryOffset) {
+      FreePageListFormat::NextEntryOffset(head_page_data);
+  if (next_entry_offset == FreePageListFormat::kFirstEntryOffset) {
     // All the entries on this page have been removed. The page itself can be
     // used as a free page.
-    uint64_t next_page_id64 = LoadUint64(head_page_data + kNextPageIdOffset);
-    size_t next_page_id = static_cast<size_t>(next_page_id64);
+    uint64_t new_head_page_id64 =
+        FreePageListFormat::NextPageId64(head_page_data);
+    size_t new_head_page_id = static_cast<size_t>(new_head_page_id64);
     // This check should be optimized out on 64-bit architectures.
-    if (next_page_id != next_page_id64)
+    if (new_head_page_id != new_head_page_id64)
       return Status::kDatabaseTooLarge;
 
     *page_id = head_page_id_;
-    head_page_id_ = next_page_id;
+    head_page_id_ = new_head_page_id;
 
     page_pool->UnpinStorePage(head_page);
     return Status::kSuccess;
   }
 
-  next_entry_offset -= kEntrySize;
-  // Check for store data file corruption to avoid an illegal memory access.
-  static_assert(
-      (kEntrySize & (kEntrySize - 1)) == 0,
-      "kEntrySize must be a power of two for bit masking tricks to work");
-  if (next_entry_offset >= page_pool->page_size() ||
-      (next_entry_offset & (kEntrySize - 1)) != 0) {
+  next_entry_offset -= FreePageListFormat::kEntrySize;
+  if (FreePageListFormat::IsCorruptEntryOffset(
+      next_entry_offset, page_pool->page_size())) {
     page_pool->UnpinStorePage(head_page);
     return Status::kDataCorrupted;
   }
 
-  DCHECK_GE(next_entry_offset, kFirstEntryOffset);
-
-  // NOTE: We rely on the compiler to optimize the multiplication to a shift.
   uint64_t free_page_id64 = LoadUint64(head_page_data + next_entry_offset);
   size_t free_page_id = static_cast<size_t>(free_page_id64);
   // This check should be optimized out on 64-bit architectures.
-  if (free_page_id != free_page_id64)
-      return Status::kDatabaseTooLarge;
+  if (free_page_id != free_page_id64) {
+    page_pool->UnpinStorePage(head_page);
+    return Status::kDatabaseTooLarge;
+  }
   head_page->MarkDirty();
-  StoreUint64(
-      static_cast<uint64_t>(next_entry_offset),
-      head_page_data + kNextEntryOffset);
+  FreePageListFormat::SetNextEntryOffset(next_entry_offset, head_page_data);
   *page_id = free_page_id;
   page_pool->UnpinStorePage(head_page);
   return Status::kSuccess;
@@ -95,55 +88,52 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
   StoreImpl* store = transaction->store();
   PagePool* page_pool = store->page_pool();
   Page* head_page;
-  Status status = page_pool->StorePage(
-      store, head_page_id_, PagePool::kFetchPageData, &head_page);
-  if (status != Status::kSuccess)
-    return status;
 
-  uint8_t* head_page_data = head_page->data();
-  // Casting is safe because the page size must be smaller than size_t. The next
-  // entry offset must be at most page_size, so it must be smaller than size_t.
-  size_t next_entry_offset =
-      static_cast<size_t>(LoadUint64(head_page_data + kNextEntryOffset));
-  if (next_entry_offset < page_pool->page_size()) {
-    // Check for store data file corruption to avoid an illegal memory access.
-    static_assert(
-        (kEntrySize & (kEntrySize - 1)) == 0,
-        "kEntrySize must be a power of two for bit masking tricks to work");
-    if ((next_entry_offset & (kEntrySize - 1)) != 0) {
+  if (head_page_id_ != kInvalidPageId) {
+    Status status = page_pool->StorePage(
+        store, head_page_id_, PagePool::kFetchPageData, &head_page);
+    if (status != Status::kSuccess)
+      return status;
+
+    uint8_t* head_page_data = head_page->data();
+    size_t next_entry_offset =
+        FreePageListFormat::NextEntryOffset(head_page_data);
+    if (next_entry_offset < page_pool->page_size()) {
+      // We rely on the compiler to optimize out the redundant page size check.
+      if (FreePageListFormat::IsCorruptEntryOffset(
+          next_entry_offset, page_pool->page_size())) {
+        page_pool->UnpinStorePage(head_page);
+        return Status::kDataCorrupted;
+      }
+
+      // There's room for another entry in the page.
+      head_page->MarkDirty();
+      FreePageListFormat::SetNextEntryOffset(next_entry_offset, head_page_data);
+      StoreUint64(
+          static_cast<uint64_t>(page_id),
+          head_page_data + next_entry_offset);
       page_pool->UnpinStorePage(head_page);
-      return Status::kDataCorrupted;
+      return Status::kSuccess;
     }
 
-    // There's room for another entry in the page.
-    head_page->MarkDirty();
-    StoreUint64(
-        static_cast<uint64_t>(next_entry_offset + kEntrySize),
-        head_page_data + kNextEntryOffset);
-    StoreUint64(
-        static_cast<uint64_t>(page_id),
-        head_page_data + next_entry_offset);
+    // The current page is full.
     page_pool->UnpinStorePage(head_page);
-    return Status::kSuccess;
   }
 
-  // The current page is full. The page that just freed up will be used to store
-  // free page IDs.
-  page_pool->UnpinStorePage(head_page);
+  // The page that just freed up will be set up as a list data page, and used to
+  // store the list's entries (free page IDs).
 
-  status = page_pool->StorePage(
+  Status status = page_pool->StorePage(
       store, page_id, PagePool::kIgnorePageData, &head_page);
   if (status != Status::kSuccess)
     return status;
 
   head_page->MarkDirty();
-  head_page_data = head_page->data();
-  StoreUint64(
-      static_cast<uint64_t>(kFirstEntryOffset),
-      head_page_data + kNextEntryOffset);
-  StoreUint64(
-      static_cast<uint64_t>(head_page_id_),
-      head_page_data + kNextPageIdOffset);
+  uint8_t* head_page_data = head_page->data();
+  FreePageListFormat::SetNextEntryOffset(
+      FreePageListFormat::kFirstEntryOffset, head_page_data);
+  FreePageListFormat::SetNextPageId64(
+      static_cast<uint64_t>(head_page_id_), head_page_data);
   page_pool->UnpinStorePage(head_page);
 
   if (head_page_id_ == kInvalidPageId)
@@ -194,7 +184,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
   // system takes less code than detecting 32-bit overflow and erroring out. So,
   // we pass around the value.
   uint64_t full_chain_head_id64 =
-      LoadUint64(head_page_data + kNextPageIdOffset);
+      FreePageListFormat::NextPageId64(head_page_data);
 
   size_t other_tail_page_id = other->tail_page_id_;
   if (other_tail_page_id != other->head_page_id_) {
@@ -213,14 +203,14 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
     }
 
     other_tail_page->MarkDirty();
-    StoreUint64(
-        full_chain_head_id64, other_tail_page->data() + kNextPageIdOffset);
+    FreePageListFormat::SetNextPageId64(
+        full_chain_head_id64, other_tail_page->data());
     page_pool->UnpinStorePage(other_tail_page);
 
     // The chain's head is now the other list's second page. This page is
     // guaranteed to be full, as well as all the pages after it.
-    full_chain_head_id64 = LoadUint64(
-        other_head_page_data + kNextPageIdOffset);
+    full_chain_head_id64 =
+        FreePageListFormat::NextPageId64(other_head_page_data);
   }
 
   // Step 2: The problem has been reduced to merging two list head pages and a
@@ -228,21 +218,14 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
   // page write (for the header page), so the code below avoids changing the
   // list head.
 
-  // Casting is safe because the page size must be smaller than size_t. The next
-  // entry offset must be at most page_size, so it must be smaller than size_t.
   size_t page_size = page_pool->page_size();
   size_t next_entry_offset =
-      static_cast<size_t>(LoadUint64(head_page_data + kNextEntryOffset));
+      FreePageListFormat::NextEntryOffset(head_page_data);
   size_t other_next_entry_offset =
-      static_cast<size_t>(LoadUint64(other_head_page_data + kNextEntryOffset));
-  // Check for store data file corruption to avoid illegal memory accesses.
-  static_assert(
-      (kEntrySize & (kEntrySize - 1)) == 0,
-      "kEntrySize must be a power of two for bit masking tricks to work");
-  if (next_entry_offset >= page_size ||
-      (next_entry_offset & (kEntrySize - 1)) != 0 ||
-      other_next_entry_offset >= page_size ||
-      (other_next_entry_offset & (kEntrySize - 1)) != 0) {
+      FreePageListFormat::NextEntryOffset(other_head_page_data);
+  if (FreePageListFormat::IsCorruptEntryOffset(next_entry_offset, page_size) ||
+      FreePageListFormat::IsCorruptEntryOffset(other_next_entry_offset,
+      page_size)) {
     page_pool->UnpinStorePage(other_head_page);
     page_pool->UnpinStorePage(head_page);
     return Status::kDataCorrupted;
@@ -254,20 +237,21 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
   // Check if we can add all the page IDs in other list's first page (including
   // the first page's ID itself) to our list's first page.
   size_t needed_space_minus_one_entry =
-      other_next_entry_offset - kFirstEntryOffset;
+      other_next_entry_offset - FreePageListFormat::kFirstEntryOffset;
   if (next_entry_offset + needed_space_minus_one_entry < page_size) {
     // This list's head page has enough room for all the IDs.
     DCHECK_LE(
-        next_entry_offset + needed_space_minus_one_entry + kEntrySize,
-        page_size);
+        next_entry_offset + needed_space_minus_one_entry +
+        FreePageListFormat::kEntrySize, page_size);
 
     StoreUint64(
         static_cast<uint64_t>(other_head_page_id),
         head_page_data + next_entry_offset);
-    next_entry_offset += kEntrySize;
+    next_entry_offset += FreePageListFormat::kEntrySize;
     std::memcpy(
         head_page_data + next_entry_offset,
-        other_head_page_data + kFirstEntryOffset, needed_space_minus_one_entry);
+        other_head_page_data + FreePageListFormat::kFirstEntryOffset,
+        needed_space_minus_one_entry);
     next_entry_offset += needed_space_minus_one_entry;
   } else {
     // This list's head page cannot accomodate all page IDs. Move IDs from this
@@ -285,20 +269,15 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
     std::memcpy(
         other_head_page_data + other_next_entry_offset,
         head_page_data + new_next_entry_offset, empty_space);
-    StoreUint64(
-        static_cast<uint64_t>(page_size),
-        other_head_page_data + kNextEntryOffset);
+    FreePageListFormat::SetNextEntryOffset(page_size, other_head_page_data);
     next_entry_offset = new_next_entry_offset;
 
-    StoreUint64(
-        static_cast<uint64_t>(other_head_page_id),
-        head_page_data + kNextPageIdOffset);
+    FreePageListFormat::SetNextPageId64(
+        static_cast<uint64_t>(other_head_page_id), head_page_data);
   }
 
   // next_entry_offset is changed in both cases above, stored once here.
-  StoreUint64(
-      static_cast<uint64_t>(next_entry_offset),
-      head_page_data + kNextEntryOffset);
+  FreePageListFormat::SetNextEntryOffset(next_entry_offset, head_page_data);
 
   page_pool->UnpinStorePage(other_head_page);
   page_pool->UnpinStorePage(head_page);

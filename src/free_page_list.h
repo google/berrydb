@@ -114,7 +114,9 @@ class FreePageList {
   }
 
 #if DCHECK_IS_ON()
-  /** True if this list has been was_merged into another list. */
+  /** True if this list has been was_merged into another list.
+   *
+   * This method should only be used in DCHECKs. */
   inline bool was_merged() const noexcept { return was_merged_; }
 #endif  // DCHECK_IS_ON()
 
@@ -126,27 +128,6 @@ class FreePageList {
   bool tail_page_is_defined_ = true;
   bool was_merged_ = false;
 #endif  // DCHECK_IS_ON()
-
-  /** The offset of the first free entry in a list page.
-   *
-   * All list operations need to look at this number. It is at the beginning of
-   * the page so accessing it requires slightly less code than accessing any
-   * other field.
-   */
-  static constexpr size_t kNextEntryOffset = 0;
-  /** The offset of the next list page's id in a list page. */
-  static constexpr size_t kNextPageIdOffset = 8;
-  /** The offset of the first entry (page id) in a list page. */
-  static constexpr size_t kFirstEntryOffset = 16;
-  /** The size of each entry (page id) in a free page list page.
-   *
-   * This is currently set to 8 bytes, needed by page IDs in large databases. */
-  static constexpr size_t kEntrySize = 8;
-
-  // TODO(pwnall): Consider / evaluate using base-128 varints instead of 8-byte
-  //               ints for page entries. Instead of relying on kEntrySize,
-  //               removing an entry would have to scan back for the first byte
-  //               without the top bit set.
 };
 
 }  // namespace berrydb
