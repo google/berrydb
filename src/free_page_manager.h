@@ -47,7 +47,7 @@ class FreePageManager {
    * Under normal circumstances, the allocation should always suceedd. Even if
    * the free list is empty, the store file can be grown. Failure indicates an
    * exceptional circumstance, such as an I/O error or a quota error, so the
-   * caller should bail on errors and eventually abort the transaction.
+   * caller should bail on errors and eventually roll back the transaction.
    *
    * @param  transaction       the transaction that will use the newly allocated
    *                           page

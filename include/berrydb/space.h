@@ -29,7 +29,7 @@ class Transaction;
  *
  * Each (key/value name)space can be used by at most one write transaction OR by
  * an arbitrary number of read transactions. Once a transaction touches a space,
- * it is considered to be using the space until it commits or aborts.
+ * it is considered to be using the space until it commits or it is rolled back.
  */
 class Space {
   /** Releases the memory associated with the space.
@@ -45,9 +45,9 @@ class Space {
   friend class SpaceImpl;
 
   /** Use Catalog and Space methods to create Space instances. */
-  Space() = default;
+  constexpr Space() noexcept = default;
   /** Use Release() to destroy Space instances. */
-  ~Space() = default;
+  ~Space() noexcept = default;
 };
 
 }  // namespace berrydb

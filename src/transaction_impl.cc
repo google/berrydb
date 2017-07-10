@@ -8,6 +8,9 @@
 #include "./page_pool.h"
 #include "./store_impl.h"
 
+// TODO(pwnall): Remove this once we don't need to DCHECK a Status value.
+#include "berrydb/ostream_ops.h"
+
 namespace berrydb {
 
 static_assert(std::is_standard_layout<TransactionImpl>::value,
@@ -56,7 +59,12 @@ TransactionImpl::~TransactionImpl() {
 #if DCHECK_IS_ON()
 void TransactionImpl::DcheckPageBelongsToTransaction(Page* page) {
   DCHECK(page != nullptr);
+  DCHECK_EQ(page->transaction(), this);
   DCHECK_EQ(store_->page_pool(), page->page_pool());
+}
+
+bool TransactionImpl::IsInit() const noexcept {
+  return store_->init_transaction() == this;
 }
 #endif  // DCHECK_IS_ON()
 
@@ -100,7 +108,7 @@ Status TransactionImpl::Close() {
   page_pool->PinTransactionPages(&pool_pages_);
 
   // We cannot use C++11's range-based for loop because the iterator would get
-  // invalidated if we release the page it's pointing to.
+  // invalidated when we remove the page it's pointing to from the list.
   for (auto it = pool_pages_.begin(); it != pool_pages_.end(); ) {
     Page* page = *it;
     ++it;
@@ -113,8 +121,39 @@ Status TransactionImpl::Close() {
 }
 
 Status TransactionImpl::Commit() {
+  DCHECK(this != store_->init_transaction());
+
   if (is_closed_)
     return Status::kAlreadyClosed;
+
+  // Write the pages modified by this transaction.
+  //
+  // This must be a non-init transaction, because only non-init transactions can
+  // commit. So, all the pages assigned to this transaction must be pages that
+  // have been modified by it.
+
+  PagePool* page_pool = store_->page_pool();
+  page_pool->PinTransactionPages(&pool_pages_);
+
+  TransactionImpl* init_transaction = store_->init_transaction();
+
+  // We cannot use C++11's range-based for loop because the iterator would get
+  // invalidated when we remove the page it's pointing to from the list.
+  for (auto it = pool_pages_.begin(); it != pool_pages_.end(); ) {
+    Page* page = *it;
+    ++it;
+
+    // TODO(pwnall): Write REDO records for the pages to the log instead. The
+    //               log write status handling code will remain the same.
+    Status status = store_->WritePage(page);
+
+    // TODO(pwnall): Handle errors, once we have logging in place.
+    DCHECK_EQ(status, Status::kSuccess);
+    UNUSED(status);
+
+    PageWasPersisted(page, init_transaction);
+    page_pool->UnpinStorePage(page);
+  }
 
   is_committed_ = true;
   return Close();

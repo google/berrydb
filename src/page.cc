@@ -8,6 +8,8 @@
 
 #include "berrydb/platform.h"
 #include "./page_pool.h"
+#include "./store_impl.h"
+#include "./transaction_impl.h"
 
 namespace berrydb {
 
@@ -51,5 +53,31 @@ Page::Page(PagePool* page_pool)
 Page::~Page() {
   DCHECK(transaction_ == nullptr);
 }
+
+#if DCHECK_IS_ON()
+void Page::DcheckTransactionAssignmentIsValid(TransactionImpl* transaction) {
+  DCHECK(transaction_ == nullptr);
+  DCHECK(transaction != nullptr);
+  DCHECK(transaction->store()->page_pool() == page_pool_);
+}
+
+void Page::DcheckDirtyValueIsValid(bool is_dirty) {
+  // Dirty page pool entries must be assigned to non-init transactions.
+  DCHECK(!is_dirty || (transaction_ != nullptr && !transaction_->IsInit()));
+
+  // A page pool entry that just became non-dirty must have been re-assigned to
+  // an init transaction, or must have been unassigned from a store.
+  DCHECK(is_dirty || (transaction_ == nullptr || transaction_->IsInit()));
+
+  DCHECK(is_dirty != is_dirty_);
+}
+
+void Page::DcheckTransactionReassignmentIsValid(TransactionImpl* transaction) {
+  DCHECK(transaction != nullptr);
+  DCHECK(transaction_ != nullptr);
+  DCHECK(transaction_ != transaction);
+  DCHECK(transaction_->IsInit() != transaction->IsInit());
+}
+#endif  // DCHECK_IS_ON()
 
 }  // namespace berrydb

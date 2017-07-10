@@ -54,12 +54,14 @@ class FreePageListTest : public ::testing::Test {
     Page* page = page_pool->AllocPage();
     ASSERT_TRUE(page != nullptr);
 
+    UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
     ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
         page, store, page_id, PagePool::kIgnorePageData));
-    page->MarkDirty();
+    transaction->WillModifyPage(page);
     std::memcpy(page->data(), data, 1 << kStorePageShift);
     ASSERT_EQ(Status::kSuccess, store->WritePage(page));
-    page->MarkDirty(false);
+    transaction->PageWasPersisted(page, store->init_transaction());
+    ASSERT_EQ(Status::kSuccess, transaction->Commit());
     page_pool->UnassignPageFromStore(page);
     page_pool->UnpinUnassignedPage(page);
   }

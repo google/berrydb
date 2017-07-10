@@ -70,7 +70,7 @@ Status FreePageList::Pop(TransactionImpl* transaction, size_t* page_id) {
     page_pool->UnpinStorePage(head_page);
     return Status::kDatabaseTooLarge;
   }
-  head_page->MarkDirty();
+  transaction->WillModifyPage(head_page);
   FreePageListFormat::SetNextEntryOffset(next_entry_offset, head_page_data);
   *page_id = free_page_id;
   page_pool->UnpinStorePage(head_page);
@@ -107,7 +107,7 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
       }
 
       // There's room for another entry in the page.
-      head_page->MarkDirty();
+      transaction->WillModifyPage(head_page);
       FreePageListFormat::SetNextEntryOffset(next_entry_offset, head_page_data);
       StoreUint64(
           static_cast<uint64_t>(page_id),
@@ -128,7 +128,7 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
   if (status != Status::kSuccess)
     return status;
 
-  head_page->MarkDirty();
+  transaction->WillModifyPage(head_page);
   uint8_t* head_page_data = head_page->data();
   FreePageListFormat::SetNextEntryOffset(
       FreePageListFormat::kFirstEntryOffset, head_page_data);
@@ -202,7 +202,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
       return status;
     }
 
-    other_tail_page->MarkDirty();
+    transaction->WillModifyPage(other_tail_page);
     FreePageListFormat::SetNextPageId64(
         full_chain_head_id64, other_tail_page->data());
     page_pool->UnpinStorePage(other_tail_page);
@@ -232,7 +232,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
   }
 
   // This list's head page will be modified in both cases below.
-  head_page->MarkDirty();
+  transaction->WillModifyPage(head_page);
 
   // Check if we can add all the page IDs in other list's first page (including
   // the first page's ID itself) to our list's first page.
@@ -257,7 +257,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
     // This list's head page cannot accomodate all page IDs. Move IDs from this
     // list's head page to fill up the other list's head page, and then chain
     // the other list's head page to this list's head page.
-    other_head_page->MarkDirty();
+    transaction->WillModifyPage(other_head_page);
 
     // DCHECK failure implies that the data corruption check above is broken.
     DCHECK_LE(other_next_entry_offset, page_size);

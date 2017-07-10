@@ -101,7 +101,7 @@ TEST_F(PageTest, Pinning) {
   page->Release(&page_pool);
 }
 
-TEST_F(PageTest, AssignToStoreUnassignFromStore) {
+TEST_F(PageTest, WillCacheStoreDataDoesNotCacheStoreData) {
   CreatePool(kStorePageShift, 42);
   PagePool* page_pool = pool_->page_pool();
   UniquePtr<StoreImpl> store(StoreImpl::Create(
@@ -112,13 +112,11 @@ TEST_F(PageTest, AssignToStoreUnassignFromStore) {
   ASSERT_TRUE(!page->IsUnpinned());
 
   TransactionImpl* transaction = store->init_transaction();
-  page->Assign(transaction, 1337);
-  transaction->PageAssigned(page);
+  page->WillCacheStoreData(transaction, 1337);
   EXPECT_EQ(transaction, page->transaction());
   EXPECT_EQ(1337U, page->page_id());
 
-  page->UnassignFromStore();
-  transaction->PageUnassigned(page);
+  page->DoesNotCacheStoreData();
 #if DCHECK_IS_ON()
   EXPECT_EQ(nullptr, page->transaction());
 #endif  // DCHECK_IS_ON()

@@ -13,6 +13,8 @@
 #include "berrydb/platform.h"
 #include "berrydb/status.h"
 #include "./page.h"
+#include "./store_impl.h"
+#include "./transaction_impl.h"
 #include "./util/linked_list.h"
 #include "./util/platform_allocator.h"
 
@@ -77,10 +79,6 @@ class StoreImpl;
  * making any changes to the buffer. When a user is done with a Page buffer, it
  * calls UnpinStorePage(), so the page pool entry can become eligible for
  * eviction again.
- *
- * Bootstrapping code may call UnpinAndWriteStorePage() instead of the usual
- * UnpinStorePage(), which hints the page pool that the entry should be evicted
- * immediately.
  */
 class PagePool {
  public:
@@ -97,6 +95,20 @@ class PagePool {
      * Intended for callers who intend to overwrite the page without reading it.
      */
     kIgnorePageData = false,
+  };
+
+  /** Desired behavior when unpinning a page makes it eligible for eviction. */
+  enum PageUnpinMode : bool {
+    /* Cache the page's content in the pool using normal caching rules.
+     *
+     * This is the default value, and most callers should stick to it. */
+    kCachePage = false,
+
+    /* Discard the page from the pool as soon as space is needed.
+     *
+     * This should be used when iterating over large data sets, to avoid
+     * poisoning the cache with bad data. */
+    kDiscardPage = true,
   };
 
   /** Sets up a page pool. Page memory may be allocated on-demand. */
@@ -141,10 +153,30 @@ class PagePool {
    * Nevertheless, the caller must not use the page entry anymore after
    * releasing its pin.
    *
-   * @param  page a page that was previously obtained from this pool using
-   *             StorePage()
-   */
-  void UnpinStorePage(Page* page);
+   * @param  page a page pool entry that was previously obtained from this pool
+   *              using StorePage()
+   * @param  mode the desired behavior when unpinning makes this page pool
+   *              entry's cached data eligible for eviction */
+  inline void UnpinStorePage(
+      Page* page, PageUnpinMode mode = kCachePage) noexcept {
+    DCHECK(page != nullptr);
+    DCHECK(page->transaction() != nullptr);
+    DCHECK(page->transaction()->store() != nullptr);
+#if DCHECK_IS_ON()
+    DCHECK_EQ(page->page_pool(), this);
+#endif  // DCHECK_IS_ON()
+
+    page->RemovePin();
+    if (page->IsUnpinned()) {
+      // NOTE: This looks like a lot of code for an inlined function. However,
+      //       all call sites will specify a constant mode, so one branch will
+      //       always be optimized out.
+      if (mode == kCachePage)
+        lru_list_.push_back(page);
+      else
+        lru_list_.push_front(page);
+    }
+  }
 
   /** Releases and writes back a dirty Page previously obtained by StorePage().
    *
@@ -155,8 +187,7 @@ class PagePool {
    * possible.
    *
    * @param  page a dirty page that was previously obtained from this pool using
-   *             StorePage()
-   */
+   *             StorePage() */
   void UnpinAndWriteStorePage(Page* page);
 
   /** The base-2 log of the pool's page size. */
@@ -183,7 +214,7 @@ class PagePool {
    *
    * Only unpinned pages can be evicted and reused to meed demands for new
    * pages. If all pages in the pool become pinned, transactions that need more
-   * page pool entries will be aborted. */
+   * page pool entries will be rolled back. */
   inline size_t pinned_pages() const noexcept {
     return page_count_ - free_list_.size() - lru_list_.size();
   }
@@ -267,6 +298,12 @@ class PagePool {
       LinkedList<Page, Page::TransactionLinkedListBridge>* page_list);
 
  private:
+  // Page pools cannot be copied or moved.
+  PagePool(const PagePool& other) = delete;
+  PagePool(Page&& other) = delete;
+  PagePool& operator =(const PagePool& other) = delete;
+  PagePool& operator =(PagePool&& other) = delete;
+
   /** Entries that belong to this page pool that are assigned to stores. */
   using PageMapKey = std::pair<StoreImpl*, size_t>;
   std::unordered_map<PageMapKey, Page*, PointerSizeHasher<StoreImpl>,

@@ -9,6 +9,8 @@
 #include <cstdint>
 
 #include "berrydb/platform.h"
+// #include "./store_impl.h" would cause a cycle
+// #include "./transaction_impl.h" would cause a cycle
 #include "./util/linked_list.h"
 
 namespace berrydb {
@@ -119,43 +121,46 @@ class Page {
     --pin_count_;
   }
 
-  /** Track the fact that the pool page will cache a store page.
+  /** Track the fact that the pool page entry will cache a store page.
    *
-   * The page should not be in any list while a store page is loaded into it,
-   * so Alloc() doesn't grab it. This also implies that the page must be pinned.
+   * This method is exposed for use from TransactionImpl::AssignPage().
    *
-   * The caller must immediately call TransactionImpl::PageAssigned(). This
-   * method cannot make that call, due to header dependencies.
-   */
-  inline void Assign(TransactionImpl* transaction, size_t page_id) noexcept {
+   * The page should not be in any LRU list while a store page is loaded into
+   * it, so PagePool::Alloc() doesn't grab it. This also implies that the page
+   * must be pinned. */
+  inline void WillCacheStoreData(
+      TransactionImpl* transaction, size_t page_id) noexcept {
     // NOTE: It'd be nice to DCHECK_EQ(page_pool_, store->page_pool()).
     //       Unfortunately, that requires a dependency on store_impl.h, which
     //       absolutely needs to include page.h.
-#if DCHECK_IS_ON()
     DCHECK(transaction_ == nullptr);
-    DCHECK(transaction_list_node_.list_sentinel() == nullptr);
-    DCHECK(linked_list_node_.list_sentinel() == nullptr);
-#endif  // DCHECK_IS_ON()
     DCHECK(pin_count_ != 0);
     DCHECK(!is_dirty_);
+#if DCHECK_IS_ON()
+    DCHECK(transaction_list_node_.list_sentinel() == nullptr);
+    DCHECK(linked_list_node_.list_sentinel() == nullptr);
+    DcheckTransactionAssignmentIsValid(transaction);
+#endif  // DCHECK_IS_ON()
 
     transaction_ = transaction;
     page_id_ = page_id;
   }
 
-  /** Track the fact that the pool page no longer caches a store page.
+  /** Track the fact that the pool page entry no longer caches a store page.
    *
-   * The page must be pinned, as it was caching a store page up until now. This
-   * also implies that the page cannot be on any list.
+   * This method is exposed for use from TransactionImpl::UnassignPage().
    *
-   * The caller must immediately call StoreImpl::PageUnassigned(). This method
-   * cannot make that call, due to header dependencies.
+   * This pool page entry must be pinned, so PagePool::Alloc() does not grab it.
+   * The entry must have at most one pin, owned by the caller. Otherwise, the
+   * other pin owners will have the page's data change unexpectedly.
    */
-  inline void UnassignFromStore() noexcept {
-    DCHECK(pin_count_ != 0);
+  inline void DoesNotCacheStoreData() noexcept {
+    DCHECK_EQ(pin_count_, 1U);
     DCHECK(transaction_ != nullptr);
 #if DCHECK_IS_ON()
-    DCHECK(transaction_list_node_.list_sentinel() != nullptr);
+    // Fails if TransactionImpl::PageWillBeUnassigned() was not called right
+    // before calling this method.
+    DCHECK(transaction_list_node_.list_sentinel() == nullptr);
     DCHECK(linked_list_node_.list_sentinel() == nullptr);
 #endif  // DCHECK_IS_ON()
 
@@ -164,18 +169,51 @@ class Page {
 #endif  // DCHECK_IS_ON()
   }
 
-  /** Changes the page's dirtiness status.
+  /** Dirty flag setter for PagePool and TransactionImpl.
    *
-   * The page must be assigned to store while its dirtiness is changed. */
-  inline void MarkDirty(bool will_be_dirty = true) noexcept {
-    DCHECK(transaction_ != nullptr);
-    is_dirty_ = will_be_dirty;
+   * This should not be used directly in most cases. It is exposed for use by
+   * PagePool and by TransactionImpl.
+   *
+   * @param is_dirty the new value of the page pool entry's dirty flag
+   */
+  inline void SetDirty(bool is_dirty) noexcept {
+#if DCHECK_IS_ON()
+    DcheckDirtyValueIsValid(is_dirty);
+#endif  // DCHECK_IS_ON()
+    is_dirty_ = is_dirty;
+  }
+
+  /** Called when the Page is reassigned to a new transaction in the same store.
+   *
+   * This should not be used directly in most cases. It is exposed for use by
+   * TransactionImpl. The calling code is responsible for updating the
+   * LinkedList<Page> members for the impacted transactions.
+   *
+   * A page pool entry can only be reassigned to a transaction that belongs to
+   * the same store. This implies that neither the current nor the new
+   * transaction may be null. Either the current or the new transaction must be
+   * the store's init transaction.
+   *
+   * @param transaction the transaction that the Page is reassigned to
+   */
+  inline void ReassignToTransaction(TransactionImpl* transaction) noexcept {
+#if DCHECK_IS_ON()
+    DcheckTransactionReassignmentIsValid(transaction);
+#endif  // DCHECK_IS_ON()
+
+    transaction_ = transaction;
   }
 
  private:
    /** Use Page::Create() to construct Page instances. */
    Page(PagePool* page);
    ~Page();
+
+  // Pages cannot be copied or moved.
+  Page(const Page& other) = delete;
+  Page(Page&& other) = delete;
+  Page& operator =(const Page& other) = delete;
+  Page& operator =(Page&& other) = delete;
 
 #if DCHECK_IS_ON()
   /** The maximum value that pin_count_ can hold.
@@ -184,6 +222,28 @@ class Page {
    * Excessively large pin counts indicate leaks.
    */
   static constexpr size_t kMaxPinCount = ~static_cast<size_t>(0);
+
+  // These methods performs state consistency checks. The declarations are
+  // clunky, but necessary because some of the checks depend on the definitions
+  // of StoreImpl and TransactionImpl. This file cannot include their headers
+  // because StoreImpl and TransactionImpl contain LinkedList<Page> fields,
+  // and their inlined methods call into inlined Page methods.
+
+
+  /** DCHECKs that a transaction assignment for this page is valid.
+   *
+   * @param transaction the transaction that the Page will be assigned to */
+  void DcheckTransactionAssignmentIsValid(TransactionImpl* transaction);
+
+  /** DCHECKs that the given dirty flag value makes sense for this page.
+   *
+   * @param is_dirty the new value of the dirty's page flag */
+  void DcheckDirtyValueIsValid(bool is_dirty);
+
+  /** DCHECKs that a transaction reassignment for this page is valid.
+   *
+   * @param transaction the transaction that the Page will be reassigned to */
+  void DcheckTransactionReassignmentIsValid(TransactionImpl* transaction);
 #endif  // DCHECK_IS_ON()
 
   friend class LinkedListBridge<Page>;

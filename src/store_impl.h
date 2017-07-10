@@ -14,6 +14,7 @@
 #include "berrydb/vfs.h"
 #include "./format/store_header.h"
 #include "./page.h"
+// #include "./page_pool.h" would cause a cycle
 #include "./transaction_impl.h"
 #include "./util/linked_list.h"
 
@@ -108,7 +109,7 @@ class StoreImpl {
    * @return      most likely kSuccess or kIoError */
   Status WritePage(Page* page);
 
-  /** Updates the store to reflect a transaction's commit / abort.
+  /** Updates the store to reflect a transaction's commit / roll back.
    *
    * @param transaction must be associated with this store, and closed */
   void TransactionClosed(TransactionImpl* transaction);
@@ -128,6 +129,12 @@ class StoreImpl {
       const StoreOptions& options);
   /** Use Release() to destroy StoreImpl instances. */
   ~StoreImpl();
+
+  // Stores cannot be copied or moved.
+  StoreImpl(const StoreImpl& other) = delete;
+  StoreImpl(StoreImpl&& other) = delete;
+  StoreImpl& operator =(const StoreImpl& other) = delete;
+  StoreImpl& operator =(StoreImpl&& other) = delete;
 
   enum class State {
     kOpen = 0,

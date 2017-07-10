@@ -14,3 +14,4 @@ namespace berrydb {
 #include "berrydb/store.h"
 #include "berrydb/transaction.h"
 #include "berrydb/version.h"
+#include "berrydb/vfs.h"

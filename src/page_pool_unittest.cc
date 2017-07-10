@@ -15,6 +15,7 @@
 #include "berrydb/vfs.h"
 #include "./pool_impl.h"
 #include "./store_impl.h"
+#include "./transaction_impl.h"
 #include "./test/block_access_file_wrapper.h"
 #include "./test/file_deleter.h"
 #include "./util/unique_ptr.h"
@@ -53,12 +54,14 @@ class PagePoolTest : public ::testing::Test {
     Page* page = page_pool->AllocPage();
     ASSERT_TRUE(page != nullptr);
 
+    UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
     ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
         page, store, page_id, PagePool::kIgnorePageData));
-    page->MarkDirty();
+    transaction->WillModifyPage(page);
     std::memcpy(page->data(), data, 1 << kStorePageShift);
     ASSERT_EQ(Status::kSuccess, store->WritePage(page));
-    page->MarkDirty(false);
+    transaction->PageWasPersisted(page, store->init_transaction());
+    ASSERT_EQ(Status::kSuccess, transaction->Commit());
     page_pool->UnassignPageFromStore(page);
     page_pool->UnpinUnassignedPage(page);
   }
@@ -169,9 +172,14 @@ TEST_F(PagePoolTest, AllocUsesLruList) {
       page, store.get(), 0, PagePool::kIgnorePageData));
   EXPECT_EQ(store->init_transaction(), page->transaction());
 
+  // kIgnorePageData requires us to mark the page dirty.
+  UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
+  transaction->WillModifyPage(page);
   // Unset the page's dirty bit to avoid having the page written to the store
   // when it is evicted from the LRU list.
-  page->MarkDirty(false);
+  transaction->PageWasPersisted(page, store->init_transaction());
+  EXPECT_EQ(Status::kSuccess, transaction->Rollback());
+
   page_pool->UnpinStorePage(page);
   EXPECT_EQ(1U, page_pool->allocated_pages());
   EXPECT_EQ(0U, page_pool->unused_pages());
@@ -208,9 +216,14 @@ TEST_F(PagePoolTest, AllocPrefersFreeListToLruList) {
   EXPECT_EQ(1U, store->AssignedPageCount());
 #endif  // DCHECK_IS_ON()
 
+  // kIgnorePageData requires us to mark the page dirty.
+  UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
+  transaction->WillModifyPage(page);
   // Unset the page's dirty bit to avoid having the page written to the store
-  // if it is evicted from the LRU list.
-  page->MarkDirty(false);
+  // when it is evicted from the LRU list.
+  transaction->PageWasPersisted(page, store->init_transaction());
+  EXPECT_EQ(Status::kSuccess, transaction->Rollback());
+
   page_pool->UnpinStorePage(page);
   ASSERT_EQ(1U, page_pool->allocated_pages());
   ASSERT_EQ(0U, page_pool->unused_pages());
@@ -244,7 +257,8 @@ TEST_F(PagePoolTest, UnassignPageFromStoreState) {
       page, store.get(), 0, PagePool::kIgnorePageData));
   EXPECT_EQ(store->init_transaction(), page->transaction());
 
-  page->MarkDirty(true);
+  UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
+  transaction->WillModifyPage(page);
   uint8_t* data = page->data();
   ASSERT_NE(nullptr, data);
   std::memset(data, 0, 1 << kStorePageShift);
@@ -258,6 +272,12 @@ TEST_F(PagePoolTest, UnassignPageFromStoreState) {
   EXPECT_FALSE(store->IsClosed());
 
   page_pool->UnpinUnassignedPage(page);
+
+  // Committing the transaction will do less work than rolling it back, because
+  // the page data was already written to the store data file by
+  // UnassignPageFromStore(). Rolling back would require reading and applying an
+  // undo record from the log.
+  EXPECT_EQ(Status::kSuccess, transaction->Commit());
 }
 
 TEST_F(PagePoolTest, UnassignPageFromStoreIoError) {
@@ -276,7 +296,8 @@ TEST_F(PagePoolTest, UnassignPageFromStoreIoError) {
       page, store.get(), 0, PagePool::kIgnorePageData));
   EXPECT_EQ(store->init_transaction(), page->transaction());
 
-  page->MarkDirty(true);
+  UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
+  transaction->WillModifyPage(page);
   uint8_t* data = page->data();
   ASSERT_NE(nullptr, data);
   std::memset(data, 0, 1 << kStorePageShift);
@@ -289,6 +310,7 @@ TEST_F(PagePoolTest, UnassignPageFromStoreIoError) {
   EXPECT_EQ(nullptr, page->transaction());
 #endif  // DCHECK_IS_ON()
   EXPECT_EQ(true, store->IsClosed());
+  EXPECT_EQ(true, transaction->IsClosed());
 
   page_pool->UnpinUnassignedPage(page);
 }
@@ -397,7 +419,13 @@ TEST_F(PagePoolTest, PinUnpinStorePage) {
       page, store.get(), 42, PagePool::kIgnorePageData));
   EXPECT_EQ(store->init_transaction(), page->transaction());
 
-  page->MarkDirty(false);
+  // kIgnorePageData requires us to mark the page dirty.
+  UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
+  transaction->WillModifyPage(page);
+  // Unset the page's dirty bit to avoid having the page written to the store
+  // when it is evicted from the LRU list.
+  transaction->PageWasPersisted(page, store->init_transaction());
+  EXPECT_EQ(Status::kSuccess, transaction->Rollback());
 
   // Should add a pin to the page.
   page_pool->PinStorePage(page);

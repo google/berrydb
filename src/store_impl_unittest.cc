@@ -95,7 +95,9 @@ TEST_F(StoreImplTest, WriteReadPage) {
   for (size_t i = 0; i < 4; ++i) {
     ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
         page, store.get(), i, PagePool::kIgnorePageData));
-    page->MarkDirty();
+
+    UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
+    transaction->WillModifyPage(page);
     std::memcpy(
         page->data(), buffer + (i << kStorePageShift), 1 << kStorePageShift);
     ASSERT_EQ(Status::kSuccess, store->WritePage(page));
@@ -103,29 +105,33 @@ TEST_F(StoreImplTest, WriteReadPage) {
 
     // Clear the page to make sure ReadPage fetches the correct content.
     std::memset(page->data(), 0, 1 << kStorePageShift);
-    page->MarkDirty(false);  // Bypass DCHECKs in ReadPage.
+    transaction->PageWasPersisted(page, store->init_transaction());  // Bypass DCHECKs in ReadPage.
     ASSERT_EQ(Status::kSuccess, store->ReadPage(page));
     ASSERT_EQ(0, std::memcmp(
         page->data(), buffer + (i << kStorePageShift), 1 << kStorePageShift));
 
     page_pool->UnassignPageFromStore(page);
     ASSERT_TRUE(!page->IsUnpinned());
+    ASSERT_EQ(Status::kSuccess, transaction->Rollback());
   }
 
   for (size_t i = 0; i < 4; ++i) {
     ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
         page, store.get(), i, PagePool::kIgnorePageData));
-    page->MarkDirty();
+
+    UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
+    transaction->WillModifyPage(page);
 
     // Clear the page to make sure ReadPage fetches the correct content.
     std::memset(page->data(), 0, 1 << kStorePageShift);
-    page->MarkDirty(false);  // Bypass DCHECKs in ReadPage.
+    transaction->PageWasPersisted(page, store->init_transaction());  // Bypass DCHECKs in ReadPage.
     ASSERT_EQ(Status::kSuccess, store->ReadPage(page));
     ASSERT_EQ(0, std::memcmp(
         page->data(), buffer + (i << kStorePageShift), 1 << kStorePageShift));
 
     page_pool->UnassignPageFromStore(page);
     ASSERT_TRUE(!page->IsUnpinned());
+    ASSERT_EQ(Status::kSuccess, transaction->Rollback());
   }
 
   EXPECT_EQ(Status::kSuccess, store->Close());
@@ -148,10 +154,16 @@ TEST_F(StoreImplTest, CloseUnassignsPages) {
     ASSERT_TRUE(page[i] != nullptr);
   }
 
+  UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
+
   for (size_t i = 0; i < 4; ++i) {
     ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
         page[i], store.get(), i, PagePool::kIgnorePageData));
-    page[i]->MarkDirty(false);  // Avoid writing the page to disk.
+    // kIgnorePageData requires us to mark the page dirty.
+    transaction->WillModifyPage(page[i]);
+
+    // Avoid writing the page to disk.
+    transaction->PageWasPersisted(page[i], store->init_transaction());
 
     page_pool->UnpinStorePage(page[i]);
     EXPECT_TRUE(page[i]->IsUnpinned());
@@ -161,6 +173,7 @@ TEST_F(StoreImplTest, CloseUnassignsPages) {
   EXPECT_EQ(0U, page_pool->unused_pages());
   EXPECT_EQ(0U, page_pool->pinned_pages());
 
+  EXPECT_EQ(Status::kSuccess, transaction->Rollback());
   ASSERT_EQ(Status::kSuccess, store->Close());
   EXPECT_EQ(4U, page_pool->allocated_pages());
   EXPECT_EQ(4U, page_pool->unused_pages());

@@ -93,16 +93,16 @@ class Transaction {
 
   /** Releases the transaction's memory.
    *
-   * If the transaction is in progress, it is aborted. */
+   * If the transaction is in progress, it is rolled back. */
   void Release();
 
  private:
   friend class TransactionImpl;
 
   /** Use Store::CreateTransaction() to create Transaction instances. */
-  Transaction() = default;
+  constexpr Transaction() noexcept = default;
   /** Use Release() to destroy Transaction instances. */
-  ~Transaction() = default;
+  ~Transaction() noexcept = default;
 };
 
 }  // namespace berrydb

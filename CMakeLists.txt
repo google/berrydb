@@ -93,8 +93,10 @@ target_sources(berrydb
   PRIVATE
     "${PROJECT_SOURCE_DIR}/src/api/catalog.cc"
     "${PROJECT_SOURCE_DIR}/src/api/options.cc"
+    "${PROJECT_SOURCE_DIR}/src/api/ostream_ops.cc"
     "${PROJECT_SOURCE_DIR}/src/api/pool.cc"
     "${PROJECT_SOURCE_DIR}/src/api/space.cc"
+    "${PROJECT_SOURCE_DIR}/src/api/status.cc"
     "${PROJECT_SOURCE_DIR}/src/api/store.cc"
     "${PROJECT_SOURCE_DIR}/src/api/transaction.cc"
     "${PROJECT_SOURCE_DIR}/src/api/vfs.cc"
@@ -135,6 +137,7 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/include/berrydb.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/catalog.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/options.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/ostream_ops.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/pool.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/space.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/status.h"
@@ -160,7 +163,9 @@ if (BERRYDB_BUILD_TESTS)
   add_executable (berrydb_tests "")
   target_sources (berrydb_tests
     PRIVATE
+      "${PROJECT_SOURCE_DIR}/src/api/ostream_ops_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/api/pool_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/api/status_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/api/store_unittest.cc"
       "${PROJECT_BINARY_DIR}/src/api/version_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/alloc_unittest.cc"

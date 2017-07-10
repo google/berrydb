@@ -80,6 +80,16 @@ class Vfs {
    *                   not a requirement
    */
   virtual Status DeleteFile(const std::string& file_path) = 0;
+
+ protected:
+  Vfs() noexcept;
+
+  // Copy and move assignment + construction are protected so that subclasses
+  // can enable them, if they wish to do so.
+  Vfs(const Vfs& other) noexcept;
+  Vfs(Vfs&& other) noexcept;
+  Vfs& operator =(const Vfs& other) noexcept;
+  Vfs& operator =(Vfs&& other) noexcept;
 };
 
 /** File I/O interface without any assumptions on the access pattern.
@@ -148,9 +158,16 @@ class RandomAccessFile {
 
  protected:
   /** Instances must be created using Vfs::OpenForRandomAccess(). */
-  RandomAccessFile();
+  RandomAccessFile() noexcept;
   /** Instances must be destroyed using Close(). */
-  virtual ~RandomAccessFile() = 0;
+  virtual ~RandomAccessFile();
+
+  // Copy and move assignment + construction are protected so that subclasses
+  // can enable them, if they wish to do so.
+  RandomAccessFile(const RandomAccessFile& other) noexcept;
+  RandomAccessFile(RandomAccessFile&& other) noexcept;
+  RandomAccessFile& operator =(const RandomAccessFile& other) noexcept;
+  RandomAccessFile& operator =(RandomAccessFile&& other) noexcept;
 };
 
 /** Interface for accessing files via block-based I/O.
@@ -226,9 +243,14 @@ class BlockAccessFile {
 
  protected:
   /** Instances must be created using Vfs::OpenForBlockAccess(). */
-  BlockAccessFile();
+  BlockAccessFile() noexcept;
   /** Instances must be destroyed using Close(). */
   virtual ~BlockAccessFile() = 0;
+
+  BlockAccessFile(const BlockAccessFile& other) noexcept;
+  BlockAccessFile(BlockAccessFile&& other) noexcept;
+  BlockAccessFile& operator =(const BlockAccessFile& other) noexcept;
+  BlockAccessFile& operator =(BlockAccessFile&& other) noexcept;
 };
 
 /**

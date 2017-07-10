@@ -78,9 +78,9 @@ class Store {
   friend class StoreImpl;
 
   /** Use Pool::OpenStore() to create Store instances. */
-  Store() = default;
+  constexpr Store() noexcept = default;
   /** Use Release() to destroy Store instances. */
-  ~Store() = default;
+  ~Store() noexcept = default;
 };
 
 }  // namespace berrydb

@@ -7,6 +7,8 @@
 
 #include "berrydb/transaction.h"
 #include "./page.h"
+// #include "./page_pool.h" would cause a cycle
+// #include "./store_impl.h" would cause a cycle
 #include "./util/linked_list.h"
 
 namespace berrydb {
@@ -57,42 +59,162 @@ class TransactionImpl {
   inline StoreImpl* store() const noexcept { return store_; }
 
 #if DCHECK_IS_ON()
-  /** Number of pool pages assigned to this transaction. DCHECKs use only.
+  /** Number of pool pages assigned to this transaction. DCHECK use only.
    *
    * This includes pinned pages and pages in the LRU list. */
   inline size_t AssignedPageCount() const noexcept {
     return pool_pages_.size();
   }
+
+  /** True if this transaction is the store's init transaction. DCHECK use only.
+   *
+   * This method is not allowed for non-DCHECK use because its implementation
+   * cannot be inlined. The implementation cannot be inlined because it depends
+   * on the StoreImpl class, whose declaration depends on TransactionImpl. */
+  bool IsInit() const noexcept;
 #endif  // DCHECK_IS_ON()
 
-  /** Called when a Page is assigned to this transaction.
+  /** Prepares a page pool entry for caching a page in this transaction's store.
    *
    * Registers the page on the transaction's list of assigned pages, so the page
    * can be logged (for write transactions) or unassigned (for store init
    * transactions) when the transaction is closed.
    *
-   * Must be called after the Page's transaction is set to this transaction. */
-  inline void PageAssigned(Page* page) noexcept {
+   * The caller must have a pin on the page pool entry, and the page pool entry
+   * must not be currently assigned to cache any store's data.
+   *
+   * @param page    the page pool entry that will cache a store page
+   * @param page_id the ID of the store data page that will be cached by the
+   *                page pool entry
+   */
+  inline void AssignPage(Page* page, size_t page_id) noexcept {
     DCHECK(page != nullptr);
-    DCHECK_EQ(page->transaction(), this);
-#if DCHECK_IS_ON()
-    DcheckPageBelongsToTransaction(page);
-#endif  // DCHECK_IS_ON()
+    DCHECK(!page->IsUnpinned());
+    DCHECK(page->transaction() == nullptr);
+
+    page->WillCacheStoreData(this, page_id);
     pool_pages_.push_back(page);
   }
 
-  /** Called when a Page is unassigned from this transaction.
+  /** Prepares a Page that will not be caching a page in this transaction store.
    *
-   * Calls to this method must be paired with PageAssigned() calls. The call
-
-   * Must be called before the Page's transaction is unset. */
-  inline void PageUnassigned(Page* page) noexcept {
+   * The caller must have a pin on the page pool entry. The page pool entry must
+   * be currently caching a page in this transaction's store, and must be
+   * assigned to this transaction.
+   *
+   * @param page a page pool entry that was caching a page in this transaction's
+   *             store, and will not be caching the page anymore
+   */
+  inline void UnassignPage(Page* page) noexcept {
     DCHECK(page != nullptr);
+    DCHECK(!page->IsUnpinned());
+    DCHECK_EQ(page->transaction(), this);
 #if DCHECK_IS_ON()
     DcheckPageBelongsToTransaction(page);
 #endif  // DCHECK_IS_ON()
 
     pool_pages_.erase(page);
+    page->DoesNotCacheStoreData();
+  }
+
+  /** Called when this transaction will modify a page pool entry's data buffer.
+   *
+   * In order to guarantee durability, this method must be called before the
+   * entry's data buffer is modified. The modification is tied to this
+   * transaction, and will be persisted iff the transaction is committed.
+   *
+   * This page pool entry must be caching a page that belongs to the
+   * transaction's store. The caller must have a pin on this page pool entry.
+   *
+   * @param page the Page whose data buffer will be modified in this transaction
+   */
+  inline void WillModifyPage(Page* page) noexcept {
+    DCHECK(page != nullptr);
+    DCHECK(!page->IsUnpinned());
+    DCHECK(page->transaction() != nullptr);
+    DCHECK_EQ(page->transaction()->store(), store_);
+
+    // The init transaction will never be committed, so it cannot be used to
+    // modify pages.
+#if DCHECK_IS_ON()
+    DCHECK(!is_init_);
+#endif  // DCHECK_IS_ON()
+
+    TransactionImpl* page_transaction = page->transaction();
+    if (page_transaction != this) {
+      // A page may not be modified by two transactions at the same time. This
+      // follows from the concurrency model, which states that a Space modified
+      // by a transaction must not be accessed by any concurrent transaction.
+#if DCHECK_IS_ON()
+      DCHECK(page->transaction()->is_init_);
+#endif  // DCHECK_IS_ON()
+      DCHECK(!page->is_dirty());
+
+      // TODO(pwnall): Once logging is done, consider if it's possible for a
+      //     page not to be dirty while it is assigned to a non-init
+      //     transaction. If not, this check can be turned into an early return
+      //     when the page is already assigned to this transaction.
+      page_transaction->pool_pages_.erase(page);
+      pool_pages_.push_back(page);
+      page->ReassignToTransaction(this);
+    }
+
+    page->SetDirty(true);
+  }
+
+  /** Called when a page assigned to this transaction was persisted.
+   *
+   * Pages should only be persisted when they are dirty. Persisting a page
+   * involves writing it to the store data file, or writing a REDO log record
+   * for it to the log file, and (in some cases) flushing the log file.
+   *
+   * @param page the Page whose data buffer was written to persistent storage
+   */
+  inline void PageWasPersisted(
+      Page* page, TransactionImpl* init_transaction) noexcept {
+    DCHECK(page != nullptr);
+    DCHECK(!page->IsUnpinned());
+    DCHECK_EQ(page->transaction(), this);
+
+    DCHECK(init_transaction != nullptr);
+    DCHECK_EQ(init_transaction->store(), store_);
+#if DCHECK_IS_ON()
+    DCHECK(init_transaction->is_init_);
+#endif  // DCHECK_IS_ON()
+
+    if (this == init_transaction) {
+      // Pages owned by an init transaction cannot be dirty.
+      DCHECK(!page->is_dirty());
+      return;
+    }
+
+    pool_pages_.erase(page);
+    init_transaction->pool_pages_.push_back(page);
+    page->ReassignToTransaction(init_transaction);
+    page->SetDirty(false);
+  }
+
+  /** Prepares a Page that will not be caching a page in this transaction store.
+   *
+   * The caller must have a pin on the page pool entry. The page pool entry must
+   * be currently caching a page in this transaction's store, and must be
+   * assigned to this transaction. The page must have been recently
+   *
+   * @param page a page pool entry that was caching a page in this transaction's
+   *             store, and will not be caching the page anymore
+   */
+  inline void UnassignPersistedPage(Page* page) noexcept {
+    DCHECK(page != nullptr);
+    DCHECK(!page->IsUnpinned());
+    DCHECK_EQ(page->transaction(), this);
+    DCHECK(page->is_dirty());
+#if DCHECK_IS_ON()
+    DCHECK(!is_init_);
+#endif  // DCHECK_IS_ON()
+
+    pool_pages_.erase(page);
+    page->DoesNotCacheStoreData();
+    page->SetDirty(false);
   }
 
   // See the public API documention for details.
@@ -126,7 +248,13 @@ class TransactionImpl {
   /** Use TransactionImpl::Create() to obtain TransactionImpl instances. */
   TransactionImpl(StoreImpl* store);
 
-  /** Common path of commit and abort. */
+  // Transactions cannot be copied or moved.
+  TransactionImpl(const TransactionImpl& other) = delete;
+  TransactionImpl(TransactionImpl&& other) = delete;
+  TransactionImpl& operator =(const TransactionImpl& other) = delete;
+  TransactionImpl& operator =(TransactionImpl&& other) = delete;
+
+  /** Common functionality in Commit() and Rollback(). */
   Status Close();
 
 #if DCHECK_IS_ON()

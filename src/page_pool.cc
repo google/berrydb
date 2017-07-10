@@ -40,52 +40,6 @@ PagePool::~PagePool() {
   }
 }
 
-void PagePool::UnpinStorePage(Page* page) {
-  DCHECK(page != nullptr);
-  DCHECK(page->transaction() != nullptr);
-  DCHECK(page->transaction()->store() != nullptr);
-#if DCHECK_IS_ON()
-  DCHECK_EQ(page->page_pool(), this);
-#endif  // DCHECK_IS_ON()
-
-  page->RemovePin();
-  if (page->IsUnpinned())
-    lru_list_.push_back(page);
-}
-
-void PagePool::UnpinAndWriteStorePage(Page* page) {
-  DCHECK(page != nullptr);
-  DCHECK(page->is_dirty());
-  DCHECK(page->transaction() != nullptr);
-  DCHECK(page->transaction()->store() != nullptr);
-#if DCHECK_IS_ON()
-  DCHECK_EQ(page->page_pool(), this);
-#endif  // DCHECK_IS_ON()
-
-  // TODO(pwnall): After all the code is written, figure out if there's a more
-  //               compact version of this code, depending on where it is used.
-
-  page->RemovePin();
-  if (!page->IsUnpinned())
-    return;
-
-  TransactionImpl* transaction = page->transaction();
-  StoreImpl* store = transaction->store();
-  Status write_status = store->WritePage(page);
-  // TODO(pwnall): Reassign the Page to the store's init transaction.
-  page->MarkDirty(false);
-  if (write_status != Status::kSuccess) {
-    // TODO(pwnall): Figure out the correct strategy for unassigning here.
-    page->UnassignFromStore();
-    transaction->PageUnassigned(page);
-    free_list_.push_back(page);
-    store->Close();
-    return;
-  }
-
-  lru_list_.push_back(page);
-}
-
 void PagePool::UnpinUnassignedPage(Page* page) {
   DCHECK(page != nullptr);
 #if DCHECK_IS_ON()
@@ -112,15 +66,11 @@ void PagePool::UnassignPageFromStore(Page* page) {
   page_map_.erase(std::make_pair(store, page->page_id()));
   if (page->is_dirty()) {
     Status write_status = store->WritePage(page);
-    page->MarkDirty(false);
-
-    page->UnassignFromStore();
-    transaction->PageUnassigned(page);
+    transaction->UnassignPersistedPage(page);
     if (write_status != Status::kSuccess)
       store->Close();
   } else {
-    page->UnassignFromStore();
-    transaction->PageUnassigned(page);
+    transaction->UnassignPage(page);
   }
 }
 
@@ -188,16 +138,14 @@ Status PagePool::AssignPageToStore(
 #endif  // DCHECK_IS_ON()
 
   TransactionImpl* transaction = store->init_transaction();
-  page->Assign(transaction, page_id);
-  transaction->PageAssigned(page);
+  transaction->AssignPage(page, page_id);
   Status fetch_status = FetchStorePage(page, fetch_mode);
   if (fetch_status == Status::kSuccess) {
     page_map_[std::make_pair(store, page_id)] = page;
     return Status::kSuccess;
   }
 
-  page->UnassignFromStore();
-  transaction->PageUnassigned(page);
+  transaction->UnassignPage(page);
   return fetch_status;
 }
 

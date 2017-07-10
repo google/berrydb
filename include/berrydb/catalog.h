@@ -64,10 +64,10 @@ class Catalog {
   /**
    * Create instances via Store::RootCatalog() and Catalog/Transaction methods.
    */
-  Catalog() = default;
+  constexpr Catalog() noexcept = default;
 
   /** Use Release() to destroy Catalog instances. */
-  ~Catalog() = default;
+  ~Catalog() noexcept = default;
 };
 
 }  // namespace berrydb

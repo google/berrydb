@@ -8,6 +8,7 @@
 
 #include "berrydb/options.h"
 #include "berrydb/vfs.h"
+#include "./free_page_list.h"
 #include "./pool_impl.h"
 #include "./transaction_impl.h"
 
@@ -80,37 +81,36 @@ Status StoreImpl::Bootstrap() {
   if (fetch_status != Status::kSuccess)
     return fetch_status;
 
-  header_page->MarkDirty();
+  TransactionImpl* transaction = CreateTransaction();
+
+  transaction->WillModifyPage(header_page);
   uint8_t* header_data = header_page->data();
   std::memset(header_data, 0, 1 << header_.page_shift);
-  header_.free_list_head_page = 1;
-  header_.page_count = 3;
+  header_.free_list_head_page = FreePageList::kInvalidPageId;
+  header_.page_count = 2;
   // header.page_shift is already set correctly by the constructor.
   header_.Serialize(header_data);
-  page_pool_->UnpinAndWriteStorePage(header_page);
-
-  Page* free_list_head_page;
-  fetch_status = page_pool_->StorePage(
-      this, 1, PagePool::kIgnorePageData, &free_list_head_page);
-  if (fetch_status != Status::kSuccess)
-    return fetch_status;
-
-  free_list_head_page->MarkDirty();
-  std::memset(free_list_head_page->data(), 0, 1 << header_.page_shift);
-  // TODO(pwnall): Bootstrap the free page list here.
-  page_pool_->UnpinAndWriteStorePage(free_list_head_page);
+  page_pool_->UnpinStorePage(header_page);
 
   Page* root_catalog_page;
   fetch_status = page_pool_->StorePage(
-      this, 2, PagePool::kIgnorePageData, &root_catalog_page);
-  if (fetch_status != Status::kSuccess)
+      this, 1, PagePool::kIgnorePageData, &root_catalog_page);
+  if (fetch_status != Status::kSuccess) {
+    transaction->Rollback();
+    transaction->Release();
     return fetch_status;
+  }
 
-  root_catalog_page->MarkDirty();
+  transaction->WillModifyPage(root_catalog_page);
   std::memset(root_catalog_page->data(), 0, 1 << header_.page_shift);
   // TODO(pwnall): Bootstrap the root catalog here.
-  page_pool_->UnpinAndWriteStorePage(root_catalog_page);
+  page_pool_->UnpinStorePage(root_catalog_page);
 
+  Status commit_status = transaction->Commit();
+  if (commit_status != Status::kSuccess)
+    return commit_status;
+
+  transaction->Release();
   return Status::kSuccess;
 }
 
@@ -129,7 +129,7 @@ Status StoreImpl::Close() {
   }
 
   // We cannot transition directly into the closed state because we want to
-  // abort the live transactions cleanly, assuming no I/O errors.
+  // roll back the live transactions cleanly, assuming no I/O errors.
   state_ = State::kClosing;
 
   // Replace the entire transaction list so TransactionClosed() doesn't

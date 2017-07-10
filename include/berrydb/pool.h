@@ -44,9 +44,9 @@ class Pool {
   friend class PoolImpl;
 
   /** Use Pool::Create() to create Pool instances. */
-  Pool() = default;
+  constexpr Pool() noexcept = default;
   /** Use Release() to destroy Pool instances. */
-  ~Pool() = default;
+  ~Pool() noexcept = default;
 };
 
 }  // namespace berrydb

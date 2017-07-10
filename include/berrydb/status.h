@@ -37,8 +37,13 @@ enum class Status : int {
   // This error can only occur when a database used on a 64-bit CPU is opened on
   // a 32-bit CPU.
   kDatabaseTooLarge = 8,
+
+  // Valid values are in [kSuccess, kFirstInvalidValue).
+  kFirstInvalidValue,  // This must remain at the end of the enum's block.
 };
+
+const char* StatusToCString(Status status) noexcept;
 
 }  // namespace berrydb
 
-#endif  // BERRYDB_INCLUDE_TRANSACTION_H_
+#endif  // BERRYDB_INCLUDE_STATUS_H_
