@@ -13,6 +13,7 @@
 #include "berrydb/options.h"
 #include "berrydb/store.h"
 #include "berrydb/vfs.h"
+#include "./free_page_list_format.h"
 #include "./page_pool.h"
 #include "./pool_impl.h"
 #include "./store_impl.h"
@@ -68,9 +69,13 @@ class FreePageListTest : public ::testing::Test {
 
   const std::string kStoreFileName = "test_free_page_list.berry";
 
+  static constexpr size_t kStorePageShift = 8;  // 256-byte pages
+
+  // The first page in the data store file that can be changed.
+  static constexpr size_t kBasePage = 3;
   // 256-byte store pages have 240 bytes for free page list entres, so a page
-  // has 14 entries.
-  constexpr static size_t kStorePageShift = 8;  // 256-byte pages
+  // has 30 entries.
+  static constexpr size_t kEntriesPerPage = 30;
 
   Vfs* vfs_;
   // Must precede UniquePtr members, because on Windows all file handles must be
@@ -85,8 +90,322 @@ class FreePageListTest : public ::testing::Test {
   std::mt19937 rnd_;
 };
 
-TEST_F(FreePageListTest, Push) {
-  return;
+constexpr size_t FreePageListTest::kStorePageShift;
+constexpr size_t FreePageListTest::kBasePage;
+constexpr size_t FreePageListTest::kEntriesPerPage;
+
+TEST_F(FreePageListTest, PushPop) {
+  CreatePool(kStorePageShift, 128);
+  PagePool* page_pool = pool_->page_pool();
+
+  EXPECT_EQ(0U, data_file_size_);
+  UniquePtr<StoreImpl> store(StoreImpl::Create(
+      data_file_.release(), data_file_size_, log_file_.release(),
+      log_file_size_, page_pool, StoreOptions()));
+
+  FreePageList free_page_list;
+  TransactionImpl* alloc_transaction = store->CreateTransaction();
+
+  for (size_t i = kBasePage; i < 128 + kBasePage; ++i)
+    ASSERT_EQ(Status::kSuccess, free_page_list.Push(alloc_transaction, i));
+
+  // Test for the empty page and entry-available-in-page case.
+
+  for (size_t i = 128 + kBasePage - 1; i >= kBasePage; --i) {
+    size_t page_id = FreePageList::kInvalidPageId;
+    ASSERT_EQ(Status::kSuccess, free_page_list.Pop(
+        alloc_transaction, &page_id));
+    EXPECT_EQ(i, page_id);
+  }
+
+  // Test for the empty list case.
+
+  size_t page_id = kBasePage;
+  ASSERT_EQ(Status::kSuccess, free_page_list.Pop(
+      alloc_transaction, &page_id));
+  EXPECT_EQ(FreePageList::kInvalidPageId, page_id);
 }
+
+TEST_F(FreePageListTest, PushState) {
+  CreatePool(kStorePageShift, 3);
+  PagePool* page_pool = pool_->page_pool();
+
+  EXPECT_EQ(0U, data_file_size_);
+  UniquePtr<StoreImpl> store(StoreImpl::Create(
+      data_file_.release(), data_file_size_, log_file_.release(),
+      log_file_size_, page_pool, StoreOptions()));
+
+  FreePageList free_page_list;
+  TransactionImpl* alloc_transaction = store->CreateTransaction();
+
+  // Test for the empty list case and space-available-in-page case.
+
+  for (size_t i = 0; i <= kEntriesPerPage; ++i) {
+    ASSERT_EQ(Status::kSuccess, free_page_list.Push(
+        alloc_transaction, kBasePage + i));
+    EXPECT_EQ(kBasePage, free_page_list.head_page_id());
+    EXPECT_EQ(kBasePage, free_page_list.tail_page_id());
+
+    Page* list_head_page;
+    ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
+        store.get(), kBasePage, PagePool::kFetchPageData, &list_head_page));
+    EXPECT_EQ(alloc_transaction, list_head_page->transaction());
+    EXPECT_TRUE(list_head_page->is_dirty());
+
+    uint8_t* list_head_data = list_head_page->data();
+    EXPECT_EQ(
+        FreePageList::kInvalidPageId,
+        FreePageListFormat::NextPageId64(list_head_data));
+    EXPECT_EQ(
+        FreePageListFormat::kFirstEntryOffset +
+            i * FreePageListFormat::kEntrySize,
+        FreePageListFormat::NextEntryOffset(list_head_data));
+    for (size_t j = 1; j <= i; ++j) {
+      EXPECT_EQ(
+          static_cast<uint64_t>(kBasePage + j),
+          LoadUint64(
+              list_head_data + FreePageListFormat::kFirstEntryOffset +
+              (j - 1) * FreePageListFormat::kEntrySize));
+    }
+
+    // Make sure that the list didn't touch any page unnecessarily.
+    EXPECT_LT(1U, page_pool->page_capacity());
+    EXPECT_EQ(1U, page_pool->allocated_pages());
+    EXPECT_EQ(0U, page_pool->unused_pages());
+
+    // Evict the head page so it's not dirty anymore.
+    page_pool->UnassignPageFromStore(list_head_page);
+    ASSERT_FALSE(list_head_page->is_dirty());
+    page_pool->UnpinUnassignedPage(list_head_page);
+  }
+
+  // Test for the page-full case.
+
+  ASSERT_EQ(Status::kSuccess, free_page_list.Push(
+      alloc_transaction, kBasePage + kEntriesPerPage + 1));
+  EXPECT_EQ(kBasePage + kEntriesPerPage + 1, free_page_list.head_page_id());
+  EXPECT_EQ(kBasePage, free_page_list.tail_page_id());
+
+  Page* list_head_page;
+  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
+      store.get(), kBasePage + kEntriesPerPage + 1, PagePool::kFetchPageData,
+      &list_head_page));
+  EXPECT_EQ(alloc_transaction, list_head_page->transaction());
+  EXPECT_TRUE(list_head_page->is_dirty());
+
+  uint8_t* list_head_data = list_head_page->data();
+  EXPECT_EQ(
+      kBasePage, FreePageListFormat::NextPageId64(list_head_data));
+  EXPECT_EQ(
+      FreePageListFormat::kFirstEntryOffset,
+      FreePageListFormat::NextEntryOffset(list_head_data));
+
+  Page* list_tail_page;
+  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
+      store.get(), kBasePage, PagePool::kFetchPageData, &list_tail_page));
+  EXPECT_EQ(store->init_transaction(), list_tail_page->transaction());
+  EXPECT_FALSE(list_tail_page->is_dirty());
+
+  uint8_t* list_tail_data = list_tail_page->data();
+  EXPECT_EQ(
+      FreePageList::kInvalidPageId,
+      FreePageListFormat::NextPageId64(list_tail_data));
+  EXPECT_EQ(
+      page_pool->page_size(),
+      FreePageListFormat::NextEntryOffset(list_tail_data));
+
+  // Make sure that the list didn't touch any page unnecessarily.
+  //
+  // The list needed to touch the old head page to realize it's full, and the
+  // new head page to build the list page data structures.
+  EXPECT_LT(2U, page_pool->page_capacity());
+  EXPECT_EQ(2U, page_pool->allocated_pages());
+  EXPECT_EQ(0U, page_pool->unused_pages());
+
+  // Test for the corrupted page case.
+
+  StoreUint64(19, list_head_data + FreePageListFormat::kNextEntryOffset);
+  uint8_t list_head_copy[1 << kStorePageShift];
+  ASSERT_EQ(1U << kStorePageShift, page_pool->page_size());
+  std::memcpy(list_head_copy, list_head_data, page_pool->page_size());
+  // Evict the head page so it's not dirty anymore.
+  page_pool->UnassignPageFromStore(list_head_page);
+  ASSERT_FALSE(list_head_page->is_dirty());
+  page_pool->UnpinUnassignedPage(list_head_page);
+
+  EXPECT_EQ(Status::kDataCorrupted, free_page_list.Push(
+      alloc_transaction, kBasePage + kEntriesPerPage + 1));
+
+  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
+      store.get(), kBasePage + kEntriesPerPage + 1, PagePool::kFetchPageData,
+      &list_head_page));
+  EXPECT_EQ(store->init_transaction(), list_head_page->transaction());
+  EXPECT_FALSE(list_head_page->is_dirty());
+
+  list_head_data = list_head_page->data();
+  EXPECT_EQ(0, std::memcmp(
+      list_head_copy, list_head_data, page_pool->page_size()));
+
+  page_pool->UnpinStorePage(list_head_page, PagePool::kCachePage);
+  page_pool->UnpinStorePage(list_tail_page, PagePool::kCachePage);
+  EXPECT_EQ(Status::kSuccess, alloc_transaction->Rollback());
+}
+
+TEST_F(FreePageListTest, PopState) {
+  CreatePool(kStorePageShift, 3);
+  PagePool* page_pool = pool_->page_pool();
+
+  EXPECT_EQ(0U, data_file_size_);
+  UniquePtr<StoreImpl> store(StoreImpl::Create(
+      data_file_.release(), data_file_size_, log_file_.release(),
+      log_file_size_, page_pool, StoreOptions()));
+
+  FreePageList free_page_list;
+  TransactionImpl* alloc_transaction = store->CreateTransaction();
+
+  // Set up the list.
+
+  for (size_t i = 0; i <= kEntriesPerPage + 1; ++i) {
+    ASSERT_EQ(Status::kSuccess, free_page_list.Push(
+        alloc_transaction, kBasePage + i));
+  }
+  ASSERT_EQ(kBasePage + kEntriesPerPage + 1, free_page_list.head_page_id());
+  ASSERT_EQ(kBasePage, free_page_list.tail_page_id());
+
+  Page* list_head_page;
+  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
+      store.get(), kBasePage + kEntriesPerPage + 1, PagePool::kFetchPageData,
+      &list_head_page));
+  ASSERT_EQ(alloc_transaction, list_head_page->transaction());
+  ASSERT_TRUE(list_head_page->is_dirty());
+
+  Page* list_tail_page;
+  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
+      store.get(), kBasePage, PagePool::kFetchPageData, &list_tail_page));
+  ASSERT_EQ(alloc_transaction, list_tail_page->transaction());
+  ASSERT_TRUE(list_tail_page->is_dirty());
+
+  page_pool->UnassignPageFromStore(list_head_page);
+  ASSERT_FALSE(list_head_page->is_dirty());
+  page_pool->UnpinUnassignedPage(list_head_page);
+  page_pool->UnassignPageFromStore(list_tail_page);
+  ASSERT_FALSE(list_tail_page->is_dirty());
+  page_pool->UnpinUnassignedPage(list_tail_page);
+
+  ASSERT_LT(2U, page_pool->page_capacity());
+  ASSERT_EQ(2U, page_pool->allocated_pages());
+  ASSERT_EQ(2U, page_pool->unused_pages());
+
+  // Test for the empty page case.
+
+  size_t page_id = FreePageList::kInvalidPageId;
+  ASSERT_EQ(Status::kSuccess, free_page_list.Pop(
+      alloc_transaction, &page_id));
+  EXPECT_EQ(kBasePage + kEntriesPerPage + 1, page_id);
+  EXPECT_EQ(kBasePage, free_page_list.head_page_id());
+  EXPECT_EQ(kBasePage, free_page_list.tail_page_id());
+
+  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
+      store.get(), kBasePage + kEntriesPerPage + 1, PagePool::kFetchPageData,
+      &list_tail_page));
+
+  EXPECT_EQ(store->init_transaction(), list_head_page->transaction());
+  EXPECT_FALSE(list_head_page->is_dirty());
+
+  // Make sure that the list didn't touch any page unnecessarily.
+  EXPECT_LT(2U, page_pool->page_capacity());
+  EXPECT_EQ(2U, page_pool->allocated_pages());
+  EXPECT_EQ(1U, page_pool->unused_pages());
+
+  // Evict the tail page to make sure it doesn't get accessed anymore.
+  page_pool->UnassignPageFromStore(list_tail_page);
+  ASSERT_FALSE(list_tail_page->is_dirty());
+  page_pool->UnpinUnassignedPage(list_tail_page);
+
+  // Test for the entry-available-in-page case.
+
+  for (size_t i = 0; i < kEntriesPerPage; ++i) {
+    size_t page_id = FreePageList::kInvalidPageId;
+    ASSERT_EQ(Status::kSuccess, free_page_list.Pop(
+        alloc_transaction, &page_id));
+    EXPECT_EQ(kBasePage + kEntriesPerPage - i, page_id);
+    EXPECT_EQ(kBasePage, free_page_list.head_page_id());
+    EXPECT_EQ(kBasePage, free_page_list.tail_page_id());
+
+    ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
+        store.get(), kBasePage, PagePool::kFetchPageData, &list_head_page));
+    EXPECT_EQ(alloc_transaction, list_head_page->transaction());
+    EXPECT_TRUE(list_head_page->is_dirty());
+
+    uint8_t* list_head_data = list_head_page->data();
+    EXPECT_EQ(
+        FreePageList::kInvalidPageId,
+        FreePageListFormat::NextPageId64(list_head_data));
+    EXPECT_EQ(
+        FreePageListFormat::kFirstEntryOffset +
+            (kEntriesPerPage - 1 - i) * FreePageListFormat::kEntrySize,
+        FreePageListFormat::NextEntryOffset(list_head_data));
+
+    for (size_t j = 1; j <= kEntriesPerPage; ++j) {
+      EXPECT_EQ(
+          static_cast<uint64_t>(kBasePage + j),
+          LoadUint64(
+              list_head_data + FreePageListFormat::kFirstEntryOffset +
+              (j - 1) * FreePageListFormat::kEntrySize));
+    }
+
+    // Make sure that the list didn't touch any page unnecessarily.
+    EXPECT_LT(2U, page_pool->page_capacity());
+    EXPECT_EQ(2U, page_pool->allocated_pages());
+    EXPECT_EQ(1U, page_pool->unused_pages());
+
+    // Evict the head page so it's not dirty anymore.
+    page_pool->UnassignPageFromStore(list_head_page);
+    ASSERT_FALSE(list_head_page->is_dirty());
+    page_pool->UnpinUnassignedPage(list_head_page);
+  }
+
+  // Test for the case of an empty page leading to an empty list.
+
+  page_id = FreePageList::kInvalidPageId;
+  ASSERT_EQ(Status::kSuccess, free_page_list.Pop(
+      alloc_transaction, &page_id));
+  EXPECT_EQ(kBasePage, page_id);
+  EXPECT_EQ(FreePageList::kInvalidPageId, free_page_list.head_page_id());
+  EXPECT_EQ(FreePageList::kInvalidPageId, free_page_list.tail_page_id());
+
+  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
+      store.get(), kBasePage, PagePool::kFetchPageData, &list_head_page));
+  EXPECT_EQ(store->init_transaction(), list_head_page->transaction());
+  EXPECT_FALSE(list_head_page->is_dirty());
+
+  // Make sure that the list didn't touch any page unnecessarily.
+  EXPECT_LT(2U, page_pool->page_capacity());
+  EXPECT_EQ(2U, page_pool->allocated_pages());
+  EXPECT_EQ(1U, page_pool->unused_pages());
+
+  // Evict the head page so it's not accessed anymore.
+  page_pool->UnassignPageFromStore(list_head_page);
+  ASSERT_FALSE(list_head_page->is_dirty());
+  page_pool->UnpinUnassignedPage(list_head_page);
+
+  // Test for the empty list case.
+
+  page_id = kBasePage;
+  ASSERT_EQ(Status::kSuccess, free_page_list.Pop(
+      alloc_transaction, &page_id));
+  EXPECT_EQ(FreePageList::kInvalidPageId, page_id);
+  EXPECT_EQ(FreePageList::kInvalidPageId, free_page_list.head_page_id());
+  EXPECT_EQ(FreePageList::kInvalidPageId, free_page_list.tail_page_id());
+
+  // Make sure that the list didn't touch any page unnecessarily.
+  EXPECT_LT(2U, page_pool->page_capacity());
+  EXPECT_EQ(2U, page_pool->allocated_pages());
+  EXPECT_EQ(2U, page_pool->unused_pages());
+
+  EXPECT_EQ(Status::kSuccess, alloc_transaction->Rollback());
+}
+
+// TODO(pwnall): Add tests for merging.
 
 }  // namespace berrydb

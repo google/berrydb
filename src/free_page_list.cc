@@ -46,11 +46,24 @@ Status FreePageList::Pop(TransactionImpl* transaction, size_t* page_id) {
         FreePageListFormat::NextPageId64(head_page_data);
     size_t new_head_page_id = static_cast<size_t>(new_head_page_id64);
     // This check should be optimized out on 64-bit architectures.
-    if (new_head_page_id != new_head_page_id64)
+    if (new_head_page_id != new_head_page_id64) {
+      page_pool->UnpinStorePage(head_page);
       return Status::kDatabaseTooLarge;
+    }
 
     *page_id = head_page_id_;
     head_page_id_ = new_head_page_id;
+    if (new_head_page_id == kInvalidPageId) {
+      tail_page_id_ = kInvalidPageId;
+
+      // It would be correct to set tail_page_is_defined_ to true here. However,
+      // the extra code (and complexity in lifecycle) currently has no benefit.
+      // Transaction free page lists always have tail_page_is_defined_ set to
+      // true, and Store free page lists always have tail_page_is_defined_ set
+      // to false. The extra code would get tail_page_is_defined_ set to true
+      // for Stores in rare cases. However, Store lists are never merged into
+      // other lists.
+    }
 
     page_pool->UnpinStorePage(head_page);
     return Status::kSuccess;
@@ -108,10 +121,11 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
 
       // There's room for another entry in the page.
       transaction->WillModifyPage(head_page);
-      FreePageListFormat::SetNextEntryOffset(next_entry_offset, head_page_data);
       StoreUint64(
           static_cast<uint64_t>(page_id),
           head_page_data + next_entry_offset);
+      next_entry_offset += FreePageListFormat::kEntrySize;
+      FreePageListFormat::SetNextEntryOffset(next_entry_offset, head_page_data);
       page_pool->UnpinStorePage(head_page);
       return Status::kSuccess;
     }
@@ -283,5 +297,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
   page_pool->UnpinStorePage(head_page);
   return Status::kSuccess;
 }
+
+constexpr size_t FreePageList::kInvalidPageId;
 
 }  // namespace berrydb

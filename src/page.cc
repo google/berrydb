@@ -69,7 +69,12 @@ void Page::DcheckDirtyValueIsValid(bool is_dirty) {
   // an init transaction, or must have been unassigned from a store.
   DCHECK(is_dirty || (transaction_ == nullptr || transaction_->IsInit()));
 
-  DCHECK(is_dirty != is_dirty_);
+  // TODO(pwnall): It is currently possible for a page's dirty flag to be set to
+  //               true multiple times. This is tied to whether a page is
+  //               associated to a non-init transaction only when it is dirty.
+  //               Re-visit the assertion below after the whole system is in
+  //               place.
+  // DCHECK(is_dirty != is_dirty_);
 }
 
 void Page::DcheckTransactionReassignmentIsValid(TransactionImpl* transaction) {

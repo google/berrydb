@@ -106,6 +106,7 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/src/page.h"
     "${PROJECT_SOURCE_DIR}/src/catalog_impl.cc"
     "${PROJECT_SOURCE_DIR}/src/catalog_impl.h"
+    "${PROJECT_SOURCE_DIR}/src/free_page_list_format.cc"
     "${PROJECT_SOURCE_DIR}/src/free_page_list_format.h"
     "${PROJECT_SOURCE_DIR}/src/free_page_list.cc"
     "${PROJECT_SOURCE_DIR}/src/free_page_list.h"

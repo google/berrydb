@@ -155,6 +155,10 @@ Status TransactionImpl::Commit() {
     page_pool->UnpinStorePage(page);
   }
 
+  // TODO(pwnall): Instead of moving the pages between transaction lists one by
+  //               one, we could insert the committed transaction list into the
+  //               init transaction list in O(1).
+
   is_committed_ = true;
   return Close();
 }
