@@ -17,7 +17,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   # Use the highest warning level for Visual Studio.
   set(CMAKE_CXX_WARNING_LEVEL 4)
   if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
-    STRING(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   else(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
   endif(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
@@ -34,10 +34,10 @@ else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   endif(NOT CMAKE_CXX_FLAGS MATCHES "-Werror$")
 
   # Disable C++ exceptions
-  STRING(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
   # Disable RTTI
-  STRING(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  string(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
 option(BERRYDB_BUILD_TESTS "Build BerryDB's unit tests" ON)
@@ -228,6 +228,7 @@ if(BERRYDB_BUILD_BENCHMARKS)
   target_sources(berrydb_bench
     PRIVATE
       "${PROJECT_SOURCE_DIR}/src/bench/benchmark_main.cc"
+      "${PROJECT_SOURCE_DIR}/src/bench/snappy_benchmark.cc"
       "${PROJECT_SOURCE_DIR}/src/bench/vfs_benchmark.cc"
       "${PROJECT_SOURCE_DIR}/src/test/file_deleter.cc"
       "${PROJECT_SOURCE_DIR}/src/test/file_deleter.h"
@@ -239,6 +240,22 @@ if(BERRYDB_BUILD_BENCHMARKS)
   set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
   add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/benchmark")
   target_link_libraries(berrydb_bench benchmark)
+
+  # This project uses snappy.
+  set(SNAPPY_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/snappy")
+  target_link_libraries(berrydb_bench snappy)
+
+  # Snappy does not plan to fix some warnings.
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(snappy PRIVATE
+      "/wd4100"  # Unreferenced formal parameter.
+      "/wd4244"  # Lossy conversion.
+      "/wd4018"  # Signed/unsigned mismatch.
+    )
+  else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(snappy PRIVATE "-Wno-sign-compare")
+  endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
   if(BERRYDB_USE_GLOG)
     target_link_libraries(berrydb_bench glog)

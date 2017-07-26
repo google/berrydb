@@ -14,6 +14,7 @@
 -Ithird_party/boost/type_traits/include/
 -Ithird_party/googletest/googletest/include/
 -Ithird_party/googletest/googlemock/include/
+-Ithird_party/snappy/
 -Iout/platform/
 -Iout/third_party/glog/
 -std=c++11

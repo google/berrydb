@@ -28,3 +28,7 @@ checked into the project's repository.
 The benchmarking code uses
 [Google benchmark](https://github.com/google/benchmark). Code outside the
 `src/bench/` directory may not reach into Google benchmark.
+
+[Google snappy](https://github.com/google/snappy) is currently used in
+benchmarking code. It may be used for log compression in the future. Until that
+happens, code outside the `bench/` directory may not reach into Google snappy.
