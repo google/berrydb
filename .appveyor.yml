@@ -31,8 +31,10 @@ build_script:
   - mkdir out
   - cd out
   - cmake .. -G "%CMAKE_GENERATOR%" -DBERRYDB_USE_GLOG=0
-      -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
-  - cmake --build . --config %CONFIGURATION%
+      -DCMAKE_CONFIGURATION_TYPES="%CONFIGURATION%"
+  - cmake --build . --config "%CONFIGURATION%"
+  - cd ..
 
 test_script:
-  - ctest -C %CONFIGURATION% --output-on-failure
+  - out\%CONFIGURATION%\berrydb_tests.exe
+  - out\%CONFIGURATION%\berrydb_bench.exe

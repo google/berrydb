@@ -45,7 +45,12 @@ install:
 - echo ${CXX}
 - ${CXX} --version
 
+before_script:
+- mkdir -p out && cd out
+- cmake .. -DBERRYDB_USE_GLOG=$GLOG -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+- cmake --build .
+- cd ..
+
 script:
-- mkdir -p out && cd out &&
-      cmake .. -DBERRYDB_USE_GLOG=$GLOG -DCMAKE_BUILD_TYPE=$BUILD_TYPE &&
-      CTEST_OUTPUT_ON_FAILURE=1 make all test
+- out/berrydb_tests
+- out/berrydb_bench
