@@ -1,5 +1,6 @@
 -Iinclude/
 -Iplatform/
+-Ithird_party/benchmark/include/
 -Ithird_party/boost/assert/include/
 -Ithird_party/boost/config/include/
 -Ithird_party/boost/core/include/

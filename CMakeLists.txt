@@ -1,10 +1,6 @@
 cmake_minimum_required (VERSION 3.1)
-project (BerryDB)
-
-# Update include/berrydb/version.h when changing the numbers below.
-set (BerryDB_VERSION_MAJOR 0)
-set (BerryDB_VERSION_MINOR 1)
-set (BerryDB_VERSION_PATCH 0)
+# Update include/berrydb/version.h when changing the version number.
+project (BerryDB VERSION 0.1.0 LANGUAGES C CXX)
 
 # This project requires C++11.
 set (CMAKE_CXX_STANDARD 11)
@@ -46,6 +42,7 @@ endif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
 option (BERRYDB_BUILD_TESTS "Build BerryDB's unit tests" ON)
 option (BERRYDB_BUILD_CLI "Build CLI for demo" ON)
+option (BERRYDB_BUILD_BENCHMARKS "Build BerryDB's benchmarks" ON)
 option (BERRYDB_USE_GLOG "Build with Google Logging" ON)
 
 include (CheckIncludeFiles)
@@ -86,7 +83,7 @@ include_directories (
   "${PROJECT_SOURCE_DIR}/include"
   "${PROJECT_SOURCE_DIR}/platform"
   "${PROJECT_BINARY_DIR}/platform"
-  )
+)
 
 add_library (berrydb "")
 target_sources(berrydb
@@ -146,7 +143,7 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/include/berrydb/transaction.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/version.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/vfs.h"
-  )
+)
 
 if (BERRYDB_USE_GLOG)
   target_link_libraries (berrydb glog)
@@ -156,7 +153,7 @@ if (BERRYDB_BUILD_TESTS)
   enable_testing()
 
   # Prevent overriding the parent project's compiler/linker settings on Windows.
-  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  set (gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
   # This project is tested using GoogleTest.
   add_subdirectory ("${PROJECT_SOURCE_DIR}/third_party/googletest")
@@ -189,8 +186,7 @@ if (BERRYDB_BUILD_TESTS)
       "${PROJECT_SOURCE_DIR}/src/util/platform_allocator_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/util/platform_deleter_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/util/unique_ptr_unittest.cc"
-    )
-
+  )
   target_link_libraries (berrydb_tests berrydb gtest)
   if (BERRYDB_USE_GLOG)
     target_link_libraries (berrydb_tests glog)
@@ -226,3 +222,25 @@ if (BERRYDB_BUILD_CLI)
     target_link_libraries (berrydb_cli glog)
   endif (BERRYDB_USE_GLOG)
 endif (BERRYDB_BUILD_CLI)
+
+if (BERRYDB_BUILD_BENCHMARKS)
+  add_executable (berrydb_bench "")
+  target_sources (berrydb_bench
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/src/bench/benchmark_main.cc"
+      "${PROJECT_SOURCE_DIR}/src/bench/vfs_benchmark.cc"
+      "${PROJECT_SOURCE_DIR}/src/test/file_deleter.cc"
+      "${PROJECT_SOURCE_DIR}/src/test/file_deleter.h"
+  )
+  target_link_libraries (berrydb_bench berrydb)
+
+  # This project uses Google benchmark for benchmarking.
+  set (BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+  set (BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
+  add_subdirectory ("${PROJECT_SOURCE_DIR}/third_party/benchmark")
+  target_link_libraries (berrydb_bench benchmark)
+
+  if (BERRYDB_USE_GLOG)
+    target_link_libraries (berrydb_bench glog)
+  endif (BERRYDB_USE_GLOG)
+endif (BERRYDB_BUILD_BENCHMARKS)

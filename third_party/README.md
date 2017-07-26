@@ -24,3 +24,7 @@ Asides from the usage described above, `glog` may not be currently used directly
 by any component in the project. For example, the logging macros
 (`LOG(DEBUG) << "hi";`) can be very useful for debugging, but must not be
 checked into the project's repository.
+
+The benchmarking code uses
+[Google benchmark](https://github.com/google/benchmark). Code outside the
+`src/bench/` directory may not reach into Google benchmark.
