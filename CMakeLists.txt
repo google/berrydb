@@ -1,91 +1,91 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required(VERSION 3.1)
 # Update include/berrydb/version.h when changing the version number.
-project (BerryDB VERSION 0.1.0 LANGUAGES C CXX)
+project(BerryDB VERSION 0.1.0 LANGUAGES C CXX)
 
 # This project requires C++11.
-set (CMAKE_CXX_STANDARD 11)
-set (CMAKE_CXX_STANDARD_REQUIRED ON)
-set (CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-configure_file (
+configure_file(
   "${PROJECT_SOURCE_DIR}/src/api/version_unittest.cc.in"
   "${PROJECT_BINARY_DIR}/src/api/version_unittest.cc"
 )
 
 # https://github.com/izenecloud/cmake/blob/master/SetCompilerWarningAll.cmake
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   # Use the highest warning level for Visual Studio.
-  set (CMAKE_CXX_WARNING_LEVEL 4)
-  if (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+  set(CMAKE_CXX_WARNING_LEVEL 4)
+  if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
     STRING(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  else (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-  endif (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+  else(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+  endif(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
 
-else (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   # use -Wall for clang and gcc
-  if (NOT CMAKE_CXX_FLAGS MATCHES "-Wall$")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-  endif (NOT CMAKE_CXX_FLAGS MATCHES "-Wall$")
+  if(NOT CMAKE_CXX_FLAGS MATCHES "-Wall$")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+  endif(NOT CMAKE_CXX_FLAGS MATCHES "-Wall$")
 
   # use -Werror for clang and gcc
-  if (NOT CMAKE_CXX_FLAGS MATCHES "-Werror$")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
-  endif (NOT CMAKE_CXX_FLAGS MATCHES "-Werror$")
+  if(NOT CMAKE_CXX_FLAGS MATCHES "-Werror$")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+  endif(NOT CMAKE_CXX_FLAGS MATCHES "-Werror$")
 
   # Disable C++ exceptions
   STRING(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
   # Disable RTTI
   STRING(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-endif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
-option (BERRYDB_BUILD_TESTS "Build BerryDB's unit tests" ON)
-option (BERRYDB_BUILD_CLI "Build CLI for demo" ON)
-option (BERRYDB_BUILD_BENCHMARKS "Build BerryDB's benchmarks" ON)
-option (BERRYDB_USE_GLOG "Build with Google Logging" ON)
+option(BERRYDB_BUILD_TESTS "Build BerryDB's unit tests" ON)
+option(BERRYDB_BUILD_CLI "Build CLI for demo" ON)
+option(BERRYDB_BUILD_BENCHMARKS "Build BerryDB's benchmarks" ON)
+option(BERRYDB_USE_GLOG "Build with Google Logging" ON)
 
-include (CheckIncludeFiles)
-include (CheckIncludeFileCXX)
-check_include_file_cxx ("string_view" BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW)
+include(CheckIncludeFiles)
+include(CheckIncludeFileCXX)
+check_include_file_cxx("string_view" BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW)
 
-if (BERRYDB_USE_GLOG)
+if(BERRYDB_USE_GLOG)
   # glog's test targets trigger deprecation warnings, and compiling them burns
   # CPU cycles on the CI.
-  set (BUILD_TESTING_SAVED "${BUILD_TESTING}")
-  set (BUILD_TESTING OFF CACHE BOOL "" FORCE)
-  add_subdirectory ("${PROJECT_SOURCE_DIR}/third_party/glog" EXCLUDE_FROM_ALL)
-  set (BUILD_TESTING "${BUILD_TESTING_SAVED}" CACHE BOOL "" FORCE)
+  set(BUILD_TESTING_SAVED "${BUILD_TESTING}")
+  set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+  add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/glog" EXCLUDE_FROM_ALL)
+  set(BUILD_TESTING "${BUILD_TESTING_SAVED}" CACHE BOOL "" FORCE)
 
   # glog triggers deprecation warnings on OSX.
   # https://github.com/google/glog/issues/185
-  include (CheckCXXCompilerFlag)
-  check_cxx_compiler_flag (-Wdeprecated BERRYDB_HAVE_NO_DEPRECATED)
-  if (BERRYDB_HAVE_NO_DEPRECATED)
-    set_property (TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-deprecated)
-  endif (BERRYDB_HAVE_NO_DEPRECATED)
+  include(CheckCXXCompilerFlag)
+  check_cxx_compiler_flag(-Wdeprecated BERRYDB_HAVE_NO_DEPRECATED)
+  if(BERRYDB_HAVE_NO_DEPRECATED)
+    set_property(TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-deprecated)
+  endif(BERRYDB_HAVE_NO_DEPRECATED)
 
   # glog triggers sign comparison warnings on gcc.
-  check_cxx_compiler_flag (-Wdeprecated BERRYDB_HAVE_NO_SIGN_COMPARE)
-  if (BERRYDB_HAVE_NO_SIGN_COMPARE)
-    set_property (TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-sign-compare)
-  endif (BERRYDB_HAVE_NO_SIGN_COMPARE)
+  check_cxx_compiler_flag(-Wdeprecated BERRYDB_HAVE_NO_SIGN_COMPARE)
+  if(BERRYDB_HAVE_NO_SIGN_COMPARE)
+    set_property(TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-sign-compare)
+  endif(BERRYDB_HAVE_NO_SIGN_COMPARE)
 
-  set (BERRYDB_PLATFORM_BUILT_WITH_GLOG 1)
-endif (BERRYDB_USE_GLOG)
+  set(BERRYDB_PLATFORM_BUILT_WITH_GLOG 1)
+endif(BERRYDB_USE_GLOG)
 
-configure_file (
+configure_file(
   "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/config.h.in"
   "${PROJECT_BINARY_DIR}/platform/berrydb/platform/config.h"
 )
 
-include_directories (
+include_directories(
   "${PROJECT_SOURCE_DIR}/include"
   "${PROJECT_SOURCE_DIR}/platform"
   "${PROJECT_BINARY_DIR}/platform"
 )
 
-add_library (berrydb "")
+add_library(berrydb "")
 target_sources(berrydb
   PRIVATE
     "${PROJECT_SOURCE_DIR}/src/api/catalog.cc"
@@ -145,21 +145,21 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/include/berrydb/vfs.h"
 )
 
-if (BERRYDB_USE_GLOG)
-  target_link_libraries (berrydb glog)
-endif (BERRYDB_USE_GLOG)
+if(BERRYDB_USE_GLOG)
+  target_link_libraries(berrydb glog)
+endif(BERRYDB_USE_GLOG)
 
-if (BERRYDB_BUILD_TESTS)
+if(BERRYDB_BUILD_TESTS)
   enable_testing()
 
   # Prevent overriding the parent project's compiler/linker settings on Windows.
-  set (gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
   # This project is tested using GoogleTest.
-  add_subdirectory ("${PROJECT_SOURCE_DIR}/third_party/googletest")
+  add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/googletest")
 
-  add_executable (berrydb_tests "")
-  target_sources (berrydb_tests
+  add_executable(berrydb_tests "")
+  target_sources(berrydb_tests
     PRIVATE
       "${PROJECT_SOURCE_DIR}/src/api/ostream_ops_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/api/pool_unittest.cc"
@@ -187,19 +187,19 @@ if (BERRYDB_BUILD_TESTS)
       "${PROJECT_SOURCE_DIR}/src/util/platform_deleter_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/util/unique_ptr_unittest.cc"
   )
-  target_link_libraries (berrydb_tests berrydb gtest)
-  if (BERRYDB_USE_GLOG)
-    target_link_libraries (berrydb_tests glog)
-  endif (BERRYDB_USE_GLOG)
+  target_link_libraries(berrydb_tests berrydb gtest)
+  if(BERRYDB_USE_GLOG)
+    target_link_libraries(berrydb_tests glog)
+  endif(BERRYDB_USE_GLOG)
 
-  add_test (NAME berrydb_tests COMMAND berrydb_tests)
-endif (BERRYDB_BUILD_TESTS)
+  add_test(NAME berrydb_tests COMMAND berrydb_tests)
+endif(BERRYDB_BUILD_TESTS)
 
-if (BERRYDB_BUILD_CLI)
-  set (BOOST_ROOT "third_party/")
+if(BERRYDB_BUILD_CLI)
+  set(BOOST_ROOT "third_party/")
 
-  add_executable (berrydb_cli "")
-  target_include_directories (berrydb_cli
+  add_executable(berrydb_cli "")
+  target_include_directories(berrydb_cli
     PRIVATE
       "${PROJECT_SOURCE_DIR}/third_party/boost/assert/include"
       "${PROJECT_SOURCE_DIR}/third_party/boost/config/include"
@@ -213,34 +213,34 @@ if (BERRYDB_BUILD_CLI)
       "${PROJECT_SOURCE_DIR}/third_party/boost/tokenizer/include"
       "${PROJECT_SOURCE_DIR}/third_party/boost/type_traits/include"
   )
-  target_sources (berrydb_cli
+  target_sources(berrydb_cli
     PRIVATE
       "${PROJECT_SOURCE_DIR}/src/cli/cli.cc"
   )
-  target_link_libraries (berrydb_cli berrydb)
-  if (BERRYDB_USE_GLOG)
-    target_link_libraries (berrydb_cli glog)
-  endif (BERRYDB_USE_GLOG)
-endif (BERRYDB_BUILD_CLI)
+  target_link_libraries(berrydb_cli berrydb)
+  if(BERRYDB_USE_GLOG)
+    target_link_libraries(berrydb_cli glog)
+  endif(BERRYDB_USE_GLOG)
+endif(BERRYDB_BUILD_CLI)
 
-if (BERRYDB_BUILD_BENCHMARKS)
-  add_executable (berrydb_bench "")
-  target_sources (berrydb_bench
+if(BERRYDB_BUILD_BENCHMARKS)
+  add_executable(berrydb_bench "")
+  target_sources(berrydb_bench
     PRIVATE
       "${PROJECT_SOURCE_DIR}/src/bench/benchmark_main.cc"
       "${PROJECT_SOURCE_DIR}/src/bench/vfs_benchmark.cc"
       "${PROJECT_SOURCE_DIR}/src/test/file_deleter.cc"
       "${PROJECT_SOURCE_DIR}/src/test/file_deleter.h"
   )
-  target_link_libraries (berrydb_bench berrydb)
+  target_link_libraries(berrydb_bench berrydb)
 
   # This project uses Google benchmark for benchmarking.
-  set (BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
-  set (BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
-  add_subdirectory ("${PROJECT_SOURCE_DIR}/third_party/benchmark")
-  target_link_libraries (berrydb_bench benchmark)
+  set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+  set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
+  add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/benchmark")
+  target_link_libraries(berrydb_bench benchmark)
 
-  if (BERRYDB_USE_GLOG)
-    target_link_libraries (berrydb_bench glog)
-  endif (BERRYDB_USE_GLOG)
-endif (BERRYDB_BUILD_BENCHMARKS)
+  if(BERRYDB_USE_GLOG)
+    target_link_libraries(berrydb_bench glog)
+  endif(BERRYDB_USE_GLOG)
+endif(BERRYDB_BUILD_BENCHMARKS)

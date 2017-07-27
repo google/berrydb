@@ -50,6 +50,7 @@ before_script:
 - cmake .. -DBERRYDB_USE_GLOG=$GLOG -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 - cmake --build .
 - cd ..
+- cmake --version
 
 script:
 - out/berrydb_tests

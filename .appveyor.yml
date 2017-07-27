@@ -35,6 +35,7 @@ build_script:
       -DCMAKE_CONFIGURATION_TYPES="%CONFIGURATION%"
   - cmake --build . --config "%CONFIGURATION%"
   - cd ..
+  - cmake --version
 
 test_script:
   - out\%CONFIGURATION%\berrydb_tests.exe
