@@ -59,5 +59,27 @@ runs the tests.
 cmake .. && cmake --build . && ctest --output-on-failure
 ```
 
+### Android Testing
+
+The following command builds the project against the Android NDK, which is
+useful for benchmarking against ARM processors.
+
+```bash
+cmake .. -DCMAKE_SYSTEM_NAME=Android \
+    -DCMAKE_ANDROID_NDK=$HOME/Library/Android/sdk/ndk-bundle \
+    -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_BUILD_TYPE=Release \
+    -DRUN_HAVE_POSIX_REGEX=0 -DBERRYDB_USE_GLOG=0 && \
+    cmake --build .
+```
+
+The following commands install and run the benchmarks.
+
+```bash
+adb push berrydb_bench /data/local/tmp
+adb shell chmod +x /data/local/tmp/berrydb_bench
+adb shell 'cd /data/local/tmp && ./berrydb_bench'
+adb shell rm /data/local/tmp/berrydb_bench
+```
+
 Most third-party libraries used by this project can only be used in specific components. `CMakeLists.txt` enforces these constraints, and  [third_party/README.md](./third_party/README.md) describes the motivations
 behind them.

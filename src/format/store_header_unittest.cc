@@ -47,7 +47,7 @@ TEST(StoreHeaderTest, HeaderErrors) {
     for (size_t j = 0; j < 8; ++j) {
       uint8_t mask = 1 << j;
       buffer[i] ^= mask;
-      EXPECT_EQ(false, header2.Deserialize(buffer));
+      EXPECT_FALSE(header2.Deserialize(buffer));
       buffer[i] ^= mask;
       ASSERT_EQ(true, header2.Deserialize(buffer));
     }
