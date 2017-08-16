@@ -86,6 +86,9 @@ BENCHMARK_DEFINE_F(VfsBenchmark, RandomBlockWrites)(benchmark::State& state) {
       return;
     }
   }
+
+  state.SetBytesProcessed(state.iterations() << block_shift_);
+  state.SetItemsProcessed(state.iterations());
 }
 
 BENCHMARK_REGISTER_F(
@@ -116,6 +119,9 @@ BENCHMARK_DEFINE_F(VfsBenchmark, LogWrites)(benchmark::State& state) {
       return;
     }
   }
+  
+  state.SetBytesProcessed(state.iterations() << block_shift_);
+  state.SetItemsProcessed(state.iterations());
 }
 
 BENCHMARK_REGISTER_F(VfsBenchmark, LogWrites)->RangeMultiplier(2)->Range(

@@ -25,8 +25,8 @@ git submodule update --init --recursive
 If you're using [Atom](https://atom.io/), the following packages can help.
 
 ```bash
-apm install autocomplete-clang build build-cmake clang-format docblockr \
-    language-cmake linter linter-clang
+apm install autocomplete-clang build build-cmake clang-format \
+    clang-tools-extra docblockr language-cmake linter linter-clang
 ```
 
 If you don't mind more setup in return for more speed, replace
@@ -34,8 +34,8 @@ If you don't mind more setup in return for more speed, replace
 [setting up ycmd](https://github.com/Valloric/ycmd#building).
 
 ```bash
-apm install autocomplete-plus build build-cmake clang-format docblockr \
-    language-cmake linter you-complete-me
+apm install autocomplete-plus build build-cmake clang-format \
+    clang-tools-extra docblockr language-cmake linter you-complete-me
 ```
 
 
@@ -65,11 +65,10 @@ The following command builds the project against the Android NDK, which is
 useful for benchmarking against ARM processors.
 
 ```bash
-cmake .. -DCMAKE_SYSTEM_NAME=Android \
+cmake .. -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a \
     -DCMAKE_ANDROID_NDK=$HOME/Library/Android/sdk/ndk-bundle \
-    -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_BUILD_TYPE=Release \
-    -DRUN_HAVE_POSIX_REGEX=0 -DBERRYDB_USE_GLOG=0 && \
-    cmake --build .
+    -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DBERRYDB_USE_GLOG=0 \
+    -DCMAKE_BUILD_TYPE=Release && cmake --build .
 ```
 
 The following commands install and run the benchmarks.
@@ -79,6 +78,15 @@ adb push berrydb_bench /data/local/tmp
 adb shell chmod +x /data/local/tmp/berrydb_bench
 adb shell 'cd /data/local/tmp && ./berrydb_bench'
 adb shell rm /data/local/tmp/berrydb_bench
+```
+
+The following commands install and run the tests.
+
+```bash
+adb push berrydb_tests /data/local/tmp
+adb shell chmod +x /data/local/tmp/berrydb_tests
+adb shell 'cd /data/local/tmp && ./berrydb_tests'
+adb shell rm /data/local/tmp/berrydb_tests
 ```
 
 Most third-party libraries used by this project can only be used in specific components. `CMakeLists.txt` enforces these constraints, and  [third_party/README.md](./third_party/README.md) describes the motivations

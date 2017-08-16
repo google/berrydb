@@ -32,6 +32,8 @@ BENCHMARK_DEFINE_F(SnappyBenchmark, CompressionTest)(benchmark::State& state) {
     DCHECK_LE(output_size, output_buffer_size);
   }
 
+  state.SetBytesProcessed(state.iterations() * input_size);
+
   Deallocate(output, output_buffer_size);
   Deallocate(input, input_size);
 }
