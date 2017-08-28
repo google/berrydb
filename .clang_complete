@@ -12,6 +12,7 @@
 -Ithird_party/boost/throw_exception/include/
 -Ithird_party/boost/tokenizer/include/
 -Ithird_party/boost/type_traits/include/
+-Ithird_party/crc32c/include/
 -Ithird_party/googletest/googletest/include/
 -Ithird_party/googletest/googlemock/include/
 -Ithird_party/snappy/

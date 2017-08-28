@@ -241,6 +241,7 @@ if(BERRYDB_BUILD_BENCHMARKS)
   target_sources(berrydb_bench
     PRIVATE
       "${PROJECT_SOURCE_DIR}/src/bench/benchmark_main.cc"
+      "${PROJECT_SOURCE_DIR}/src/bench/crc32c_benchmark.cc"
       "${PROJECT_SOURCE_DIR}/src/bench/snappy_benchmark.cc"
       "${PROJECT_SOURCE_DIR}/src/bench/vfs_benchmark.cc"
       "${PROJECT_SOURCE_DIR}/src/test/file_deleter.cc"
@@ -253,6 +254,13 @@ if(BERRYDB_BUILD_BENCHMARKS)
   set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
   add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/benchmark")
   target_link_libraries(berrydb_bench benchmark)
+
+  # This project uses crc32c.
+  set(CRC32C_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(CRC32C_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
+  set(CRC32C_USE_GLOG OFF CACHE BOOL "" FORCE)
+  add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/crc32c")
+  target_link_libraries(berrydb_bench crc32c)
 
   # This project uses snappy.
   set(SNAPPY_BUILD_TESTS OFF CACHE BOOL "" FORCE)
