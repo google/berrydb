@@ -23,20 +23,25 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   endif(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
 
 else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-  # use -Wall for clang and gcc
-  if(NOT CMAKE_CXX_FLAGS MATCHES "-Wall$")
+  # Use -Wall for clang and gcc.
+  if(NOT CMAKE_CXX_FLAGS MATCHES "-Wall")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-  endif(NOT CMAKE_CXX_FLAGS MATCHES "-Wall$")
+  endif(NOT CMAKE_CXX_FLAGS MATCHES "-Wall")
 
-  # use -Werror for clang and gcc
-  if(NOT CMAKE_CXX_FLAGS MATCHES "-Werror$")
+  # Use -Wextra for clang and gcc.
+  if(NOT CMAKE_CXX_FLAGS MATCHES "-Wextra")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")
+  endif(NOT CMAKE_CXX_FLAGS MATCHES "-Wextra")
+
+  # Use -Werror for clang and gcc.
+  if(NOT CMAKE_CXX_FLAGS MATCHES "-Werror")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
-  endif(NOT CMAKE_CXX_FLAGS MATCHES "-Werror$")
+  endif(NOT CMAKE_CXX_FLAGS MATCHES "-Werror")
 
-  # Disable C++ exceptions
+  # Disable C++ exceptions.
   string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
-  # Disable RTTI
+  # Disable RTTI.
   string(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
@@ -60,16 +65,24 @@ if(BERRYDB_USE_GLOG)
   # glog triggers deprecation warnings on OSX.
   # https://github.com/google/glog/issues/185
   include(CheckCXXCompilerFlag)
-  check_cxx_compiler_flag(-Wdeprecated BERRYDB_HAVE_NO_DEPRECATED)
+  check_cxx_compiler_flag(-Wno-deprecated BERRYDB_HAVE_NO_DEPRECATED)
   if(BERRYDB_HAVE_NO_DEPRECATED)
     set_property(TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-deprecated)
   endif(BERRYDB_HAVE_NO_DEPRECATED)
 
   # glog triggers sign comparison warnings on gcc.
-  check_cxx_compiler_flag(-Wdeprecated BERRYDB_HAVE_NO_SIGN_COMPARE)
+  check_cxx_compiler_flag(-Wno-sign-compare BERRYDB_HAVE_NO_SIGN_COMPARE)
   if(BERRYDB_HAVE_NO_SIGN_COMPARE)
     set_property(TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-sign-compare)
   endif(BERRYDB_HAVE_NO_SIGN_COMPARE)
+
+  # glog triggers unused parameter warnings on clang.
+  check_cxx_compiler_flag(-Wno-unused-parameter
+                          BERRYDB_HAVE_NO_UNUSED_PARAMETER)
+  if(BERRYDB_HAVE_NO_UNUSED_PARAMETER)
+    set_property(TARGET glog
+                 APPEND PROPERTY COMPILE_OPTIONS -Wno-unused-parameter)
+  endif(BERRYDB_HAVE_NO_UNUSED_PARAMETER)
 
   set(BERRYDB_PLATFORM_BUILT_WITH_GLOG 1)
 endif(BERRYDB_USE_GLOG)
@@ -246,15 +259,28 @@ if(BERRYDB_BUILD_BENCHMARKS)
   add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/snappy")
   target_link_libraries(berrydb_bench snappy)
 
-  # Snappy does not plan to fix some warnings.
+  # Snappy triggers sign comparison warnings on clang.
+  check_cxx_compiler_flag(-Wno-sign-compare BERRYDB_HAVE_NO_SIGN_COMPARE)
+  if(BERRYDB_HAVE_NO_SIGN_COMPARE)
+    set_property(TARGET snappy
+                 APPEND PROPERTY COMPILE_OPTIONS -Wno-sign-compare)
+  endif(BERRYDB_HAVE_NO_SIGN_COMPARE)
+
+  # Snappy triggers unused parameter warnings on clang.
+  check_cxx_compiler_flag(-Wno-unused-parameter
+                          BERRYDB_HAVE_NO_UNUSED_PARAMETER)
+  if(BERRYDB_HAVE_NO_UNUSED_PARAMETER)
+    set_property(TARGET snappy
+                 APPEND PROPERTY COMPILE_OPTIONS -Wno-unused-parameter)
+  endif(BERRYDB_HAVE_NO_SIGN_COMPARE)
+
+  # Snappy does not plan to fix some MSVC warnings.
   if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(snappy PRIVATE
       "/wd4100"  # Unreferenced formal parameter.
       "/wd4244"  # Lossy conversion.
       "/wd4018"  # Signed/unsigned mismatch.
     )
-  else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(snappy PRIVATE "-Wno-sign-compare")
   endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
   if(BERRYDB_USE_GLOG)

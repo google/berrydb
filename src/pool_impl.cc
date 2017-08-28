@@ -60,7 +60,7 @@ void PoolImpl::StoreCreated(StoreImpl* store) {
   DCHECK_EQ(this, store->page_pool()->pool());
 #endif  // DCHECK_IS_ON()
 
-  // stores_.insert(store);
+  stores_.insert(store);
 }
 
 void PoolImpl::StoreClosed(StoreImpl* store) {

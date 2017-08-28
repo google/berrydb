@@ -59,7 +59,7 @@ template<typename T, typename U> inline constexpr bool operator==(
   return true;
 }
 template<typename T, typename U> inline constexpr bool operator!=(
-    const PlatformAllocator<T>& lhs, const PlatformAllocator<U>& rhs) noexcept {
+    const PlatformAllocator<T>&, const PlatformAllocator<U>&) noexcept {
   return false;
 }
 
