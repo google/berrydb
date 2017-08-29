@@ -2,11 +2,24 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <iostream>  // std::cout
-#include <vector>  // std::vector
-#include <boost/tokenizer.hpp>  // boost::tokenizer, boost::escaped_list_separator
 #include <iomanip>  // std::setw, std::setfill
+#include <iostream>  // std::cout
 #include <map>  // std::map
+#include <vector>  // std::vector
+
+#include <boost/tokenizer.hpp>  // boost::tokenizer, boost::escaped_list_separator
+
+#if defined(BOOST_NO_EXCEPTIONS)
+
+// We must define boost::throw_exception, because we disabled exceptions in the
+// compiler.
+// https://stackoverflow.com/questions/9272648/boost-symbol-not-found
+namespace boost {
+void throw_exception(const std::exception &) {
+}
+} // namespace boost
+
+#endif  // defined(BOOST_NO_EXCEPTIONS)
 
 void welcome() {
   const char * logo =

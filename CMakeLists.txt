@@ -22,6 +22,13 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
   endif(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
 
+  # Disable C++ exceptions.
+  string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+
+  # Disable RTTI.
+  string(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
 else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   # Use -Wall for clang and gcc.
   if(NOT CMAKE_CXX_FLAGS MATCHES "-Wall")
@@ -39,10 +46,12 @@ else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   endif(NOT CMAKE_CXX_FLAGS MATCHES "-Werror")
 
   # Disable C++ exceptions.
-  string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  string(REGEX REPLACE "-fexceptions" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
 
   # Disable RTTI.
-  string(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  string(REGEX REPLACE "-frtti" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
 option(BERRYDB_BUILD_TESTS "Build BerryDB's unit tests" ON)
@@ -55,6 +64,9 @@ include(CheckIncludeFileCXX)
 check_include_file_cxx("string_view" BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW)
 
 if(BERRYDB_USE_GLOG)
+  # glog requires this setting to avoid using dynamic_cast.
+  set(DISABLE_RTTI ON CACHE BOOL "" FORCE)
+
   # glog's test targets trigger deprecation warnings, and compiling them burns
   # CPU cycles on the CI.
   set(BUILD_TESTING_SAVED "${BUILD_TESTING}")
