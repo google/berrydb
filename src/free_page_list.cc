@@ -208,7 +208,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
     // The pages must be joined in this precise order because the other list is
     // guaranteed to have a well-tracked tail page, whereas this list does not.
     Page* other_tail_page;
-    Status status = page_pool->StorePage(
+    status = page_pool->StorePage(
         store, other_tail_page_id, PagePool::kFetchPageData, &other_tail_page);
     if (status != Status::kSuccess) {
       page_pool->UnpinStorePage(other_head_page);

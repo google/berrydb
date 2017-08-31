@@ -5,7 +5,7 @@
 #ifndef BERRYDB_INCLUDE_OPTIONS_H_
 #define BERRYDB_INCLUDE_OPTIONS_H_
 
-#include "berrydb/platform.h"
+#include <cstddef>
 
 namespace berrydb {
 

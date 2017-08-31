@@ -5,6 +5,7 @@
 #ifndef BERRYDB_SPACE_IMPL_H_
 #define BERRYDB_SPACE_IMPL_H_
 
+#include "berrydb/platform.h"
 #include "berrydb/space.h"
 
 namespace berrydb {

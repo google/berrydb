@@ -5,8 +5,6 @@
 #ifndef BERRYDB_INCLUDE_SPACE_H_
 #define BERRYDB_INCLUDE_SPACE_H_
 
-#include "berrydb/platform.h"
-
 namespace berrydb {
 
 enum class Status : int;

@@ -22,7 +22,6 @@
 #include "./platform/dcheck.h"
 #include "./platform/endianness.h"
 #include "./platform/hashing.h"
-#include "./platform/string_view.h"
 #include "./platform/types.h"
 
 namespace berrydb {

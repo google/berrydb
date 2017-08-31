@@ -6,12 +6,14 @@
 // becomes sufficiently advanced, this file will be reduced to a
 // "using std::string_view" statement.
 
-#ifndef BERRYDB_PLATFORM_STRING_VIEW_H_
-#define BERRYDB_PLATFORM_STRING_VIEW_H_
+#ifndef BERRYDB_INCLUDE_STRING_VIEW_H_
+#define BERRYDB_INCLUDE_STRING_VIEW_H_
 
-#include "berrydb/platform/config.h"
-
-#if BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW
+#if defined(__has_include)
+#if __has_include(<string_view>)
+// Visual Studio provides a <string_view> header even in C++11 mode. When
+// included, the header issues an #error. (C1189)
+#if !defined(_MSC_VER) || __cplusplus >= 201703L
 
 #include <string_view>
 
@@ -21,13 +23,18 @@ using std::string_view;
 
 }  // namespace berrydb
 
-#else  // BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW
+#define BERRYDB_HAVE_STRING_VIEW_DEFINITION
+
+#endif  // !defined(_MSC_VER) || __cplusplus >= 201703L
+#endif  // __has_include(<string_view>)
+#endif  // defined(__has_include)
+
+#if !defined(BERRYDB_HAVE_STRING_VIEW_DEFINITION)
 
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <string>
-
-#include "./dcheck.h"
 
 namespace berrydb {
 
@@ -54,7 +61,7 @@ class string_view {
   // constexpr in C++14
   inline string_view(const_pointer data, size_type size) noexcept
       : data_(data), size_(size) {
-    DCHECK(size == 0 || data != nullptr);
+    assert(size == 0 || data != nullptr);
   }
   // constexpr in C++14
   inline string_view(const_pointer data) noexcept
@@ -79,19 +86,19 @@ class string_view {
 
   // constexpr in C++14
   inline void remove_prefix(size_type n) noexcept {
-    DCHECK_LE(n, size_);
+    assert(n <= size_);
     data_ += n;
     size_ -= n;
   }
 
   // constexpr in C++14
   inline void remove_suffix(size_type n) noexcept {
-    DCHECK_LE(n, size_);
+    assert(n <= size_);
     size_ -= n;
   }
 
   size_type copy(char* to, size_type n, size_type pos = 0) {
-    DCHECK_LE(pos, size_);
+    assert(pos <= size_);
     size_t copy_size = std::min(n, size_ - pos);
     traits_type::copy(to, data_ + pos, copy_size);
     return copy_size;
@@ -99,7 +106,7 @@ class string_view {
 
   // constexpr in C++14
   inline string_view substr(size_type pos = 0, size_type n = npos) const {
-    DCHECK_LE(pos, size_);
+    assert(pos <= size_);
     return string_view(data_ + pos, std::min(n, size_ - pos));
   }
 
@@ -146,6 +153,7 @@ inline bool operator >=(const string_view& l, const string_view& r) noexcept {
 
 }  // namespace berrydb
 
-#endif  // BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW
+#endif  // !defined(BERRYDB_HAVE_STRING_VIEW_DEFINITION)
+#undef BERRYDB_HAVE_STRING_VIEW_DEFINITION
 
-#endif  // BERRYDB_PLATFORM_STRING_VIEW_H_
+#endif  // BERRYDB_INCLUDE_STRING_VIEW_H_

@@ -5,7 +5,7 @@
 #ifndef BERRYDB_INCLUDE_STORE_H_
 #define BERRYDB_INCLUDE_STORE_H_
 
-#include "berrydb/platform.h"
+#include <string>
 
 namespace berrydb {
 

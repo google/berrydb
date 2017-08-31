@@ -9,8 +9,6 @@
 // operators are intended to be used for debugging or diagnostic logging, and
 // are not suitable for persisting state or for user interfaces.
 
-#include "berrydb/platform.h"
-
 #include <ostream>
 
 namespace berrydb {

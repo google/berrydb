@@ -4,6 +4,7 @@
 
 #include "./block_access_file_wrapper.h"
 
+#include "berrydb/platform.h"
 #include "berrydb/status.h"
 
 namespace berrydb {

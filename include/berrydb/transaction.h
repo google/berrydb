@@ -5,7 +5,7 @@
 #ifndef BERRYDB_INCLUDE_TRANSACTION_H_
 #define BERRYDB_INCLUDE_TRANSACTION_H_
 
-#include "berrydb/platform.h"
+#include "berrydb/string_view.h"
 
 namespace berrydb {
 

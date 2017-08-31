@@ -155,7 +155,6 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/alloc.h"
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/dcheck.h"
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/endianness.h"
-    "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/string_view.h"
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/types.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/catalog.h"
@@ -165,6 +164,7 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/include/berrydb/space.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/status.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/store.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/string_view.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/transaction.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/version.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/vfs.h"
@@ -190,10 +190,10 @@ if(BERRYDB_BUILD_TESTS)
       "${PROJECT_SOURCE_DIR}/src/api/pool_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/api/status_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/api/store_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/api/string_view_unittest.cc"
       "${PROJECT_BINARY_DIR}/src/api/version_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/alloc_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/endianness_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/embedder_tests/string_view_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/vfs_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/format/store_header_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/free_page_list_format_unittest.cc"
@@ -292,7 +292,7 @@ if(BERRYDB_BUILD_BENCHMARKS)
   if(BERRYDB_HAVE_NO_UNUSED_PARAMETER)
     set_property(TARGET snappy
                  APPEND PROPERTY COMPILE_OPTIONS -Wno-unused-parameter)
-  endif(BERRYDB_HAVE_NO_SIGN_COMPARE)
+  endif(BERRYDB_HAVE_NO_UNUSED_PARAMETER)
 
   # Snappy does not plan to fix some MSVC warnings.
   if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")

@@ -6,6 +6,7 @@
 #define BERRYDB_CATALOG_IMPL_H_
 
 #include "berrydb/catalog.h"
+#include "berrydb/platform.h"
 
 namespace berrydb {
 
