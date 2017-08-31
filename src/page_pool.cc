@@ -12,7 +12,7 @@
 namespace berrydb {
 
 PagePool::PagePool(PoolImpl* pool, size_t page_shift, size_t page_capacity)
-    : page_shift_(page_shift), page_size_(1 << page_shift),
+    : page_shift_(page_shift), page_size_(static_cast<size_t>(1) << page_shift),
       page_capacity_(page_capacity), pool_(pool), free_list_(), lru_list_(),
       log_list_() {
   // The page size should be a power of two.

@@ -70,7 +70,7 @@ Status ReadLibcFile(
   // NOTE(pwnall): On POSIX, we'd want to use pread instead of fseek() and
   //               fread().
 
-  if (std::fseek(fp, offset, SEEK_SET) != 0) {
+  if (std::fseek(fp, static_cast<long>(offset), SEEK_SET) != 0) {
     // ferror() can be checked if we want to return more detailed errors.
     return Status::kIoError;
   }
@@ -88,7 +88,7 @@ Status WriteLibcFile(
   // NOTE(pwnall): On POSIX, we'd want to use pwrite instead of fseek() and
   //               fwrite().
 
-  if (std::fseek(fp, offset, SEEK_SET) != 0) {
+  if (std::fseek(fp, static_cast<long>(offset), SEEK_SET) != 0) {
     // ferror() can be checked if we want to return more detailed errors.
     return Status::kIoError;
   }
@@ -115,7 +115,7 @@ class LibcBlockAccessFile : public BlockAccessFile {
   LibcBlockAccessFile(FILE* fp, size_t block_shift)
       : fp_(fp)
 #if DCHECK_IS_ON()
-      , block_size_(1 << block_shift)
+      , block_size_(static_cast<size_t>(1) << block_shift)
 #endif  // DCHECK_IS_ON()
       {
     DCHECK(fp != nullptr);

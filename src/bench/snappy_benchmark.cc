@@ -22,7 +22,7 @@ BENCHMARK_DEFINE_F(SnappyBenchmark, CompressionTest)(benchmark::State& state) {
   uint8_t* input = reinterpret_cast<uint8_t*>(Allocate(input_size));
   uint8_t* output = reinterpret_cast<uint8_t*>(Allocate(output_buffer_size));
   for (size_t i = 0; i < input_size; ++i)
-    input[i] = rnd_();
+    input[i] = static_cast<uint8_t>(rnd_());
 
   while (state.KeepRunning()) {
     size_t output_size;

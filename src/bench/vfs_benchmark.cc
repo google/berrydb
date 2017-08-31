@@ -22,7 +22,7 @@ class VfsBenchmark : public benchmark::Fixture {
   void SetUp(const benchmark::State& state) override {
     block_size_ = state.range(0);
     block_shift_ = static_cast<size_t>(std::log2(block_size_));
-    DCHECK_EQ(block_size_, 1U << block_shift_);
+    DCHECK_EQ(block_size_, static_cast<size_t>(1) << block_shift_);
 
     block_data_ = reinterpret_cast<uint8_t*>(Allocate(block_size_));
     DCHECK(block_data_ != nullptr);
@@ -119,7 +119,7 @@ BENCHMARK_DEFINE_F(VfsBenchmark, LogWrites)(benchmark::State& state) {
       return;
     }
   }
-  
+
   state.SetBytesProcessed(state.iterations() << block_shift_);
   state.SetItemsProcessed(state.iterations());
 }

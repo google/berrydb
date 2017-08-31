@@ -20,7 +20,7 @@ BENCHMARK_DEFINE_F(Crc32cBenchmark, CrcTest)(benchmark::State& state) {
   size_t input_size = state.range(0);
   uint8_t* input = reinterpret_cast<uint8_t*>(Allocate(input_size));
   for (size_t i = 0; i < input_size; ++i)
-    input[i] = rnd_();
+    input[i] = static_cast<uint8_t>(rnd_());
 
   while (state.KeepRunning())
     benchmark::DoNotOptimize(crc32c::Crc32c(input, input_size));

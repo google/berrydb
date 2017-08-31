@@ -325,7 +325,7 @@ TEST_F(FreePageListTest, PopState) {
   // Test for the entry-available-in-page case.
 
   for (size_t i = 0; i < kEntriesPerPage; ++i) {
-    size_t page_id = FreePageList::kInvalidPageId;
+    page_id = FreePageList::kInvalidPageId;
     ASSERT_EQ(Status::kSuccess, free_page_list.Pop(
         alloc_transaction, &page_id));
     EXPECT_EQ(kBasePage + kEntriesPerPage - i, page_id);

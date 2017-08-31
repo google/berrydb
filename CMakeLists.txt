@@ -104,12 +104,6 @@ configure_file(
   "${PROJECT_BINARY_DIR}/platform/berrydb/platform/config.h"
 )
 
-include_directories(
-  "${PROJECT_SOURCE_DIR}/include"
-  "${PROJECT_SOURCE_DIR}/platform"
-  "${PROJECT_BINARY_DIR}/platform"
-)
-
 add_library(berrydb "")
 target_sources(berrydb
   PRIVATE
@@ -170,6 +164,23 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/include/berrydb/vfs.h"
 )
 
+target_include_directories(berrydb
+  PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+# TODO(pwnall): These should be PRIVATE for the berrydb target.
+include_directories(
+  "${PROJECT_SOURCE_DIR}/platform"
+  "${PROJECT_BINARY_DIR}/platform"
+)
+
+# Warnings as errors in Visual Studio for this project's targets.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  set_property(TARGET berrydb APPEND PROPERTY COMPILE_OPTIONS "/WX")
+endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+
 if(BERRYDB_USE_GLOG)
   target_link_libraries(berrydb glog)
 endif(BERRYDB_USE_GLOG)
@@ -213,6 +224,12 @@ if(BERRYDB_BUILD_TESTS)
       "${PROJECT_SOURCE_DIR}/src/util/unique_ptr_unittest.cc"
   )
   target_link_libraries(berrydb_tests berrydb gtest)
+
+  # Warnings as errors in Visual Studio for this project's targets.
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set_property(TARGET berrydb_tests APPEND PROPERTY COMPILE_OPTIONS "/WX")
+  endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+
   if(BERRYDB_USE_GLOG)
     target_link_libraries(berrydb_tests glog)
   endif(BERRYDB_USE_GLOG)
@@ -243,6 +260,12 @@ if(BERRYDB_BUILD_CLI)
       "${PROJECT_SOURCE_DIR}/src/cli/cli.cc"
   )
   target_link_libraries(berrydb_cli berrydb)
+
+  # Warnings as errors in Visual Studio for this project's targets.
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set_property(TARGET berrydb_cli APPEND PROPERTY COMPILE_OPTIONS "/WX")
+  endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+
   if(BERRYDB_USE_GLOG)
     target_link_libraries(berrydb_cli glog)
   endif(BERRYDB_USE_GLOG)
@@ -306,4 +329,9 @@ if(BERRYDB_BUILD_BENCHMARKS)
   if(BERRYDB_USE_GLOG)
     target_link_libraries(berrydb_bench glog)
   endif(BERRYDB_USE_GLOG)
+
+  # Warnings as errors in Visual Studio for this project's targets.
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set_property(TARGET berrydb_bench APPEND PROPERTY COMPILE_OPTIONS "/WX")
+  endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif(BERRYDB_BUILD_BENCHMARKS)

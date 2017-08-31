@@ -28,7 +28,8 @@ TEST(StringViewTest, ConstructorCString) {
 }
 
 TEST(StringViewTest, ConstructorDataSize) {
-  const char* data = reinterpret_cast<const char*>(0xBEEFBEEF);
+  const char* data =
+      reinterpret_cast<const char*>(static_cast<uintptr_t>(0xBEEFBEEF));
   string_view sv(data, 42);
 
   EXPECT_EQ(sv.data(), data);
@@ -38,7 +39,8 @@ TEST(StringViewTest, ConstructorDataSize) {
 }
 
 TEST(StringViewTest, ConstructorCopy) {
-  const char* data = reinterpret_cast<const char*>(0xBEEFBEEF);
+  const char* data =
+      reinterpret_cast<const char*>(static_cast<uintptr_t>(0xBEEFBEEF));
   string_view source_sv(data, 42);
   string_view sv(source_sv);
 

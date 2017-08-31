@@ -9,6 +9,7 @@
 // reduce code size and/or increase performance.
 
 #include <functional>
+#include <utility>
 
 #include "./types.h"
 
@@ -23,37 +24,42 @@ struct SizeHasher {
 };
 
 // Hash specialization used for pointers.
-template<typename T>
-struct PointerHasher {
+template<typename T> struct PointerHasher {
   inline size_t operator()(T* pointer) const noexcept {
     std::hash<T*> hasher;
     return hasher(pointer);
   }
 };
 
+// Combines the value of two hashes.
+template<typename T> struct HashCombiner {
+  inline T operator()(T h1, T h2) const noexcept {
+    static_assert(
+        std::is_same<T, uint32_t>::value ||
+        std::is_same<T, uint64_t>::value,
+        "This implementation assumes size_t is uint32_t or uint64_t");
+
+    h2 *= Multiplier();
+    h2 = (h2 << (sizeof(T) * 8 - 17)) | (h2 >> 17);
+    return h1 ^ h2;
+  }
+ private:
+  static constexpr T Multiplier();
+  static constexpr T RotateFactor() { return 17; }
+};
+template<> constexpr uint64_t HashCombiner<uint64_t>::Multiplier() {
+  return 0xc6a4a7935bd1e995;
+}
+template<> constexpr uint32_t HashCombiner<uint32_t>::Multiplier() {
+  return 0xcc9e2d51;
+}
+
 // Hash specialization used for pairs of pointers and size_t.
-template<typename T>
-struct PointerSizeHasher {
+template<typename T> struct PointerSizeHasher {
   inline size_t operator()(const std::pair<T*, size_t> pair) const noexcept {
-    SizeHasher size_hasher;
-    PointerHasher<T> pointer_hasher;
-
-    size_t h1 = pointer_hasher(pair.first);
-    size_t h2 = size_hasher(pair.second);
-
-    static_assert(sizeof(size_t) == 4 || sizeof(size_t) == 8,
-        "This implementation assumes that hash outputs are 32-bit or 64-bit");
-
-    if (sizeof(size_t) == 4) {  // The compiler should optimize away the if.
-      h2 *= 0xcc9e2d51;
-      h2 = (h2 << 15) | (h2 >> 17);
-      return h1 ^ h2;
-
-    } else {
-      h2 *= static_cast<size_t>(0xc6a4a7935bd1e995);
-      h2 = (h2 << 47) | (h2 >> 17);
-      return h1 ^ h2;
-    }
+    size_t h1 = PointerHasher<T>()(pair.first);
+    size_t h2 = SizeHasher()(pair.second);
+    return HashCombiner<size_t>()(h1, h2);
   }
 };
 

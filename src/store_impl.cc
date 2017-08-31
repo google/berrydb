@@ -85,7 +85,7 @@ Status StoreImpl::Bootstrap() {
 
   transaction->WillModifyPage(header_page);
   uint8_t* header_data = header_page->data();
-  std::memset(header_data, 0, 1 << header_.page_shift);
+  std::memset(header_data, 0, static_cast<size_t>(1) << header_.page_shift);
   header_.free_list_head_page = FreePageList::kInvalidPageId;
   header_.page_count = 2;
   // header.page_shift is already set correctly by the constructor.
@@ -102,7 +102,9 @@ Status StoreImpl::Bootstrap() {
   }
 
   transaction->WillModifyPage(root_catalog_page);
-  std::memset(root_catalog_page->data(), 0, 1 << header_.page_shift);
+  std::memset(
+      root_catalog_page->data(), 0,
+      static_cast<size_t>(1) << header_.page_shift);
   // TODO(pwnall): Bootstrap the root catalog here.
   page_pool_->UnpinStorePage(root_catalog_page);
 
@@ -170,7 +172,7 @@ Status StoreImpl::ReadPage(Page* page) {
   DCHECK(!page->IsUnpinned());
 
   size_t file_offset = page->page_id() << header_.page_shift;
-  size_t page_size = 1 << header_.page_shift;
+  size_t page_size = static_cast<size_t>(1) << header_.page_shift;
   return data_file_->Read(file_offset, page_size, page->data());
 }
 
@@ -182,7 +184,7 @@ Status StoreImpl::WritePage(Page* page) {
   //DCHECK(!page->IsUnpinned());
 
   size_t file_offset = page->page_id() << header_.page_shift;
-  size_t page_size = 1 << header_.page_shift;
+  size_t page_size = static_cast<size_t>(1) << header_.page_shift;
   return data_file_->Write(page->data(), file_offset, page_size);
 }
 
