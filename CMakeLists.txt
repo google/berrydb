@@ -149,7 +149,6 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/alloc.h"
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/dcheck.h"
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/endianness.h"
-    "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/types.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/catalog.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/options.h"
@@ -160,6 +159,7 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/include/berrydb/store.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/string_view.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/transaction.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/types.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/version.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/vfs.h"
 )

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BERRYDB_INCLUDE_STATUS_H_
-#define BERRYDB_INCLUDE_STATUS_H_
+#ifndef BERRYDB_INCLUDE_BERRYDB_STATUS_H_
+#define BERRYDB_INCLUDE_BERRYDB_STATUS_H_
 
 namespace berrydb {
 
@@ -46,4 +46,4 @@ const char* StatusToCString(Status status) noexcept;
 
 }  // namespace berrydb
 
-#endif  // BERRYDB_INCLUDE_STATUS_H_
+#endif  // BERRYDB_INCLUDE_BERRYDB_STATUS_H_

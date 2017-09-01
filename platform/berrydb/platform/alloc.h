@@ -5,21 +5,18 @@
 #ifndef BERRYDB_PLATFORM_ALLOC_H_
 #define BERRYDB_PLATFORM_ALLOC_H_
 
-#include "./dcheck.h"
-
 // Embedders who use custom memory allocators will want to replace the functions
 // below. The interface is inspired from std::pmr::memory_resource.
 
-#include <cstddef>
-#include <cstdint>
 #include <cstdlib>
+
+#include "berrydb/types.h"
+
+#include "./dcheck.h"
 
 #if DCHECK_IS_ON()
 #include <cstring>
 #endif  // DCHECK_IS_ON()
-
-#include "./dcheck.h"
-#include "./types.h"
 
 namespace berrydb {
 

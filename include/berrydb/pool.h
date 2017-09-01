@@ -2,10 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BERRYDB_INCLUDE_POOL_H_
-#define BERRYDB_INCLUDE_POOL_H_
+#ifndef BERRYDB_INCLUDE_BERRYDB_POOL_H_
+#define BERRYDB_INCLUDE_BERRYDB_POOL_H_
 
 #include <string>
+
+#include "berrydb/types.h"
 
 namespace berrydb {
 
@@ -51,4 +53,4 @@ class Pool {
 
 }  // namespace berrydb
 
-#endif  // BERRYDB_INCLUDE_POOL_H_
+#endif  // BERRYDB_INCLUDE_BERRYDB_POOL_H_

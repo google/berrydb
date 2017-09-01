@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BERRYDB_INCLUDE_VERSION_H_
-#define BERRYDB_INCLUDE_VERSION_H_
+#ifndef BERRYDB_INCLUDE_BERRYDB_VERSION_H_
+#define BERRYDB_INCLUDE_BERRYDB_VERSION_H_
 
 namespace berrydb {
 
@@ -18,4 +18,4 @@ extern constexpr const unsigned kVersionPatch = 0;
 
 };  // namespace berrydb
 
-#endif  // BERRYDB_INCLUDE_VERSION_H_
+#endif  // BERRYDB_INCLUDE_BERRYDB_VERSION_H_

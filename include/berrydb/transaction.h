@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BERRYDB_INCLUDE_TRANSACTION_H_
-#define BERRYDB_INCLUDE_TRANSACTION_H_
+#ifndef BERRYDB_INCLUDE_BERRYDB_TRANSACTION_H_
+#define BERRYDB_INCLUDE_BERRYDB_TRANSACTION_H_
 
 #include "berrydb/string_view.h"
 
@@ -107,4 +107,4 @@ class Transaction {
 
 }  // namespace berrydb
 
-#endif  // BERRYDB_INCLUDE_TRANSACTION_H_
+#endif  // BERRYDB_INCLUDE_BERRYDB_TRANSACTION_H_

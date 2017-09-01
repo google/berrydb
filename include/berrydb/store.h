@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BERRYDB_INCLUDE_STORE_H_
-#define BERRYDB_INCLUDE_STORE_H_
+#ifndef BERRYDB_INCLUDE_BERRYDB_STORE_H_
+#define BERRYDB_INCLUDE_BERRYDB_STORE_H_
 
 #include <string>
 
@@ -85,4 +85,4 @@ class Store {
 
 }  // namespace berrydb
 
-#endif  // BERRYDB_INCLUDE_STORE_H_
+#endif  // BERRYDB_INCLUDE_BERRYDB_STORE_H_

@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifndef BERRYDB_INCLUDE_BERRYDB_H_
+#define BERRYDB_INCLUDE_BERRYDB_H_
+
 namespace berrydb {
 
 }  // namespace berrydb
@@ -14,5 +17,8 @@ namespace berrydb {
 #include "berrydb/store.h"
 #include "berrydb/string_view.h"
 #include "berrydb/transaction.h"
+#include "berrydb/types.h"
 #include "berrydb/version.h"
 #include "berrydb/vfs.h"
+
+#endif  // BERRYDB_INCLUDE_BERRYDB_H_

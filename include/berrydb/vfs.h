@@ -2,10 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BERRYDB_INCLUDE_VFS_H_
-#define BERRYDB_INCLUDE_VFS_H_
+#ifndef BERRYDB_INCLUDE_BERRYDB_VFS_H_
+#define BERRYDB_INCLUDE_BERRYDB_VFS_H_
 
 #include <string>
+
+#include "berrydb/types.h"
 
 namespace berrydb {
 
@@ -264,4 +266,4 @@ Vfs* DefaultVfs();
 
 }  // namespace berrydb
 
-#endif  // BERRYDB_INCLUDE_VFS_H_
+#endif  // BERRYDB_INCLUDE_BERRYDB_VFS_H_

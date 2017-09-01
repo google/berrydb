@@ -6,8 +6,8 @@
 // becomes sufficiently advanced, this file will be reduced to a
 // "using std::string_view" statement.
 
-#ifndef BERRYDB_INCLUDE_STRING_VIEW_H_
-#define BERRYDB_INCLUDE_STRING_VIEW_H_
+#ifndef BERRYDB_INCLUDE_BERRYDB_STRING_VIEW_H_
+#define BERRYDB_INCLUDE_BERRYDB_STRING_VIEW_H_
 
 #if defined(__has_include)
 #if __has_include(<string_view>)
@@ -156,4 +156,4 @@ inline bool operator >=(const string_view& l, const string_view& r) noexcept {
 #endif  // !defined(BERRYDB_HAVE_STRING_VIEW_DEFINITION)
 #undef BERRYDB_HAVE_STRING_VIEW_DEFINITION
 
-#endif  // BERRYDB_INCLUDE_STRING_VIEW_H_
+#endif  // BERRYDB_INCLUDE_BERRYDB_STRING_VIEW_H_
