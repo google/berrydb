@@ -7,8 +7,8 @@
 
 #include <memory>
 
-#include "berrydb/platform.h"
 #include "./platform_deleter.h"
+#include "berrydb/platform.h"
 
 namespace berrydb {
 
@@ -29,7 +29,7 @@ namespace berrydb {
  * 3) In code where the pointer is destroyed rarely (e.g. Stores, not
  *    Transactions) and never / very rarely assigned to.
  */
-template<typename T>
+template <typename T>
 using UniquePtr = std::unique_ptr<T, PlatformDeleter<T>>;
 
 }  // namespace berrydb

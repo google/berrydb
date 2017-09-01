@@ -55,8 +55,8 @@ class FreePageManager {
    * @return                   the ID of the allocated page, or kInvalidPageId
    *                           if the page allocation fails
    */
-  size_t AllocPage(
-      TransactionImpl* transaction, TransactionImpl* alloc_transaction);
+  size_t AllocPage(TransactionImpl* transaction,
+                   TransactionImpl* alloc_transaction);
 
   /** Queues up a page to be freed when a transaction commits.
    *
@@ -69,9 +69,9 @@ class FreePageManager {
    * @param  transation the transaction whose commit will free the page
    * @return            most likely kSuccess or kIoError
    */
-  Status FreePage(
-      size_t page_id, TransactionImpl* transaction,
-      TransactionImpl* alloc_transaction);
+  Status FreePage(size_t page_id,
+                  TransactionImpl* transaction,
+                  TransactionImpl* alloc_transaction);
 
  private:
   const StoreImpl* store_;

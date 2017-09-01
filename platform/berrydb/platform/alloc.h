@@ -38,7 +38,7 @@ inline void* Allocate(std::size_t size_in_bytes) {
   // Fill the heap block with a recognizable pattern, so it is easier to detect
   // use-before-initialize bugs.
   std::memset(data, 0xCC, size_in_bytes);
-#else  // DCHECK_IS_ON()
+#else   // DCHECK_IS_ON()
   void* data = std::malloc(size_in_bytes);
 #endif  // DCHECK_IS_ON()
 
@@ -65,7 +65,7 @@ inline void Deallocate(void* data, std::size_t size_in_bytes) {
   // Fill the heap block with a recognizable pattern, so it is easier to detect
   // use-after-free bugs.
   std::memset(data, 0xDD, size_in_bytes);
-#else  // DCHECK_IS_ON()
+#else   // DCHECK_IS_ON()
   void* heap_block = data;
 #endif  // DCHECK_IS_ON()
 

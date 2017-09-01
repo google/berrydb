@@ -15,7 +15,7 @@ namespace berrydb {
 
 enum class Status : int;
 
-std::ostream& operator <<(std::ostream& stream, Status status);
+std::ostream& operator<<(std::ostream& stream, Status status);
 
 }  // namespace berrydb
 

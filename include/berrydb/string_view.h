@@ -55,9 +55,9 @@ class string_view {
 
   static constexpr const size_type npos = ~static_cast<size_t>(0);
 
-  constexpr inline string_view() noexcept : data_(nullptr), size_(0) { }
+  constexpr inline string_view() noexcept : data_(nullptr), size_(0) {}
   constexpr inline string_view(const string_view&) noexcept = default;
-  string_view& operator =(const string_view&) noexcept = default;
+  string_view& operator=(const string_view&) noexcept = default;
   // constexpr in C++14
   inline string_view(const_pointer data, size_type size) noexcept
       : data_(data), size_(size) {
@@ -65,7 +65,7 @@ class string_view {
   }
   // constexpr in C++14
   inline string_view(const_pointer data) noexcept
-      : data_(data), size_(traits_type::length(data)) { }
+      : data_(data), size_(traits_type::length(data)) {}
 
   constexpr inline const_iterator cbegin() const noexcept { return data_; }
   constexpr inline const_iterator cend() const noexcept {
@@ -120,34 +120,35 @@ class string_view {
   }
 
   // Hack to make up for the lack of a std::string constructor override.
-  template<typename Allocator>
-  inline constexpr operator std::basic_string<
-      char, std::char_traits<char>, Allocator>() const {
+  template <typename Allocator>
+  inline constexpr
+  operator std::basic_string<char, std::char_traits<char>, Allocator>() const {
     return std::basic_string<char, std::char_traits<char>, Allocator>(
-      data_, size_, Allocator());
+        data_, size_, Allocator());
   }
+
  private:
   const_pointer data_;
   size_type size_;
 };
 
 // constexpr in C++14
-inline bool operator ==(const string_view& l, const string_view& r) noexcept {
+inline bool operator==(const string_view& l, const string_view& r) noexcept {
   return l.size() == r.size() && l.compare(r) == 0;
 }
-inline bool operator !=(const string_view& l, const string_view& r) noexcept {
+inline bool operator!=(const string_view& l, const string_view& r) noexcept {
   return l.size() != r.size() || l.compare(r) != 0;
 }
-inline bool operator <(const string_view& l, const string_view& r) noexcept {
+inline bool operator<(const string_view& l, const string_view& r) noexcept {
   return l.compare(r) < 0;
 }
-inline bool operator <=(const string_view& l, const string_view& r) noexcept {
+inline bool operator<=(const string_view& l, const string_view& r) noexcept {
   return l.compare(r) <= 0;
 }
-inline bool operator >(const string_view& l, const string_view& r) noexcept {
+inline bool operator>(const string_view& l, const string_view& r) noexcept {
   return l.compare(r) > 0;
 }
-inline bool operator >=(const string_view& l, const string_view& r) noexcept {
+inline bool operator>=(const string_view& l, const string_view& r) noexcept {
   return l.compare(r) >= 0;
 }
 

@@ -23,8 +23,6 @@
 #include "./platform/endianness.h"
 #include "./platform/hashing.h"
 
-namespace berrydb {
-
-}  // namespace berrydb
+namespace berrydb {}  // namespace berrydb
 
 #endif  // BERRYDB_PLATFORM_H_

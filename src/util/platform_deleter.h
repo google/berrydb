@@ -22,11 +22,11 @@ namespace berrydb {
  * Instead of using this deleter directly with std::unique_ptr, use the
  * UniquePtr alias defined in util/unique_ptr.h.
  */
-template<typename T>
+template <typename T>
 struct PlatformDeleter {
   inline PlatformDeleter() noexcept = default;
 
-  template<typename U>
+  template <typename U>
   inline PlatformDeleter(const PlatformDeleter<U>& other) noexcept {
     UNUSED(other);
   }
@@ -35,7 +35,7 @@ struct PlatformDeleter {
 };
 
 /** PlatformDeleter cannot be used with arrays. */
-template<typename T>
+template <typename T>
 struct PlatformDeleter<T[]> {
   void operator()(T* data) const = delete;
 };

@@ -42,16 +42,16 @@ class FreePageListFormat {
    * @param  page_data         the writable data buffer of a page used for free
    *                           page list data
    */
-  static inline void SetNextEntryOffset(
-      size_t next_entry_offset, uint8_t* page_data) noexcept {
+  static inline void SetNextEntryOffset(size_t next_entry_offset,
+                                        uint8_t* page_data) noexcept {
     DCHECK(page_data != nullptr);
     // The next_entry_offset value is not DCHECKed on purpose, so this method
     // can be used by data corruption tests.
 
     // The 64-bit store is safe because page data is at least 64-bit-aligned,
     // and list data pages are made up of 64-bit numbers.
-    StoreUint64(
-        static_cast<uint64_t>(next_entry_offset), page_data + kNextEntryOffset);
+    StoreUint64(static_cast<uint64_t>(next_entry_offset),
+                page_data + kNextEntryOffset);
   }
 
   /** Reads the page ID of the successor to a list page.
@@ -81,8 +81,8 @@ class FreePageListFormat {
    * @return next_page_id64 the page ID of the next data page in the list;
    *                        should not be kInvalidPageId
    */
-  static inline void SetNextPageId64(
-      uint64_t next_page_id64, uint8_t* page_data) noexcept {
+  static inline void SetNextPageId64(uint64_t next_page_id64,
+                                     uint8_t* page_data) noexcept {
     DCHECK(page_data != nullptr);
     // The next_page_id64 value is not DCHECKed on purpose, so this method can
     // be used by data corruption tests.
@@ -102,8 +102,8 @@ class FreePageListFormat {
    *                      page list resides
    * @return              true if the given offset is guaranteed to be invalid
    */
-  static inline bool IsCorruptEntryOffset(
-      size_t entry_offset, size_t page_size) noexcept {
+  static inline bool IsCorruptEntryOffset(size_t entry_offset,
+                                          size_t page_size) noexcept {
     static_assert(
         (kEntrySize & (kEntrySize - 1)) == 0,
         "kEntrySize must be a power of two for bit masking tricks to work");

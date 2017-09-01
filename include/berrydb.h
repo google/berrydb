@@ -5,9 +5,7 @@
 #ifndef BERRYDB_INCLUDE_BERRYDB_H_
 #define BERRYDB_INCLUDE_BERRYDB_H_
 
-namespace berrydb {
-
-}  // namespace berrydb
+namespace berrydb {}  // namespace berrydb
 
 #include "berrydb/catalog.h"
 #include "berrydb/options.h"

@@ -26,7 +26,7 @@ namespace berrydb {
  *    DO NOT use: std::vector<Page>
  *    DO use:     std::vector<Page, PlatformAllocator<Page>>
  */
-template<typename T>
+template <typename T>
 struct PlatformAllocator {
   typedef T value_type;
   typedef std::true_type is_empty;
@@ -37,7 +37,10 @@ struct PlatformAllocator {
   typedef const T* const_pointer;
   typedef T& reference;
   typedef const T& const_reference;
-  template <typename U> struct rebind { typedef PlatformAllocator<U> other; };
+  template <typename U>
+  struct rebind {
+    typedef PlatformAllocator<U> other;
+  };
 
   inline T* allocate(std::size_t count) {
     return reinterpret_cast<T*>(Allocate(sizeof(T) * count));
@@ -48,18 +51,20 @@ struct PlatformAllocator {
 
   inline PlatformAllocator() noexcept = default;
   inline PlatformAllocator(const PlatformAllocator& other) noexcept = default;
-  template<typename U>
+  template <typename U>
   inline PlatformAllocator(const PlatformAllocator<U>& other) noexcept {
     UNUSED(other);
   };
 };
 
-template<typename T, typename U> inline constexpr bool operator==(
-    const PlatformAllocator<T>&, const PlatformAllocator<U>&) noexcept {
+template <typename T, typename U>
+inline constexpr bool operator==(const PlatformAllocator<T>&,
+                                 const PlatformAllocator<U>&) noexcept {
   return true;
 }
-template<typename T, typename U> inline constexpr bool operator!=(
-    const PlatformAllocator<T>&, const PlatformAllocator<U>&) noexcept {
+template <typename T, typename U>
+inline constexpr bool operator!=(const PlatformAllocator<T>&,
+                                 const PlatformAllocator<U>&) noexcept {
   return false;
 }
 

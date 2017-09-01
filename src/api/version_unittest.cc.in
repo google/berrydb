@@ -7,10 +7,10 @@
 namespace berrydb {
 
 static_assert(kVersionMajor == @BerryDB_VERSION_MAJOR@,
-    "Version mismatch between version.h and CMakeLists.txt");
+              "Version mismatch between version.h and CMakeLists.txt");
 static_assert(kVersionMinor == @BerryDB_VERSION_MINOR@,
-    "Version mismatch between version.h and CMakeLists.txt");
+              "Version mismatch between version.h and CMakeLists.txt");
 static_assert(kVersionPatch == @BerryDB_VERSION_PATCH@,
-    "Version mismatch between version.h and CMakeLists.txt");
+              "Version mismatch between version.h and CMakeLists.txt");
 
 }  // namespace berrydb

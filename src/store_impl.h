@@ -8,12 +8,12 @@
 #include <functional>
 #include <unordered_set>
 
+#include "./format/store_header.h"
+#include "./page.h"
 #include "berrydb/platform.h"
 #include "berrydb/pool.h"
 #include "berrydb/store.h"
 #include "berrydb/vfs.h"
-#include "./format/store_header.h"
-#include "./page.h"
 // #include "./page_pool.h" would cause a cycle
 #include "./transaction_impl.h"
 #include "./util/linked_list.h"
@@ -34,10 +34,12 @@ class StoreImpl {
    * pool. The new instance should be initalized via StoreImpl::Initialize()
    * before it is used for transactions.
    */
-  static StoreImpl* Create(
-      BlockAccessFile* data_file, size_t data_file_size,
-      RandomAccessFile* log_file, size_t log_file_size, PagePool* page_pool,
-      const StoreOptions& options);
+  static StoreImpl* Create(BlockAccessFile* data_file,
+                           size_t data_file_size,
+                           RandomAccessFile* log_file,
+                           size_t log_file_size,
+                           PagePool* page_pool,
+                           const StoreOptions& options);
 
   /** Computes the internal representation for a pointer from the public API. */
   static inline StoreImpl* FromApi(Store* api) noexcept {
@@ -123,18 +125,20 @@ class StoreImpl {
 
  private:
   /** Use StoreImpl::Create() to obtain StoreImpl instances. */
-  StoreImpl(
-      BlockAccessFile* data_file, size_t data_file_size,
-      RandomAccessFile* log_file, size_t log_file_size, PagePool* page_pool,
-      const StoreOptions& options);
+  StoreImpl(BlockAccessFile* data_file,
+            size_t data_file_size,
+            RandomAccessFile* log_file,
+            size_t log_file_size,
+            PagePool* page_pool,
+            const StoreOptions& options);
   /** Use Release() to destroy StoreImpl instances. */
   ~StoreImpl();
 
   // Stores cannot be copied or moved.
   StoreImpl(const StoreImpl& other) = delete;
   StoreImpl(StoreImpl&& other) = delete;
-  StoreImpl& operator =(const StoreImpl& other) = delete;
-  StoreImpl& operator =(StoreImpl&& other) = delete;
+  StoreImpl& operator=(const StoreImpl& other) = delete;
+  StoreImpl& operator=(StoreImpl&& other) = delete;
 
   enum class State {
     kOpen = 0,

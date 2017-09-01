@@ -10,13 +10,13 @@
 #include <functional>
 #include <unordered_map>
 
-#include "berrydb/platform.h"
-#include "berrydb/status.h"
 #include "./page.h"
 #include "./store_impl.h"
 #include "./transaction_impl.h"
 #include "./util/linked_list.h"
 #include "./util/platform_allocator.h"
+#include "berrydb/platform.h"
+#include "berrydb/status.h"
 
 namespace berrydb {
 
@@ -134,9 +134,10 @@ class PagePool {
    * @return            may return kPoolFull if the page pool is (almost) full
    *                    and cannot find a free page, or kIoError if reading the
    *                    store page failed */
-  Status StorePage(
-      StoreImpl* store, size_t page_id, PageFetchMode fetch_mode,
-      Page** result);
+  Status StorePage(StoreImpl* store,
+                   size_t page_id,
+                   PageFetchMode fetch_mode,
+                   Page** result);
 
   /** Releases a Page previously obtained by StorePage().
    *
@@ -157,8 +158,8 @@ class PagePool {
    *              using StorePage()
    * @param  mode the desired behavior when unpinning makes this page pool
    *              entry's cached data eligible for eviction */
-  inline void UnpinStorePage(
-      Page* page, PageUnpinMode mode = kCachePage) noexcept {
+  inline void UnpinStorePage(Page* page,
+                             PageUnpinMode mode = kCachePage) noexcept {
     DCHECK(page != nullptr);
     DCHECK(page->transaction() != nullptr);
     DCHECK(page->transaction()->store() != nullptr);
@@ -266,8 +267,10 @@ class PagePool {
    * @param  fetch_mode desired fetching behavior
    * @return            most likley kSuccess or kIoError
    */
-  Status AssignPageToStore(
-      Page* page, StoreImpl* store, size_t page_id, PageFetchMode fetch_mode);
+  Status AssignPageToStore(Page* page,
+                           StoreImpl* store,
+                           size_t page_id,
+                           PageFetchMode fetch_mode);
 
   /** Frees up a page pool entry that is currently caching a store page.
    *
@@ -301,14 +304,17 @@ class PagePool {
   // Page pools cannot be copied or moved.
   PagePool(const PagePool& other) = delete;
   PagePool(Page&& other) = delete;
-  PagePool& operator =(const PagePool& other) = delete;
-  PagePool& operator =(PagePool&& other) = delete;
+  PagePool& operator=(const PagePool& other) = delete;
+  PagePool& operator=(PagePool&& other) = delete;
 
   /** Entries that belong to this page pool that are assigned to stores. */
   using PageMapKey = std::pair<StoreImpl*, size_t>;
-  std::unordered_map<PageMapKey, Page*, PointerSizeHasher<StoreImpl>,
-      std::equal_to<PageMapKey>,
-      PlatformAllocator<std::pair<const PageMapKey, Page*>>> page_map_;
+  std::unordered_map<PageMapKey,
+                     Page*,
+                     PointerSizeHasher<StoreImpl>,
+                     std::equal_to<PageMapKey>,
+                     PlatformAllocator<std::pair<const PageMapKey, Page*>>>
+      page_map_;
 
   size_t page_shift_;
   size_t page_size_;

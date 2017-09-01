@@ -74,6 +74,7 @@ class Store {
    *
    * Closes the store, if it hasn't been already closed. */
   void Release();
+
  private:
   friend class StoreImpl;
 

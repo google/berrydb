@@ -128,8 +128,8 @@ class Page {
    * The page should not be in any LRU list while a store page is loaded into
    * it, so PagePool::Alloc() doesn't grab it. This also implies that the page
    * must be pinned. */
-  inline void WillCacheStoreData(
-      TransactionImpl* transaction, size_t page_id) noexcept {
+  inline void WillCacheStoreData(TransactionImpl* transaction,
+                                 size_t page_id) noexcept {
     // NOTE: It'd be nice to DCHECK_EQ(page_pool_, store->page_pool()).
     //       Unfortunately, that requires a dependency on store_impl.h, which
     //       absolutely needs to include page.h.
@@ -205,15 +205,15 @@ class Page {
   }
 
  private:
-   /** Use Page::Create() to construct Page instances. */
-   Page(PagePool* page);
-   ~Page();
+  /** Use Page::Create() to construct Page instances. */
+  Page(PagePool* page);
+  ~Page();
 
   // Pages cannot be copied or moved.
   Page(const Page& other) = delete;
   Page(Page&& other) = delete;
-  Page& operator =(const Page& other) = delete;
-  Page& operator =(Page&& other) = delete;
+  Page& operator=(const Page& other) = delete;
+  Page& operator=(Page&& other) = delete;
 
 #if DCHECK_IS_ON()
   /** The maximum value that pin_count_ can hold.
@@ -228,7 +228,6 @@ class Page {
   // of StoreImpl and TransactionImpl. This file cannot include their headers
   // because StoreImpl and TransactionImpl contain LinkedList<Page> fields,
   // and their inlined methods call into inlined Page methods.
-
 
   /** DCHECKs that a transaction assignment for this page is valid.
    *
@@ -261,7 +260,6 @@ class Page {
    */
   size_t page_id_;
 
-
   /** Number of times the page was pinned. Very similar to a reference count. */
   size_t pin_count_;
   bool is_dirty_ = false;
@@ -284,8 +282,8 @@ class Page {
     }
     static inline Embedder* HostForNode(Node* node) noexcept {
       Embedder* host = reinterpret_cast<Embedder*>(
-          reinterpret_cast<char*>(node) - offsetof(
-              Embedder, transaction_list_node_));
+          reinterpret_cast<char*>(node) -
+          offsetof(Embedder, transaction_list_node_));
       DCHECK_EQ(node, &host->transaction_list_node_);
       return host;
     }

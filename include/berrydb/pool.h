@@ -33,8 +33,9 @@ class Pool {
   void Release();
 
   /** Open (or create) a store. */
-  Status OpenStore(
-      const std::string& path, const StoreOptions& options, Store** result);
+  Status OpenStore(const std::string& path,
+                   const StoreOptions& options,
+                   Store** result);
 
   /** The store page size supported by this resource pool. */
   size_t page_size() const;

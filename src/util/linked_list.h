@@ -11,8 +11,10 @@
 
 namespace berrydb {
 
-template<typename Embedder> class LinkedListNode;
-template<typename Embedder> class LinkedListBridge;
+template <typename Embedder>
+class LinkedListNode;
+template <typename Embedder>
+class LinkedListBridge;
 
 /**
  * A doubly linked list with embeddable nodes.
@@ -71,7 +73,7 @@ template<typename Embedder> class LinkedListBridge;
  * 2) emplace_* - doesn't really make sense, given that the embedders contain
  *        the nodes, not the other way around
  */
-template<typename Embedder, typename Bridge = LinkedListBridge<Embedder>>
+template <typename Embedder, typename Bridge = LinkedListBridge<Embedder>>
 class LinkedList {
  public:
   using value_type = Embedder*;
@@ -86,7 +88,7 @@ class LinkedList {
   using EmbedderType = Embedder;
   using BridgeType = Bridge;
 
-  inline LinkedList() noexcept : sentinel_(true), size_(0) { }
+  inline LinkedList() noexcept : sentinel_(true), size_(0) {}
   inline LinkedList(LinkedList&& other) noexcept
       : sentinel_(std::move(other.sentinel_)), size_(other.size_) {
     other.size_ = 0;
@@ -99,12 +101,8 @@ class LinkedList {
   inline bool empty() const noexcept { return sentinel_.next() == &sentinel_; }
   inline size_t size() const noexcept { return size_; }
 
-  inline iterator begin() noexcept {
-    return iterator{sentinel_.next()};
-  }
-  inline iterator end() noexcept {
-    return iterator{&sentinel_};
-  }
+  inline iterator begin() noexcept { return iterator{sentinel_.next()}; }
+  inline iterator end() noexcept { return iterator{&sentinel_}; }
 
   inline value_type front() noexcept { return *begin(); }
   inline value_type back() noexcept { return *(--end()); }
@@ -163,24 +161,24 @@ class LinkedList {
     inline iterator& operator=(iterator&&) noexcept = default;
     inline ~iterator() noexcept = default;
 
-    inline bool operator ==(const iterator& other) const noexcept {
+    inline bool operator==(const iterator& other) const noexcept {
       return node_ == other.node_;
     }
-    inline bool operator !=(const iterator& other) const noexcept {
+    inline bool operator!=(const iterator& other) const noexcept {
       return node_ != other.node_;
     }
 
     inline iterator& operator++() noexcept {
 #if DCHECK_IS_ON()
       DCHECK(!node_->is_sentinel());  // Already at cend().
-#endif  // DCHECK_IS_ON()
+#endif                                // DCHECK_IS_ON()
       node_ = node_->next();
       return *this;
     }
-    inline iterator operator++(int) noexcept {
+    inline iterator operator++(int)noexcept {
 #if DCHECK_IS_ON()
       DCHECK(!node_->is_sentinel());  // Already at cend().
-#endif  // DCHECK_IS_ON()
+#endif                                // DCHECK_IS_ON()
       Node* old_node = node_;
       node_ = node_->next();
       return iterator(old_node);
@@ -188,14 +186,14 @@ class LinkedList {
     inline iterator& operator--() noexcept {
 #if DCHECK_IS_ON()
       DCHECK(!node_->prev()->is_sentinel());  // Already at cbegin().
-#endif  // DCHECK_IS_ON()
+#endif                                        // DCHECK_IS_ON()
       node_ = node_->prev();
       return *this;
     }
-    inline iterator operator--(int) noexcept {
+    inline iterator operator--(int)noexcept {
 #if DCHECK_IS_ON()
       DCHECK(!node_->prev()->is_sentinel());  // Already at cbegin().
-#endif  // DCHECK_IS_ON()
+#endif                                        // DCHECK_IS_ON()
       Node* old_node = node_;
       node_ = node_->prev();
       return iterator(old_node);
@@ -207,7 +205,7 @@ class LinkedList {
 
    private:
     /** Constructor used by the list. */
-    iterator(Node* node): node_(node) { DCHECK(node != nullptr); }
+    iterator(Node* node) : node_(node) { DCHECK(node != nullptr); }
 
     friend class LinkedList;
 
@@ -215,7 +213,6 @@ class LinkedList {
   };
 
  private:
-
   Node sentinel_;
   // TODO(pwnall): Consider making size_ and size() DCHECK-only. If we can get
   //               away with it, this would shave some code and Transaction
@@ -224,15 +221,18 @@ class LinkedList {
 };
 
 /** A node in a linked list. */
-template<typename Embedder>
+template <typename Embedder>
 class LinkedListNode {
  public:
   /** Constructor for non-sentinel nodes. */
   inline LinkedListNode()
 #if DCHECK_IS_ON()
-      : next_(nullptr), prev_(nullptr), list_sentinel_(nullptr)
+      : next_(nullptr),
+        prev_(nullptr),
+        list_sentinel_(nullptr)
 #endif  // DCHECK_IS_ON()
-      { }
+  {
+  }
 
 #if DCHECK_IS_ON()
   /** Only intended for use in DCHECKs. */
@@ -246,11 +246,13 @@ class LinkedListNode {
  private:
   /** Constructor for sentinel nodes. */
   inline LinkedListNode(bool is_sentinel)
-      : next_(this), prev_(this)
+      : next_(this),
+        prev_(this)
 #if DCHECK_IS_ON()
-      , list_sentinel_(this)
+        ,
+        list_sentinel_(this)
 #endif  // DCHECK_IS_ON()
-      {
+  {
 #if DCHECK_IS_ON()
     DCHECK(is_sentinel);
 #endif  // DCHECK_IS_ON()
@@ -262,7 +264,7 @@ class LinkedListNode {
 #if DCHECK_IS_ON()
       : list_sentinel_(this)
 #endif  // DCHECK_IS_ON()
-      {
+  {
 #if DCHECK_IS_ON()
     DCHECK(other_sentinel.is_sentinel());
 #endif  // DCHECK_ISON()
@@ -280,9 +282,9 @@ class LinkedListNode {
     this->next_->prev_ = this;
     this->prev_->next_ = this;
 
-    // This is actually O(list size) when DCHECK is enabled. This is only
-    // mildly unfortunate, because list-moves are generally used when a list's
-    // items are destroyed.
+// This is actually O(list size) when DCHECK is enabled. This is only
+// mildly unfortunate, because list-moves are generally used when a list's
+// items are destroyed.
 #if DCHECK_IS_ON()
     for (LinkedListNode* node = next_; node != this; node = node->next_) {
       DCHECK(!node->is_sentinel());
@@ -295,8 +297,10 @@ class LinkedListNode {
 #endif  // DCHECK_IS_ON()
   }
 
-  template<typename AnyEmbedder, typename Bridge> friend class LinkedList;
-  template<typename AnyEmbedder, typename Bridge> friend class iterator;
+  template <typename AnyEmbedder, typename Bridge>
+  friend class LinkedList;
+  template <typename AnyEmbedder, typename Bridge>
+  friend class iterator;
 
   /** The node's successor in the linked list.
    *
@@ -399,7 +403,7 @@ class LinkedListNode {
 };
 
 /** Bridge that extracts the linked_list_node_ field from the embedder. */
-template<typename Embedder>
+template <typename Embedder>
 class LinkedListBridge {
  public:
   /** Extracts the LinkedListNode from an embedder object. */
@@ -409,16 +413,14 @@ class LinkedListBridge {
 
   /** Converts a LinkedListNode pointer back to an embedder pointer. */
   static inline Embedder* HostForNode(LinkedListNode<Embedder>* node) noexcept {
-    static_assert(
-        std::is_standard_layout<Embedder>::value,
-        "Linked list embedders must be standard layout types");
+    static_assert(std::is_standard_layout<Embedder>::value,
+                  "Linked list embedders must be standard layout types");
 #if DCHECK_IS_ON()
     DCHECK(!node->is_sentinel());
 #endif  // DCHECK_IS_ON()
 
     Embedder* host = reinterpret_cast<Embedder*>(
-        reinterpret_cast<char*>(node) -
-        offsetof(Embedder, linked_list_node_));
+        reinterpret_cast<char*>(node) - offsetof(Embedder, linked_list_node_));
     DCHECK_EQ(node, &host->linked_list_node_);
     return host;
   }

@@ -42,10 +42,11 @@ class Vfs {
    *                           in kIoError or kNotFound; all other errors will
    *                           result in kIoError
    */
-  virtual Status OpenForRandomAccess(
-      const std::string& file_path,
-      bool create_if_missing, bool error_if_exists,
-      RandomAccessFile** result, size_t* file_size) = 0;
+  virtual Status OpenForRandomAccess(const std::string& file_path,
+                                     bool create_if_missing,
+                                     bool error_if_exists,
+                                     RandomAccessFile** result,
+                                     size_t* file_size) = 0;
 
   /** Opens a file designed for reads/writes at (large) block granularities.
    *
@@ -69,10 +70,12 @@ class Vfs {
    *                           in kIoError or kNotFound; all other errors will
    *                           result in kIoError
    */
-  virtual Status OpenForBlockAccess(
-      const std::string& file_path, size_t block_shift,
-      bool create_if_missing, bool error_if_exists,
-      BlockAccessFile** result, size_t* file_size) = 0;
+  virtual Status OpenForBlockAccess(const std::string& file_path,
+                                    size_t block_shift,
+                                    bool create_if_missing,
+                                    bool error_if_exists,
+                                    BlockAccessFile** result,
+                                    size_t* file_size) = 0;
 
   /** Deletes a file from the filesystem.
    *
@@ -90,8 +93,8 @@ class Vfs {
   // can enable them, if they wish to do so.
   Vfs(const Vfs& other) noexcept;
   Vfs(Vfs&& other) noexcept;
-  Vfs& operator =(const Vfs& other) noexcept;
-  Vfs& operator =(Vfs&& other) noexcept;
+  Vfs& operator=(const Vfs& other) noexcept;
+  Vfs& operator=(Vfs&& other) noexcept;
 };
 
 /** File I/O interface without any assumptions on the access pattern.
@@ -103,7 +106,6 @@ class Vfs {
  */
 class RandomAccessFile {
  public:
-
   /** Reads a sequence of bytes from the file.
    *
    * @param  offset     0-based file position of the first byte to be read
@@ -120,8 +122,9 @@ class RandomAccessFile {
    * @param  byte_count number of buffer bytes that will be written to the file
    * @return            most likely kSuccess or kIoError
    */
-  virtual Status Write(
-      const uint8_t* buffer, size_t offset, size_t byte_count) = 0;
+  virtual Status Write(const uint8_t* buffer,
+                       size_t offset,
+                       size_t byte_count) = 0;
 
   /** Evicts any buffered data in the application to the operating system layer.
    *
@@ -168,8 +171,8 @@ class RandomAccessFile {
   // can enable them, if they wish to do so.
   RandomAccessFile(const RandomAccessFile& other) noexcept;
   RandomAccessFile(RandomAccessFile&& other) noexcept;
-  RandomAccessFile& operator =(const RandomAccessFile& other) noexcept;
-  RandomAccessFile& operator =(RandomAccessFile&& other) noexcept;
+  RandomAccessFile& operator=(const RandomAccessFile& other) noexcept;
+  RandomAccessFile& operator=(RandomAccessFile&& other) noexcept;
 };
 
 /** Interface for accessing files via block-based I/O.
@@ -251,8 +254,8 @@ class BlockAccessFile {
 
   BlockAccessFile(const BlockAccessFile& other) noexcept;
   BlockAccessFile(BlockAccessFile&& other) noexcept;
-  BlockAccessFile& operator =(const BlockAccessFile& other) noexcept;
-  BlockAccessFile& operator =(BlockAccessFile&& other) noexcept;
+  BlockAccessFile& operator=(const BlockAccessFile& other) noexcept;
+  BlockAccessFile& operator=(BlockAccessFile&& other) noexcept;
 };
 
 /**

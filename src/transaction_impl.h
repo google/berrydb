@@ -5,8 +5,8 @@
 #ifndef BERRYDB_TRANSACTION_IMPL_H_
 #define BERRYDB_TRANSACTION_IMPL_H_
 
-#include "berrydb/transaction.h"
 #include "./page.h"
+#include "berrydb/transaction.h"
 // #include "./page_pool.h" would cause a cycle
 // #include "./store_impl.h" would cause a cycle
 #include "./util/linked_list.h"
@@ -134,17 +134,17 @@ class TransactionImpl {
     DCHECK(page->transaction() != nullptr);
     DCHECK_EQ(page->transaction()->store(), store_);
 
-    // The init transaction will never be committed, so it cannot be used to
-    // modify pages.
+// The init transaction will never be committed, so it cannot be used to
+// modify pages.
 #if DCHECK_IS_ON()
     DCHECK(!is_init_);
 #endif  // DCHECK_IS_ON()
 
     TransactionImpl* page_transaction = page->transaction();
     if (page_transaction != this) {
-      // A page may not be modified by two transactions at the same time. This
-      // follows from the concurrency model, which states that a Space modified
-      // by a transaction must not be accessed by any concurrent transaction.
+// A page may not be modified by two transactions at the same time. This
+// follows from the concurrency model, which states that a Space modified
+// by a transaction must not be accessed by any concurrent transaction.
 #if DCHECK_IS_ON()
       DCHECK(page->transaction()->is_init_);
 #endif  // DCHECK_IS_ON()
@@ -170,8 +170,8 @@ class TransactionImpl {
    *
    * @param page the Page whose data buffer was written to persistent storage
    */
-  inline void PageWasPersisted(
-      Page* page, TransactionImpl* init_transaction) noexcept {
+  inline void PageWasPersisted(Page* page,
+                               TransactionImpl* init_transaction) noexcept {
     DCHECK(page != nullptr);
     DCHECK(!page->IsUnpinned());
     DCHECK_EQ(page->transaction(), this);
@@ -223,10 +223,12 @@ class TransactionImpl {
   Status Delete(Space* space, string_view key);
   Status Commit();
   Status Rollback();
-  Status CreateSpace(
-      CatalogImpl* catalog, string_view name, SpaceImpl** result);
-  Status CreateCatalog(
-      CatalogImpl* catalog, string_view name, CatalogImpl** result);
+  Status CreateSpace(CatalogImpl* catalog,
+                     string_view name,
+                     SpaceImpl** result);
+  Status CreateCatalog(CatalogImpl* catalog,
+                       string_view name,
+                       CatalogImpl** result);
   Status Delete(CatalogImpl* catalog, string_view name);
 
   inline bool IsClosed() const noexcept {
@@ -251,8 +253,8 @@ class TransactionImpl {
   // Transactions cannot be copied or moved.
   TransactionImpl(const TransactionImpl& other) = delete;
   TransactionImpl(TransactionImpl&& other) = delete;
-  TransactionImpl& operator =(const TransactionImpl& other) = delete;
-  TransactionImpl& operator =(TransactionImpl&& other) = delete;
+  TransactionImpl& operator=(const TransactionImpl& other) = delete;
+  TransactionImpl& operator=(TransactionImpl&& other) = delete;
 
   /** Common functionality in Commit() and Rollback(). */
   Status Close();

@@ -26,7 +26,7 @@ class FreePageList {
    * free page lists used by store data files need an additional call to
    * set_head_page_id(). */
   constexpr inline FreePageList() noexcept
-      : head_page_id_(kInvalidPageId), tail_page_id_(kInvalidPageId) { }
+      : head_page_id_(kInvalidPageId), tail_page_id_(kInvalidPageId) {}
   // The destructor is inlined because it should generate no code.
   inline ~FreePageList() noexcept = default;
 

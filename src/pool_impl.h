@@ -8,9 +8,9 @@
 #include <functional>
 #include <unordered_set>
 
-#include "berrydb/pool.h"
 #include "./page_pool.h"
 #include "./util/platform_allocator.h"
+#include "berrydb/pool.h"
 
 namespace berrydb {
 
@@ -44,9 +44,9 @@ class PoolImpl {
 
   // See the public API documention for details.
   void Release();
-  Status OpenStore(
-      const std::string& path, const StoreOptions& options,
-      StoreImpl** result);
+  Status OpenStore(const std::string& path,
+                   const StoreOptions& options,
+                   StoreImpl** result);
   inline size_t page_size() const noexcept { return page_pool_.page_size(); }
   inline size_t page_pool_size() const noexcept {
     return page_pool_.page_capacity();
@@ -71,9 +71,10 @@ class PoolImpl {
   PagePool page_pool_;
 
   /** The opened stores that use this resource pool. */
-  using StoreSet = std::unordered_set<
-      StoreImpl*, PointerHasher<StoreImpl>, std::equal_to<StoreImpl*>,
-      PlatformAllocator<StoreImpl*>>;
+  using StoreSet = std::unordered_set<StoreImpl*,
+                                      PointerHasher<StoreImpl>,
+                                      std::equal_to<StoreImpl*>,
+                                      PlatformAllocator<StoreImpl*>>;
   StoreSet stores_;
 
   /** The platform services implementation used by this pool's stores. */
