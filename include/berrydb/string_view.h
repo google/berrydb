@@ -9,11 +9,8 @@
 #ifndef BERRYDB_INCLUDE_BERRYDB_STRING_VIEW_H_
 #define BERRYDB_INCLUDE_BERRYDB_STRING_VIEW_H_
 
-#if defined(__has_include)
+#if __cplusplus > 201402L
 #if __has_include(<string_view>)
-// Visual Studio provides a <string_view> header even in C++11 mode. When
-// included, the header issues an #error. (C1189)
-#if !defined(_MSC_VER) || __cplusplus >= 201703L
 
 #include <string_view>
 
@@ -25,9 +22,8 @@ using std::string_view;
 
 #define BERRYDB_HAVE_STRING_VIEW_DEFINITION
 
-#endif  // !defined(_MSC_VER) || __cplusplus >= 201703L
 #endif  // __has_include(<string_view>)
-#endif  // defined(__has_include)
+#endif  // __cplusplus > 201402L
 
 #if !defined(BERRYDB_HAVE_STRING_VIEW_DEFINITION)
 
