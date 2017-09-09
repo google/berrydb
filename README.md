@@ -89,5 +89,18 @@ adb shell 'cd /data/local/tmp && ./berrydb_tests'
 adb shell rm /data/local/tmp/berrydb_tests
 ```
 
-Most third-party libraries used by this project can only be used in specific components. `CMakeLists.txt` enforces these constraints, and  [third_party/README.md](./third_party/README.md) describes the motivations
+Most third-party libraries used by this project can only be used in specific
+components. `CMakeLists.txt` enforces these constraints, and
+[third_party/README.md](./third_party/README.md) describes the motivations
 behind them.
+
+### Static Analysis
+
+This project is experimenting with
+[Facebook Infer](https://facebook.github.io/infer) for static analysis. The
+following command collects diagnostics.
+
+```bash
+infer compile -- cmake -DBERRYDB_USE_GLOG=0 -DBERRYDB_BUILD_BENCHMARKS=0 \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo .. && infer run -- cmake --build .
+```

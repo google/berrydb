@@ -15,6 +15,7 @@ PagePool::PagePool(PoolImpl* pool, size_t page_shift, size_t page_capacity)
     : page_shift_(page_shift), page_size_(static_cast<size_t>(1) << page_shift),
       page_capacity_(page_capacity), pool_(pool), free_list_(), lru_list_(),
       log_list_() {
+  DCHECK(pool != nullptr);
   // The page size should be a power of two.
   DCHECK_EQ(page_size_ & (page_size_ - 1), 0U);
 }
@@ -183,6 +184,7 @@ Status PagePool::StorePage(
   const auto& it = page_map_.find(std::make_pair(store, page_id));
   if (it != page_map_.end()) {
     Page* page = it->second;
+    DCHECK(page != nullptr);
     DCHECK_EQ(store, page->transaction()->store());
     DCHECK_EQ(page_id, page->page_id());
 #if DCHECK_IS_ON()
