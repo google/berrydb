@@ -75,7 +75,7 @@ int main() {
       }
     } else if (args[0] == "set") {
       if (args.size() != 3) {
-        print_output("⚠️  Expected 2 arguments.");
+        print_output("⚠️  Expected 2 arguments."); //issue with empty spaces
       } else {
         data[args[1]] = args[2];
       }
