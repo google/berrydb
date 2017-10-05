@@ -79,12 +79,18 @@ class Vfs {
 
   /** Deletes a file from the filesystem.
    *
+   * The natural name for this method would have been DeleteFile. However,
+   * <windows.h> #defines DeleteFile to DeleteFileW, and it's reasonable to
+   * expect this macro to be in effect in parts of our Windows users. RemoveFile
+   * is close enough that it's not worth dealing with headaches.
+   *
    * @param  file_path the file to be deleted
    * @return           most likely kSuccess or kIoError; attempting to delete a
    *                   non-existing file may result in kNotFound, but that is
    *                   not a requirement
    */
-  virtual Status DeleteFile(const std::string& file_path) = 0;
+  virtual Status RemoveFile(const std::string& file_path) = 0;
+
 
  protected:
   Vfs() noexcept;

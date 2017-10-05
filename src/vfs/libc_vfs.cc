@@ -245,7 +245,7 @@ class LibcVfs : public Vfs {
     return Status::kSuccess;
   }
 
-  Status DeleteFile(const std::string& file_path) override {
+  Status RemoveFile(const std::string& file_path) override {
     if(std::remove(file_path.c_str()) != 0)
       return Status::kIoError;
 

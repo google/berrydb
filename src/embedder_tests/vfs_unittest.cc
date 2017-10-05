@@ -95,7 +95,7 @@ TEST_F(VfsTest, BlockAccessFilePersistence) {
   EXPECT_EQ(Status::kSuccess, file->Close());
 
   EXPECT_EQ(0, std::memcmp(buffer, read_buffer, 1 << kBlockShift));
-  EXPECT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));
+  EXPECT_EQ(Status::kSuccess, vfs_->RemoveFile(kFileName));
 }
 
 TEST_F(VfsTest, BlockAccessFileReadWriteOffsets) {
@@ -167,7 +167,7 @@ TEST_F(VfsTest, BlockAccessFileReadWriteOffsets) {
   EXPECT_EQ(0, std::memcmp(buffer[2], read_buffer, 1 << kBlockShift));
 
   EXPECT_EQ(Status::kSuccess, file->Close());
-  EXPECT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));
+  EXPECT_EQ(Status::kSuccess, vfs_->RemoveFile(kFileName));
 }
 
 TEST_F(VfsTest, OpenForRandomAccessOptions) {
@@ -255,7 +255,7 @@ TEST_F(VfsTest, RandomAccessFilePersistence) {
   static_assert(
       sizeof(buffer) == sizeof(read_buffer), "Mismatched buffer size");
   EXPECT_EQ(0, std::memcmp(buffer, read_buffer, sizeof(buffer)));
-  EXPECT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));
+  EXPECT_EQ(Status::kSuccess, vfs_->RemoveFile(kFileName));
 }
 
 TEST_F(VfsTest, RandomAccessFileReadWriteOffsets) {
@@ -311,10 +311,10 @@ TEST_F(VfsTest, RandomAccessFileReadWriteOffsets) {
   EXPECT_EQ(0, std::memcmp(buffer, read_buffer, sizeof(buffer)));
 
   EXPECT_EQ(Status::kSuccess, file->Close());
-  EXPECT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));
+  EXPECT_EQ(Status::kSuccess, vfs_->RemoveFile(kFileName));
 }
 
-TEST_F(VfsTest, DeleteFile) {
+TEST_F(VfsTest, RemoveFile) {
   RandomAccessFile* file = nullptr;
   const size_t kInvalidSize = 0x0badc0de;
   size_t file_size = kInvalidSize;
@@ -326,7 +326,7 @@ TEST_F(VfsTest, DeleteFile) {
   EXPECT_EQ(0U, file_size);
   EXPECT_EQ(Status::kSuccess, file->Close());
 
-  ASSERT_EQ(Status::kSuccess, vfs_->DeleteFile(kFileName));
+  ASSERT_EQ(Status::kSuccess, vfs_->RemoveFile(kFileName));
 
   ASSERT_NE(
       Status::kSuccess,

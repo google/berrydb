@@ -9,11 +9,11 @@
 namespace berrydb {
 
 FileDeleter::FileDeleter(const std::string& path) : path_(path) {
-  DefaultVfs()->DeleteFile(path_);
+  DefaultVfs()->RemoveFile(path_);
 }
 
 FileDeleter::~FileDeleter() {
-  DefaultVfs()->DeleteFile(path_);
+  DefaultVfs()->RemoveFile(path_);
 }
 
 }  // namespace berrydb

@@ -11,7 +11,7 @@ namespace berrydb {
 
 /** A wrapper that ensures a temporary file is deleted before/after tests.
  *
- * The wrapper calls DeleteFile() on the wrapped path when it is constructed and
+ * The wrapper calls RemoveFile() on the wrapped path when it is constructed and
  * destroyed. The wrapper should be used as a member in test fixture classes.
  * Proper usage will ensure that tests don't leave temporary files behind, and
  * are not impacted by any temporary file that may have been left behind.
