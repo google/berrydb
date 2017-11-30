@@ -24,7 +24,7 @@ BENCHMARK_DEFINE_F(SnappyBenchmark, CompressionTest)(benchmark::State& state) {
   for (size_t i = 0; i < input_size; ++i)
     input[i] = static_cast<uint8_t>(rnd_());
 
-  while (state.KeepRunning()) {
+  for (auto _ : state) {
     size_t output_size;
     snappy::RawCompress(
         reinterpret_cast<char*>(input), input_size,

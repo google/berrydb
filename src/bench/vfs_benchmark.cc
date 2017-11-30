@@ -73,7 +73,7 @@ BENCHMARK_DEFINE_F(VfsBenchmark, RandomBlockWrites)(benchmark::State& state) {
     return;
   }
 
-  while (state.KeepRunning()) {
+  for (auto _ : state) {
     size_t block_number = rnd_() % block_count;
 
     if (file->Write(block_data_, block_number << block_shift_, block_size_) !=
@@ -108,7 +108,8 @@ BENCHMARK_DEFINE_F(VfsBenchmark, LogWrites)(benchmark::State& state) {
   }
   file.reset(raw_file);
 
-  for (size_t block_number = 0; state.KeepRunning(); ++block_number) {
+  size_t block_number = 0;
+  for (auto _ : state) {
     if (file->Write(block_data_, block_number << block_shift_, block_size_) !=
         Status::kSuccess) {
       state.SkipWithError("RandomAccessFile::Write failed.");
@@ -118,6 +119,10 @@ BENCHMARK_DEFINE_F(VfsBenchmark, LogWrites)(benchmark::State& state) {
       state.SkipWithError("RandomAccessFile::Sync failed.");
       return;
     }
+
+    // TODO(pwnall): Come up with a better strategy for simulating log growth.
+    //               This runs out of space on CI.
+    ++block_number;
   }
 
   state.SetBytesProcessed(state.iterations() << block_shift_);

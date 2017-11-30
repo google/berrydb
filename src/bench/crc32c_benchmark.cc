@@ -22,7 +22,7 @@ BENCHMARK_DEFINE_F(Crc32cBenchmark, CrcTest)(benchmark::State& state) {
   for (size_t i = 0; i < input_size; ++i)
     input[i] = static_cast<uint8_t>(rnd_());
 
-  while (state.KeepRunning())
+  for (auto _ : state)
     benchmark::DoNotOptimize(crc32c::Crc32c(input, input_size));
 
   state.SetBytesProcessed(state.iterations() * input_size);

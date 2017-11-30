@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.1)
 # Update include/berrydb/version.h when changing the version number.
 project(BerryDB VERSION 0.1.0 LANGUAGES C CXX)
 
-# This project requires C++11.
-set(CMAKE_CXX_STANDARD 11)
+# This project requires C++14.
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

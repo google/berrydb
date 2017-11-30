@@ -54,12 +54,11 @@ class string_view {
   constexpr inline string_view() noexcept : data_(nullptr), size_(0) {}
   constexpr inline string_view(const string_view&) noexcept = default;
   string_view& operator=(const string_view&) noexcept = default;
-  // constexpr in C++14
-  inline string_view(const_pointer data, size_type size) noexcept
+  constexpr inline string_view(const_pointer data, size_type size) noexcept
       : data_(data), size_(size) {
     assert(size == 0 || data != nullptr);
   }
-  // constexpr in C++14
+  // constexpr in C++17
   inline string_view(const_pointer data) noexcept
       : data_(data), size_(traits_type::length(data)) {}
 
@@ -80,15 +79,13 @@ class string_view {
 
   constexpr inline const_pointer data() const noexcept { return data_; }
 
-  // constexpr in C++14
-  inline void remove_prefix(size_type n) noexcept {
+  constexpr inline void remove_prefix(size_type n) noexcept {
     assert(n <= size_);
     data_ += n;
     size_ -= n;
   }
 
-  // constexpr in C++14
-  inline void remove_suffix(size_type n) noexcept {
+  constexpr inline void remove_suffix(size_type n) noexcept {
     assert(n <= size_);
     size_ -= n;
   }
@@ -100,13 +97,13 @@ class string_view {
     return copy_size;
   }
 
-  // constexpr in C++14
-  inline string_view substr(size_type pos = 0, size_type n = npos) const {
+  constexpr inline string_view substr(
+      size_type pos = 0, size_type n = npos) const {
     assert(pos <= size_);
     return string_view(data_ + pos, std::min(n, size_ - pos));
   }
 
-  // constexpr in C++14
+  // constexpr in C++17
   inline int compare(const string_view& other) const noexcept {
     size_type common_size = std::min(size_, other.size_);
     int result = traits_type::compare(data_, other.data_, common_size);
@@ -128,8 +125,8 @@ class string_view {
   size_type size_;
 };
 
-// constexpr in C++14
-inline bool operator==(const string_view& l, const string_view& r) noexcept {
+constexpr inline bool operator==(
+    const string_view& l, const string_view& r) noexcept {
   return l.size() == r.size() && l.compare(r) == 0;
 }
 inline bool operator!=(const string_view& l, const string_view& r) noexcept {
