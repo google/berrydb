@@ -18,4 +18,4 @@
 -Ithird_party/snappy/
 -Iout/platform/
 -Iout/third_party/glog/
--std=c++11
+-std=c++14

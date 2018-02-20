@@ -67,7 +67,8 @@ useful for benchmarking against ARM processors.
 ```bash
 cmake .. -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a \
     -DCMAKE_ANDROID_NDK=$HOME/Library/Android/sdk/ndk-bundle \
-    -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DBERRYDB_USE_GLOG=0 \
+    -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang \
+    -DCMAKE_ANDROID_STL_TYPE=c++_static -DBERRYDB_USE_GLOG=0 \
     -DCMAKE_BUILD_TYPE=Release && cmake --build .
 ```
 
