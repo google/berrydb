@@ -26,8 +26,8 @@ build:
 
 build_script:
   - git submodule update --init --recursive
-  - mkdir out
-  - cd out
+  - mkdir build
+  - cd build
   - if "%platform%"=="x64" set CMAKE_GENERATOR=%CMAKE_GENERATOR% Win64
   - cmake --version
   - cmake .. -G "%CMAKE_GENERATOR%" -DBERRYDB_USE_GLOG=0
@@ -36,5 +36,5 @@ build_script:
   - cd ..
 
 test_script:
-  - out\%CONFIGURATION%\berrydb_tests.exe
-  - out\%CONFIGURATION%\berrydb_bench.exe
+  - build\%CONFIGURATION%\berrydb_tests.exe
+  - build\%CONFIGURATION%\berrydb_bench.exe

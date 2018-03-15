@@ -1,3 +1,5 @@
+-Ibuild/platform/
+-Ibuild/third_party/glog/
 -Iinclude/
 -Iplatform/
 -Ithird_party/benchmark/include/
@@ -13,9 +15,8 @@
 -Ithird_party/boost/tokenizer/include/
 -Ithird_party/boost/type_traits/include/
 -Ithird_party/crc32c/include/
+-Ithird_party/glog/src/
 -Ithird_party/googletest/googletest/include/
 -Ithird_party/googletest/googlemock/include/
 -Ithird_party/snappy/
--Iout/platform/
--Iout/third_party/glog/
 -std=c++14

@@ -44,15 +44,15 @@ apm install autocomplete-plus build build-cmake clang-format \
 The following commands build the project.
 
 ```bash
-mkdir out
-cd out
+mkdir build
+cd build
 cmake .. && cmake --build .
 ```
 
 
 ## Development
 
-The following command (when executed from `out/`) (re)builds the project and
+The following command (when executed from `build/`) (re)builds the project and
 runs the tests.
 
 ```bash
