@@ -343,6 +343,33 @@ if(BERRYDB_BUILD_BENCHMARKS)
     )
   endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
+  # This project uses LevelDB.
+  set(LEVELDB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(LEVELDB_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
+  set(LEVELDB_INSTALL OFF CACHE BOOL "" FORCE)
+  add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/leveldb")
+  target_link_libraries(berrydb_bench leveldb)
+
+  # LevelDB triggers sign comparison warnings on clang.
+  if(BERRYDB_HAVE_NO_SIGN_COMPARE)
+    set_property(TARGET leveldb
+                 APPEND PROPERTY COMPILE_OPTIONS -Wno-sign-compare)
+  endif(BERRYDB_HAVE_NO_SIGN_COMPARE)
+
+  # LevelDB triggers unused parameter warnings on clang.
+  if(BERRYDB_HAVE_NO_UNUSED_PARAMETER)
+    set_property(TARGET leveldb
+                 APPEND PROPERTY COMPILE_OPTIONS -Wno-unused-parameter)
+  endif(BERRYDB_HAVE_NO_UNUSED_PARAMETER)
+
+  # LevelDB triggers fallthrough warnings on gcc.
+  check_cxx_compiler_flag(-Wimplicit-fallthrough=0
+                          BERRYDB_HAVE_IMPLICIT_FALLTHROUGH0)
+  if(BERRYDB_HAVE_IMPLICIT_FALLTHROUGH0)
+    set_property(TARGET leveldb
+                 APPEND PROPERTY COMPILE_OPTIONS -Wimplicit-fallthrough=0)
+  endif(BERRYDB_HAVE_IMPLICIT_FALLTHROUGH0)
+
   if(BERRYDB_USE_GLOG)
     target_link_libraries(berrydb_bench glog)
   endif(BERRYDB_USE_GLOG)
