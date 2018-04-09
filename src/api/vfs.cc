@@ -3,35 +3,36 @@
 // found in the LICENSE file.
 
 #include "berrydb/vfs.h"
+#include "../debug.h"
 
 namespace berrydb {
 
 Vfs::Vfs() noexcept = default;
-Vfs::Vfs(const Vfs& other) noexcept = default;
-Vfs::Vfs(Vfs&& other) noexcept = default;
-Vfs& Vfs::operator =(const Vfs& other) noexcept = default;
-Vfs& Vfs::operator =(Vfs&& other) noexcept = default;
+Vfs::Vfs(const Vfs& other UNUSED) noexcept = default;
+Vfs::Vfs(Vfs&& other UNUSED) noexcept = default;
+Vfs& Vfs::operator =(const Vfs& other UNUSED) noexcept = default;
+Vfs& Vfs::operator =(Vfs&& other UNUSED) noexcept = default;
 
 BlockAccessFile::BlockAccessFile() noexcept = default;
 BlockAccessFile::~BlockAccessFile() = default;
 BlockAccessFile::BlockAccessFile(
-    const BlockAccessFile& other) noexcept = default;
+    const BlockAccessFile& other UNUSED) noexcept = default;
 BlockAccessFile::BlockAccessFile(
-    BlockAccessFile&& other) noexcept = default;
+    BlockAccessFile&& other UNUSED) noexcept = default;
 BlockAccessFile& BlockAccessFile::operator =(
-    const BlockAccessFile& other) noexcept = default;
+    const BlockAccessFile& other UNUSED) noexcept = default;
 BlockAccessFile& BlockAccessFile::operator =(
-    BlockAccessFile&& other) noexcept = default;
+    BlockAccessFile&& other UNUSED) noexcept = default;
 
 RandomAccessFile::RandomAccessFile() noexcept = default;
 RandomAccessFile::~RandomAccessFile() = default;
 RandomAccessFile::RandomAccessFile(
-    const RandomAccessFile& other) noexcept = default;
+    const RandomAccessFile& other UNUSED) noexcept = default;
 RandomAccessFile::RandomAccessFile(
-    RandomAccessFile&& other) noexcept = default;
+    RandomAccessFile&& other UNUSED) noexcept = default;
 RandomAccessFile& RandomAccessFile::operator =(
-    const RandomAccessFile& other) noexcept = default;
+    const RandomAccessFile& other UNUSED) noexcept = default;
 RandomAccessFile& RandomAccessFile::operator =(
-    RandomAccessFile&& other) noexcept = default;
+    RandomAccessFile&& other UNUSED) noexcept = default;
 
 }  // namespace berrydb
