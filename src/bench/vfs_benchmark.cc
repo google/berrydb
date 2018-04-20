@@ -20,7 +20,7 @@ class VfsBenchmark : public benchmark::Fixture {
   VfsBenchmark() : vfs_(DefaultVfs()), deleter_(kFileName) {}
 
   void SetUp(const benchmark::State& state) override {
-    block_size_ = state.range(0);
+    block_size_ = static_cast<size_t>(state.range(0));
     block_shift_ = static_cast<size_t>(std::log2(block_size_));
     DCHECK_EQ(block_size_, static_cast<size_t>(1) << block_shift_);
 
@@ -60,7 +60,7 @@ BENCHMARK_DEFINE_F(VfsBenchmark, RandomBlockWrites)(benchmark::State& state) {
   }
   file.reset(raw_file);
 
-  size_t block_count = state.range(1);
+  size_t block_count = static_cast<size_t>(state.range(1));
   for (size_t i = 0; i < block_count; ++i) {
     status = file->Write(block_data_, i << block_shift_, block_size_);
     if (status != Status::kSuccess) {

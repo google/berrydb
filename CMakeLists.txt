@@ -64,6 +64,17 @@ include(CheckIncludeFiles)
 include(CheckIncludeFileCXX)
 check_include_file_cxx("string_view" BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW)
 
+include(CheckCXXCompilerFlag)
+# Used by glog.
+check_cxx_compiler_flag(-Wno-deprecated BERRYDB_HAVE_NO_DEPRECATED)
+# Used by glog and snappy.
+check_cxx_compiler_flag(-Wno-sign-compare BERRYDB_HAVE_NO_SIGN_COMPARE)
+# Used by glog and snappy.
+check_cxx_compiler_flag(-Wno-unused-parameter BERRYDB_HAVE_NO_UNUSED_PARAMETER)
+# Used by googletest.
+check_cxx_compiler_flag(-Wno-missing-field-initializers
+                        BERRYDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
+
 if(BERRYDB_USE_GLOG)
   # glog requires this setting to avoid using dynamic_cast.
   set(DISABLE_RTTI ON CACHE BOOL "" FORCE)
@@ -77,21 +88,16 @@ if(BERRYDB_USE_GLOG)
 
   # glog triggers deprecation warnings on OSX.
   # https://github.com/google/glog/issues/185
-  include(CheckCXXCompilerFlag)
-  check_cxx_compiler_flag(-Wno-deprecated BERRYDB_HAVE_NO_DEPRECATED)
   if(BERRYDB_HAVE_NO_DEPRECATED)
     set_property(TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-deprecated)
   endif(BERRYDB_HAVE_NO_DEPRECATED)
 
   # glog triggers sign comparison warnings on gcc.
-  check_cxx_compiler_flag(-Wno-sign-compare BERRYDB_HAVE_NO_SIGN_COMPARE)
   if(BERRYDB_HAVE_NO_SIGN_COMPARE)
     set_property(TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-sign-compare)
   endif(BERRYDB_HAVE_NO_SIGN_COMPARE)
 
   # glog triggers unused parameter warnings on clang.
-  check_cxx_compiler_flag(-Wno-unused-parameter
-                          BERRYDB_HAVE_NO_UNUSED_PARAMETER)
   if(BERRYDB_HAVE_NO_UNUSED_PARAMETER)
     set_property(TARGET glog
                  APPEND PROPERTY COMPILE_OPTIONS -Wno-unused-parameter)
@@ -194,6 +200,14 @@ if(BERRYDB_BUILD_TESTS)
 
   # This project is tested using GoogleTest.
   add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/googletest")
+
+  # GoogleTest triggers a missing field initializers warning.
+  if(BERRYDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
+    set_property(TARGET gtest
+        APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
+    set_property(TARGET gmock
+        APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
+  endif(BERRYDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
 
   add_executable(berrydb_tests "")
   target_sources(berrydb_tests
@@ -304,15 +318,12 @@ if(BERRYDB_BUILD_BENCHMARKS)
   target_link_libraries(berrydb_bench snappy)
 
   # Snappy triggers sign comparison warnings on clang.
-  check_cxx_compiler_flag(-Wno-sign-compare BERRYDB_HAVE_NO_SIGN_COMPARE)
   if(BERRYDB_HAVE_NO_SIGN_COMPARE)
     set_property(TARGET snappy
                  APPEND PROPERTY COMPILE_OPTIONS -Wno-sign-compare)
   endif(BERRYDB_HAVE_NO_SIGN_COMPARE)
 
   # Snappy triggers unused parameter warnings on clang.
-  check_cxx_compiler_flag(-Wno-unused-parameter
-                          BERRYDB_HAVE_NO_UNUSED_PARAMETER)
   if(BERRYDB_HAVE_NO_UNUSED_PARAMETER)
     set_property(TARGET snappy
                  APPEND PROPERTY COMPILE_OPTIONS -Wno-unused-parameter)

@@ -17,7 +17,7 @@ class Crc32cBenchmark : public benchmark::Fixture {
 };
 
 BENCHMARK_DEFINE_F(Crc32cBenchmark, CrcTest)(benchmark::State& state) {
-  size_t input_size = state.range(0);
+  size_t input_size = static_cast<size_t>(state.range(0));
   uint8_t* input = reinterpret_cast<uint8_t*>(Allocate(input_size));
   for (size_t i = 0; i < input_size; ++i)
     input[i] = static_cast<uint8_t>(rnd_());

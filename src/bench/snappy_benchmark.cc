@@ -17,7 +17,7 @@ class SnappyBenchmark : public benchmark::Fixture {
 };
 
 BENCHMARK_DEFINE_F(SnappyBenchmark, CompressionTest)(benchmark::State& state) {
-  size_t input_size = state.range(0);
+  size_t input_size = static_cast<size_t>(state.range(0));
   size_t output_buffer_size = snappy::MaxCompressedLength(input_size);
   uint8_t* input = reinterpret_cast<uint8_t*>(Allocate(input_size));
   uint8_t* output = reinterpret_cast<uint8_t*>(Allocate(output_buffer_size));
