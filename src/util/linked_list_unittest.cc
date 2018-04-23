@@ -46,6 +46,20 @@ class TestCustomLinkedListBridge {
 using LinkedListWithCustomBridge =
     LinkedList<TestCustomListEmbedder, TestCustomLinkedListBridge>;
 
+static_assert(
+    std::is_standard_layout<LinkedListWithStandardBridge::Node>::value,
+    "LinkedListNode should be standard layout");
+static_assert(
+    std::is_standard_layout<LinkedListWithStandardBridge>::value,
+    "LinkedList should be standard layout");
+
+static_assert(
+    std::is_standard_layout<LinkedListWithCustomBridge::Node>::value,
+    "LinkedListNode should be standard layout");
+static_assert(
+    std::is_standard_layout<LinkedListWithCustomBridge>::value,
+    "LinkedList should be standard layout");
+
 template <typename ListType>
 class LinkedListTest : public ::testing::Test {
  protected:
