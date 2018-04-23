@@ -162,6 +162,7 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/include/berrydb/ostream_ops.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/pool.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/space.h"
+    "${PROJECT_SOURCE_DIR}/include/berrydb/span.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/status.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/store.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/string_view.h"
@@ -214,6 +215,7 @@ if(BERRYDB_BUILD_TESTS)
     PRIVATE
       "${PROJECT_SOURCE_DIR}/src/api/ostream_ops_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/api/pool_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/api/span_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/api/status_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/api/store_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/api/string_view_unittest.cc"

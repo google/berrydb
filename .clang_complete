@@ -20,3 +20,5 @@
 -Ithird_party/googletest/googlemock/include/
 -Ithird_party/snappy/
 -std=c++14
+-Wall
+-Wextra
