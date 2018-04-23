@@ -173,7 +173,7 @@ Status StoreImpl::ReadPage(Page* page) {
 
   size_t file_offset = page->page_id() << header_.page_shift;
   size_t page_size = static_cast<size_t>(1) << header_.page_shift;
-  return data_file_->Read(file_offset, page_size, page->data());
+  return data_file_->Read(file_offset, page->mutable_data(page_size));
 }
 
 Status StoreImpl::WritePage(Page* page) {
@@ -185,7 +185,7 @@ Status StoreImpl::WritePage(Page* page) {
 
   size_t file_offset = page->page_id() << header_.page_shift;
   size_t page_size = static_cast<size_t>(1) << header_.page_shift;
-  return data_file_->Write(page->data(), file_offset, page_size);
+  return data_file_->Write(page->data(page_size), file_offset);
 }
 
 void StoreImpl::TransactionClosed(TransactionImpl* transaction) {

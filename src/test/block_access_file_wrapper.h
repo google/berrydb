@@ -5,6 +5,9 @@
 #ifndef BERRYDB_TEST_BLOCK_ACCESS_FILE_WRAPPER_H_
 #define BERRYDB_TEST_BLOCK_ACCESS_FILE_WRAPPER_H_
 
+#include "berrydb/span.h"
+#include "berrydb/status.h"
+#include "berrydb/types.h"
 #include "berrydb/vfs.h"
 
 namespace berrydb {
@@ -37,8 +40,8 @@ class BlockAccessFileWrapper : public BlockAccessFile {
   }
 
   // BlockAccessFile API.
-  Status Read(size_t offset, size_t byte_count, uint8_t* buffer) override;
-  Status Write(uint8_t* buffer, size_t offset, size_t byte_count) override;
+  Status Read(size_t offset, span<uint8_t> buffer) override;
+  Status Write(span<const uint8_t> data, size_t offset) override;
   Status Sync() override;
   Status Lock() override;
   Status Close() override;

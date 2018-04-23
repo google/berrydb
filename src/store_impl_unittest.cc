@@ -27,14 +27,16 @@ class StoreImplTest : public ::testing::Test {
         log_file_deleter_(StoreImpl::LogFilePath(kStoreFileName)) { }
 
   void SetUp() override {
+    Status status;
     BlockAccessFile* raw_data_file;
-    ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
-        data_file_deleter_.path(), kStorePageShift, true, false, &raw_data_file,
-        &data_file_size_));
+    std::tie(status, raw_data_file, data_file_size_) = vfs_->OpenForBlockAccess(
+        data_file_deleter_.path(), kStorePageShift, true, false);
+    ASSERT_EQ(Status::kSuccess, status);
     data_file_.reset(raw_data_file);
     RandomAccessFile* raw_log_file;
-    ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
-        log_file_deleter_.path(), true, false, &raw_log_file, &log_file_size_));
+    std::tie(status, raw_log_file, log_file_size_) = vfs_->OpenForRandomAccess(
+        log_file_deleter_.path(), true, false);
+    ASSERT_EQ(Status::kSuccess, status);
     log_file_.reset(raw_log_file);
   }
 

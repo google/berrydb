@@ -5,6 +5,9 @@
 // This is a subset of std::span from C++ 2a. When compiler support becomes
 // sufficiently advanced, this file will be reduced to a "using std::span".
 
+#ifndef BERRYDB_INCLUDE_BERRYDB_SPAN_H_
+#define BERRYDB_INCLUDE_BERRYDB_SPAN_H_
+
 #include <algorithm>
 #include <cassert>
 #include <iterator>
@@ -161,3 +164,5 @@ constexpr span<ElementType> make_span(ElementType (&array)[ArraySize])
 }
 
 }  // namespace berrydb
+
+#endif  // BERRYDB_INCLUDE_BERRYDB_SPAN_H_

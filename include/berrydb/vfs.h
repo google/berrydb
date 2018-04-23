@@ -6,7 +6,9 @@
 #define BERRYDB_INCLUDE_BERRYDB_VFS_H_
 
 #include <string>
+#include <tuple>
 
+#include "berrydb/span.h"
 #include "berrydb/types.h"
 
 namespace berrydb {
@@ -22,6 +24,14 @@ enum class Status : int;
  */
 class Vfs {
  public:
+  Vfs() noexcept;
+  virtual ~Vfs();
+
+  Vfs(const Vfs& other) = delete;
+  Vfs(Vfs&& other) = delete;
+  Vfs& operator=(const Vfs& other) = delete;
+  Vfs& operator=(Vfs&& other) = delete;
+
   /** Opens a file without any assumptions on the I/O access pattern.
    *
    * This method is used for transaction logs.
@@ -32,21 +42,17 @@ class Vfs {
    * @param  error_if_exists   if true, the call will not succeed if a file
    *                           already exists; create_if_missing must be also
    *                           true if this is true
-   * @param  file              if the call succeeds, populated with a
-   *                           RandomAccessFile* that can be used to access the
-   *                           file
-   * @param  file_size         the number of bytes contained by the file when it
-   *                           is opened; the caller is responsible for tracking
-   *                           file size changes coming from the caller's code
-   * @return                   attempting to open a non-existing file may result
+   * @return Status            attempting to open a non-existing file may result
    *                           in kIoError or kNotFound; all other errors will
    *                           result in kIoError
+   * @return RandomAccessFile* used to access the file
+   * @return size_t            the number of bytes contained by the file when it
+   *                           is opened; the caller is responsible for tracking
+   *                           file size changes coming from the caller's code
    */
-  virtual Status OpenForRandomAccess(const std::string& file_path,
-                                     bool create_if_missing,
-                                     bool error_if_exists,
-                                     RandomAccessFile** result,
-                                     size_t* file_size) = 0;
+  virtual std::tuple<Status, RandomAccessFile*, size_t> OpenForRandomAccess(
+      const std::string& file_path, bool create_if_missing,
+      bool error_if_exists) = 0;
 
   /** Opens a file designed for reads/writes at (large) block granularities.
    *
@@ -60,22 +66,17 @@ class Vfs {
    * @param  error_if_exists   if true, the call will not succeed if a file
    *                           already exists; create_if_missing must be also
    *                           true if this is true
-   * @param  file              if the call succeeds, populated with a
-   *                           RandomAccessFile* that can be used to access the
-   *                           file
-   * @param  file_size         the number of bytes contained by the file when it
-   *                           is opened; the caller is responsible for tracking
-   *                           file size changes coming from the caller's code
-   * @return                   attempting to open a non-existing file may result
+   * @return Status            attempting to open a non-existing file may result
    *                           in kIoError or kNotFound; all other errors will
    *                           result in kIoError
+   * @return BlockAccessFile*  used to access the file
+   * @return size_t            the number of bytes contained by the file when it
+   *                           is opened; the caller is responsible for tracking
+   *                           file size changes coming from the caller's code
    */
-  virtual Status OpenForBlockAccess(const std::string& file_path,
-                                    size_t block_shift,
-                                    bool create_if_missing,
-                                    bool error_if_exists,
-                                    BlockAccessFile** result,
-                                    size_t* file_size) = 0;
+  virtual std::tuple<Status, BlockAccessFile*, size_t> OpenForBlockAccess(
+      const std::string& file_path, size_t block_shift, bool create_if_missing,
+      bool error_if_exists) = 0;
 
   /** Deletes a file from the filesystem.
    *
@@ -90,17 +91,6 @@ class Vfs {
    *                   not a requirement
    */
   virtual Status RemoveFile(const std::string& file_path) = 0;
-
-
- protected:
-  Vfs() noexcept;
-
-  // Copy and move assignment + construction are protected so that subclasses
-  // can enable them, if they wish to do so.
-  Vfs(const Vfs& other) noexcept;
-  Vfs(Vfs&& other) noexcept;
-  Vfs& operator=(const Vfs& other) noexcept;
-  Vfs& operator=(Vfs&& other) noexcept;
 };
 
 /** File I/O interface without any assumptions on the access pattern.
@@ -114,23 +104,20 @@ class RandomAccessFile {
  public:
   /** Reads a sequence of bytes from the file.
    *
-   * @param  offset     0-based file position of the first byte to be read
-   * @param  byte_count number of bytes that will be read into the buffer
-   * @param  buffer     receives the bytes from the file
-   * @return            most likely kSuccess or kIoError
+   * @param  offset 0-based file position of the first byte to be read
+   * @param  buffer receives the bytes from the file; the span size indicates
+   *                the number of bytes to be read
+   * @return        most likely kSuccess or kIoError
    */
-  virtual Status Read(size_t offset, size_t byte_count, uint8_t* buffer) = 0;
+  virtual Status Read(size_t offset, span<uint8_t> buffer) = 0;
 
   /** Writes a sequence of bytes to the file.
    *
-   * @param  buffer     stores the bytes to be written to the file
-   * @param  offset     0-based file position of the first byte to be written
-   * @param  byte_count number of buffer bytes that will be written to the file
-   * @return            most likely kSuccess or kIoError
+   * @param  data   the bytes to be written to the file
+   * @param  offset 0-based file position of the first byte to be written
+   * @return        most likely kSuccess or kIoError
    */
-  virtual Status Write(const uint8_t* buffer,
-                       size_t offset,
-                       size_t byte_count) = 0;
+  virtual Status Write(span<const uint8_t> data, size_t offset) = 0;
 
   /** Evicts any buffered data in the application to the operating system layer.
    *
@@ -195,27 +182,26 @@ class BlockAccessFile {
  public:
   /** Reads a sequence of blocks from the file.
    *
-   * Both the offfset and byte count must be multiples of the block size used to
+   * Both the offfset and span size must be multiples of the block size used to
    * open the file.
    *
-   * @param  offset     0-based file position of the first byte to be read
-   * @param  byte_count number of bytes that will be read into the buffer
-   * @param  buffer     receives the bytes from the file
-   * @return            most likely kSuccess or kIoError
+   * @param  offset 0-based file position of the first byte to be read
+   * @param  buffer receives the bytes from the file; the span size indicates
+   *                the number of bytes to be read
+   * @return        most likely kSuccess or kIoError
    */
-  virtual Status Read(size_t offset, size_t byte_count, uint8_t* buffer) = 0;
+  virtual Status Read(size_t offset, span<uint8_t> buffer) = 0;
 
   /** Writes a sequence of blocks to the file.
    *
-   * Both the offfset and byte count must be multiples of the block size used to
+   * Both the offfset and span size must be multiples of the block size used to
    * open the file.
    *
-   * @param  buffer     stores the bytes to be written to the file
-   * @param  offset     0-based file position of the first byte to be written
-   * @param  byte_count number of buffer bytes that will be written to the file
+   * @param  data   the bytes to be written to the file
+   * @param  offset 0-based file position of the first byte to be written
    * @return            most likely kSuccess or kIoError
    */
-  virtual Status Write(uint8_t* buffer, size_t offset, size_t byte_count) = 0;
+  virtual Status Write(span<const uint8_t> data, size_t offset) = 0;
 
   /** Evicts any cached data for the file into persistent storage.
    *

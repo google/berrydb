@@ -9,6 +9,7 @@
 #include <cstdint>
 
 #include "berrydb/platform.h"
+#include "berrydb/span.h"
 // #include "./store_impl.h" would cause a cycle
 // #include "./transaction_impl.h" would cause a cycle
 #include "./util/linked_list.h"
@@ -94,9 +95,49 @@ class Page {
     return is_dirty_;
   }
 
-  /** The page data held by this page. */
+  // TODO(pwnall): Rename data to buffer + mutable_buffer.
+
+  /** The page's data buffer.
+   *
+   * Prefer using data() when the page's size is readily computed. */
   inline uint8_t* data() noexcept {
     return reinterpret_cast<uint8_t*>(this + 1);
+  }
+
+  /** The page's data buffer.
+   *
+   * Prefer using data() when the page's size is readily computed. */
+  inline const uint8_t* data() const noexcept {
+    return reinterpret_cast<const uint8_t*>(this + 1);
+  }
+
+  /** An immutable reference to the page's data.
+   *
+   * @param  page_size must match the page size of the PagePool used to
+   *                   construct this Page instance
+   * @return an immutable span covering the page's data
+   */
+  inline span<const uint8_t> data(size_t page_size) const noexcept {
+#if DCHECK_IS_ON()
+    DcheckPageSizeMatches(page_size);
+#endif  // DCHECK_IS_ON()
+    return span<const uint8_t>(data(), page_size);
+  }
+
+  /** The page's data.
+   *
+   * The caller must own a pin to the page.
+   *
+   * @param  page_size must match the page size of the PagePool used to
+   *                   construct this Page instance
+   * @return a mutable span covering the page's data
+   */
+  inline span<uint8_t> mutable_data(size_t page_size) noexcept {
+    DCHECK(!IsUnpinned());
+#if DCHECK_IS_ON()
+    DcheckPageSizeMatches(page_size);
+#endif  // DCHECK_IS_ON()
+    return span<uint8_t>(data(), page_size);
   }
 
 #if DCHECK_IS_ON()
@@ -232,17 +273,24 @@ class Page {
   /** DCHECKs that a transaction assignment for this page is valid.
    *
    * @param transaction the transaction that the Page will be assigned to */
-  void DcheckTransactionAssignmentIsValid(TransactionImpl* transaction);
+  void DcheckTransactionAssignmentIsValid(
+      TransactionImpl* transaction) noexcept;
 
   /** DCHECKs that the given dirty flag value makes sense for this page.
    *
    * @param is_dirty the new value of the dirty's page flag */
-  void DcheckDirtyValueIsValid(bool is_dirty);
+  void DcheckDirtyValueIsValid(bool is_dirty) noexcept;
 
   /** DCHECKs that a transaction reassignment for this page is valid.
    *
    * @param transaction the transaction that the Page will be reassigned to */
-  void DcheckTransactionReassignmentIsValid(TransactionImpl* transaction);
+  void DcheckTransactionReassignmentIsValid(
+      TransactionImpl* transaction) noexcept;
+
+  /** DCHECKs that the page's size matches the given argument.
+   *
+   * @param page_size the size that this page must match */
+  void DcheckPageSizeMatches(size_t page_size) const noexcept;
 #endif  // DCHECK_IS_ON()
 
   friend class LinkedListBridge<Page>;

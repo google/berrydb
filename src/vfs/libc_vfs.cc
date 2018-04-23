@@ -13,6 +13,7 @@
 //               nearby future.
 
 #include <cstdio>
+#include <tuple>
 
 #include "berrydb/platform.h"
 #include "berrydb/status.h"
@@ -22,9 +23,9 @@ namespace berrydb {
 
 namespace {
 
-std::FILE* OpenLibcFile(
+std::tuple<std::FILE*, size_t> OpenLibcFile(
     const std::string& file_path, bool create_if_missing,
-    bool error_if_exists, size_t* file_size) {
+    bool error_if_exists) {
   DCHECK(!error_if_exists || create_if_missing);
 
   const char* cpath = file_path.c_str();
@@ -35,7 +36,7 @@ std::FILE* OpenLibcFile(
     fp = std::fopen(cpath, "rb");
     if (fp != nullptr) {
       std::fclose(fp);
-      return nullptr;
+      return {nullptr, 0};
     }
     fp = std::fopen(cpath, "wb+");
 #else  // defined(_WIN32) || defined(WIN32)
@@ -54,19 +55,16 @@ std::FILE* OpenLibcFile(
   }
 
   if (fp != nullptr) {
-    if (std::fseek(fp, 0, SEEK_END) == 0) {
-      *file_size = std::ftell(fp);
-    } else {
-      // ferror() can be checked if we want to return more detailed errors.
-      std::fclose(fp);
-      fp = nullptr;
-    }
+    if (std::fseek(fp, 0, SEEK_END) == 0)
+      return {fp,  std::ftell(fp)};
+
+    // ferror() can be checked if we want to return more detailed errors.
+    std::fclose(fp);
   }
-  return fp;
+  return {nullptr, 0};
 }
 
-Status ReadLibcFile(
-    std::FILE* fp, size_t offset, size_t byte_count, uint8_t* buffer) {
+Status ReadLibcFile(std::FILE* fp, size_t offset, span<uint8_t> buffer) {
   // NOTE(pwnall): On POSIX, we'd want to use pread instead of fseek() and
   //               fread().
 
@@ -75,7 +73,7 @@ Status ReadLibcFile(
     return Status::kIoError;
   }
 
-  if (std::fread(buffer, byte_count, 1, fp) != 1) {
+  if (std::fread(buffer.data(), buffer.size(), 1, fp) != 1) {
     // feof() and ferror() have more details on the error.
     return Status::kIoError;
   }
@@ -83,8 +81,7 @@ Status ReadLibcFile(
   return Status::kSuccess;
 }
 
-Status WriteLibcFile(
-    std::FILE* fp, const uint8_t* buffer, size_t offset, size_t byte_count) {
+Status WriteLibcFile(std::FILE* fp, span<const uint8_t> data, size_t offset) {
   // NOTE(pwnall): On POSIX, we'd want to use pwrite instead of fseek() and
   //               fwrite().
 
@@ -93,7 +90,7 @@ Status WriteLibcFile(
     return Status::kIoError;
   }
 
-  if (std::fwrite(buffer, byte_count, 1, fp) != 1) {
+  if (std::fwrite(data.data(), data.size(), 1, fp) != 1) {
     // feof() and ferror() have more details on the error.
     return Status::kIoError;
   }
@@ -127,22 +124,22 @@ class LibcBlockAccessFile : public BlockAccessFile {
     std::setbuf(fp, nullptr);
   }
 
-  Status Read(size_t offset, size_t byte_count, uint8_t* buffer) override {
+  Status Read(size_t offset, span<uint8_t> buffer) override {
 #if DCHECK_IS_ON()
     DCHECK_EQ(offset & (block_size_ - 1), 0U);
-    DCHECK_EQ(byte_count & (block_size_ - 1), 0U);
+    DCHECK_EQ(buffer.size() & (buffer.size() - 1), 0U);
 #endif  // DCHECK_IS_ON()
 
-    return ReadLibcFile(fp_, offset, byte_count, buffer);
+    return ReadLibcFile(fp_, offset, buffer);
   }
 
-  Status Write(uint8_t* buffer, size_t offset, size_t byte_count) override {
+  Status Write(span<const uint8_t> data, size_t offset) override {
 #if DCHECK_IS_ON()
     DCHECK_EQ(offset & (block_size_ - 1), 0U);
-    DCHECK_EQ(byte_count & (block_size_ - 1), 0U);
+    DCHECK_EQ(data.size() & (data.size() - 1), 0U);
 #endif  // DCHECK_IS_ON()
 
-    return WriteLibcFile(fp_, buffer, offset, byte_count);
+    return WriteLibcFile(fp_, data, offset);
   }
 
   Status Sync() override { return SyncLibcFile(fp_); }
@@ -180,13 +177,12 @@ class LibcRandomAccessFile : public RandomAccessFile {
     DCHECK(fp != nullptr);
   }
 
-  Status Read(size_t offset, size_t byte_count, uint8_t* buffer) override {
-    return ReadLibcFile(fp_, offset, byte_count, buffer);
+  Status Read(size_t offset, span<uint8_t> buffer) override {
+    return ReadLibcFile(fp_, offset, buffer);
   }
 
-  Status Write(
-      const uint8_t* buffer, size_t offset, size_t byte_count) override {
-    return WriteLibcFile(fp_, buffer, offset, byte_count);
+  Status Write(span<const uint8_t> data, size_t offset) override {
+    return WriteLibcFile(fp_, data, offset);
   }
 
   Status Flush() override {
@@ -213,36 +209,36 @@ class LibcRandomAccessFile : public RandomAccessFile {
 
 class LibcVfs : public Vfs {
  public:
-  Status OpenForRandomAccess(
+  std::tuple<Status, RandomAccessFile*, size_t> OpenForRandomAccess(
       const std::string& file_path, bool create_if_missing,
-      bool error_if_exists, RandomAccessFile** result,
-      size_t* file_size) override {
-    FILE* fp = OpenLibcFile(
-        file_path, create_if_missing, error_if_exists, file_size);
+      bool error_if_exists) override {
+    FILE* fp;
+    size_t file_size;
+    std::tie(fp, file_size) = OpenLibcFile(file_path, create_if_missing,
+                                           error_if_exists);
     if (fp == nullptr)
-      return Status::kIoError;
+      return {Status::kIoError, nullptr, 0};
 
     void* heap_block = Allocate(sizeof(LibcRandomAccessFile));
     LibcRandomAccessFile* file = new (heap_block) LibcRandomAccessFile(fp);
     DCHECK_EQ(heap_block, reinterpret_cast<void*>(file));
-    *result = file;
-    return Status::kSuccess;
+    return {Status::kSuccess, file, file_size};
   }
-  Status OpenForBlockAccess(
+  std::tuple<Status, BlockAccessFile*, size_t> OpenForBlockAccess(
       const std::string& file_path, size_t block_shift,
-      bool create_if_missing, bool error_if_exists,
-      BlockAccessFile** result, size_t* file_size) override {
-    FILE* fp = OpenLibcFile(
-        file_path, create_if_missing, error_if_exists, file_size);
+      bool create_if_missing, bool error_if_exists) override {
+    FILE* fp;
+    size_t file_size;
+    std::tie(fp, file_size) = OpenLibcFile(file_path, create_if_missing,
+                                           error_if_exists);
     if (fp == nullptr)
-      return Status::kIoError;
+      return {Status::kIoError, nullptr, 0};
 
     void* heap_block = Allocate(sizeof(LibcBlockAccessFile));
     LibcBlockAccessFile* file = new (heap_block) LibcBlockAccessFile(
         fp, block_shift);
     DCHECK_EQ(heap_block, reinterpret_cast<void*>(file));
-    *result = file;
-    return Status::kSuccess;
+    return {Status::kSuccess, file, file_size};
   }
 
   Status RemoveFile(const std::string& file_path) override {

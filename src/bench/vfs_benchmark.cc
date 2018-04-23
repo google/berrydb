@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <random>
+#include <tuple>
 
 #include "benchmark/benchmark.h"
 
@@ -24,12 +25,12 @@ class VfsBenchmark : public benchmark::Fixture {
     block_shift_ = static_cast<size_t>(std::log2(block_size_));
     DCHECK_EQ(block_size_, static_cast<size_t>(1) << block_shift_);
 
-    block_data_ = reinterpret_cast<uint8_t*>(Allocate(block_size_));
-    DCHECK(block_data_ != nullptr);
+    block_bytes_ = reinterpret_cast<uint8_t*>(Allocate(block_size_));
+    DCHECK(block_bytes_ != nullptr);
   }
 
   void TearDown(const benchmark::State& state) override {
-    Deallocate(block_data_, block_size_);
+    Deallocate(block_bytes_, block_size_);
     UNUSED(state);
   }
 
@@ -44,16 +45,17 @@ class VfsBenchmark : public benchmark::Fixture {
   std::mt19937 rnd_;
   size_t block_size_;
   size_t block_shift_;
-  uint8_t* block_data_;
+  uint8_t* block_bytes_;
 };
 
 
 BENCHMARK_DEFINE_F(VfsBenchmark, RandomBlockWrites)(benchmark::State& state) {
   UniquePtr<BlockAccessFile> file;
+  Status status;
   BlockAccessFile* raw_file;
   size_t raw_file_size;
-  Status status = vfs_->OpenForBlockAccess(
-      deleter_.path(), block_shift_, true, false, &raw_file, &raw_file_size);
+  std::tie(status, raw_file, raw_file_size) = vfs_->OpenForBlockAccess(
+      deleter_.path(), block_shift_, true, false);
   if (status != Status::kSuccess) {
     state.SkipWithError("Vfs::OpenForBlockAccess failed.");
     return;
@@ -61,8 +63,9 @@ BENCHMARK_DEFINE_F(VfsBenchmark, RandomBlockWrites)(benchmark::State& state) {
   file.reset(raw_file);
 
   size_t block_count = static_cast<size_t>(state.range(1));
+  span<const uint8_t> block_data(block_bytes_, block_size_);
   for (size_t i = 0; i < block_count; ++i) {
-    status = file->Write(block_data_, i << block_shift_, block_size_);
+    status = file->Write(block_data, i << block_shift_);
     if (status != Status::kSuccess) {
       state.SkipWithError("BlockAccessFile::Write failed. (initial fill)");
       return;
@@ -76,7 +79,7 @@ BENCHMARK_DEFINE_F(VfsBenchmark, RandomBlockWrites)(benchmark::State& state) {
   for (auto _ : state) {
     size_t block_number = rnd_() % block_count;
 
-    if (file->Write(block_data_, block_number << block_shift_, block_size_) !=
+    if (file->Write(block_data, block_number << block_shift_) !=
         Status::kSuccess) {
       state.SkipWithError("BlockAccessFile::Write failed. (random block)");
       return;
@@ -98,10 +101,11 @@ BENCHMARK_REGISTER_F(
 
 BENCHMARK_DEFINE_F(VfsBenchmark, LogWrites)(benchmark::State& state) {
   UniquePtr<RandomAccessFile> file;
+  Status status;
   RandomAccessFile* raw_file;
   size_t raw_file_size;
-  Status status = vfs_->OpenForRandomAccess(
-      deleter_.path(), true, false, &raw_file, &raw_file_size);
+  std::tie(status, raw_file, raw_file_size) = vfs_->OpenForRandomAccess(
+      deleter_.path(), true, false);
   if (status != Status::kSuccess) {
     state.SkipWithError("Vfs::OpenForBlockAccess failed.");
     return;
@@ -109,8 +113,9 @@ BENCHMARK_DEFINE_F(VfsBenchmark, LogWrites)(benchmark::State& state) {
   file.reset(raw_file);
 
   size_t block_number = 0;
+  span<const uint8_t> block_data(block_bytes_, block_size_);
   for (auto _ : state) {
-    if (file->Write(block_data_, block_number << block_shift_, block_size_) !=
+    if (file->Write(block_data, block_number << block_shift_) !=
         Status::kSuccess) {
       state.SkipWithError("RandomAccessFile::Write failed.");
       return;

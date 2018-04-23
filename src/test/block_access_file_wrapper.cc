@@ -17,20 +17,18 @@ BlockAccessFileWrapper::~BlockAccessFileWrapper() {
     file_->Close();
 }
 
-Status BlockAccessFileWrapper::Read(
-    size_t offset, size_t byte_count, uint8_t* buffer) {
+Status BlockAccessFileWrapper::Read(size_t offset, span<uint8_t> buffer) {
   DCHECK(!is_closed_);
   if (access_error_ != Status::kSuccess)
     return access_error_;
-  return file_->Read(offset, byte_count, buffer);
+  return file_->Read(offset, buffer);
 }
 
-Status BlockAccessFileWrapper::Write(
-    uint8_t* buffer, size_t offset, size_t byte_count) {
+Status BlockAccessFileWrapper::Write(span<const uint8_t> data, size_t offset) {
   DCHECK(!is_closed_);
   if (access_error_ != Status::kSuccess)
     return access_error_;
-  return file_->Write(buffer, offset, byte_count);
+  return file_->Write(data, offset);
 }
 
 Status BlockAccessFileWrapper::Sync() {

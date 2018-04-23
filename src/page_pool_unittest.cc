@@ -29,15 +29,17 @@ class PagePoolTest : public ::testing::Test {
         log_file1_deleter_(StoreImpl::LogFilePath(kStoreFileName1)) { }
 
   void SetUp() override {
+    Status status;
     BlockAccessFile* raw_data_file1;
-    ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
-        data_file1_deleter_.path(), kStorePageShift, true, false,
-        &raw_data_file1, &data_file1_size_));
+    std::tie(status, raw_data_file1, data_file1_size_) =
+        vfs_->OpenForBlockAccess(data_file1_deleter_.path(), kStorePageShift,
+                                 true, false);
+    ASSERT_EQ(Status::kSuccess, status);
     data_file1_.reset(raw_data_file1);
     RandomAccessFile* raw_log_file1;
-    ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
-        log_file1_deleter_.path(), true, false, &raw_log_file1,
-        &log_file1_size_));
+    ASSERT_EQ(Status::kSuccess, status);
+    std::tie(status, raw_log_file1, log_file1_size_) =
+        vfs_->OpenForRandomAccess(log_file1_deleter_.path(), true, false);
     log_file1_.reset(raw_log_file1);
   }
 

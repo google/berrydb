@@ -81,11 +81,12 @@ void PoolImpl::StoreClosed(StoreImpl* store) {
 Status PoolImpl::OpenStore(
     const std::string& path, const StoreOptions& options,
     StoreImpl** result) {
+  Status status;
   BlockAccessFile* data_file;
   size_t data_file_size;
-  Status status = vfs_->OpenForBlockAccess(
+  std::tie(status, data_file, data_file_size) = vfs_->OpenForBlockAccess(
       path, page_pool_.page_shift(), options.create_if_missing,
-      options.error_if_exists, &data_file, &data_file_size);
+      options.error_if_exists);
   if (status != Status::kSuccess)
     return status;
 
@@ -98,9 +99,8 @@ Status PoolImpl::OpenStore(
   std::string log_file_path = StoreImpl::LogFilePath(path);
   RandomAccessFile* log_file;
   size_t log_file_size;
-  status = vfs_->OpenForRandomAccess(
-      log_file_path, true /* create_if_missing */, false /* error_if_exists */,
-      &log_file, &log_file_size);
+  std::tie(status, log_file, log_file_size) = vfs_->OpenForRandomAccess(
+      log_file_path, true /* create_if_missing */, false /* error_if_exists */);
   if (status != Status::kSuccess) {
     data_file->Close();
     return status;

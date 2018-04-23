@@ -15,27 +15,32 @@ TEST(FileDeleterTest, DeletesFileBeforeAndAfter) {
   const std::string kFileName = "file_deleter_test.empty";
 
   Vfs* vfs = DefaultVfs();
+  Status status;
   RandomAccessFile* file;
   size_t file_size;
-  ASSERT_EQ(Status::kSuccess, vfs->OpenForRandomAccess(
-      kFileName, true, false, &file, &file_size));
+  std::tie(status, file, file_size) = vfs->OpenForRandomAccess(
+      kFileName, true, false);
+  ASSERT_EQ(Status::kSuccess, status);
   file->Close();
 
   {
     FileDeleter deleter(kFileName);
     // The file should have been deleted when FileDeleter was constructed.
-    EXPECT_NE(Status::kSuccess, vfs->OpenForRandomAccess(
-        kFileName, false, false, &file, &file_size));
+    std::tie(status, file, file_size) = vfs->OpenForRandomAccess(
+        kFileName, false, false);
+    EXPECT_NE(Status::kSuccess, status);
 
     EXPECT_EQ(kFileName, deleter.path());
 
-    ASSERT_EQ(Status::kSuccess, vfs->OpenForRandomAccess(
-        kFileName, true, false, &file, &file_size));
+    std::tie(status, file, file_size) = vfs->OpenForRandomAccess(
+        kFileName, true, false);
+    ASSERT_EQ(Status::kSuccess, status);
     file->Close();
   }
   // The file should have been deleted when FileDeleter was destroyed.
-  EXPECT_NE(Status::kSuccess, vfs->OpenForRandomAccess(
-      kFileName, false, false, &file, &file_size));
+  std::tie(status, file, file_size) = vfs->OpenForRandomAccess(
+      kFileName, false, false);
+  EXPECT_NE(Status::kSuccess, status);
 }
 
 }  // namespace berrydb

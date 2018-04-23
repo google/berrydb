@@ -7,10 +7,7 @@
 namespace berrydb {
 
 Vfs::Vfs() noexcept = default;
-Vfs::Vfs(const Vfs& other) noexcept = default;
-Vfs::Vfs(Vfs&& other) noexcept = default;
-Vfs& Vfs::operator =(const Vfs& other) noexcept = default;
-Vfs& Vfs::operator =(Vfs&& other) noexcept = default;
+Vfs::~Vfs() = default;
 
 BlockAccessFile::BlockAccessFile() noexcept = default;
 BlockAccessFile::~BlockAccessFile() = default;

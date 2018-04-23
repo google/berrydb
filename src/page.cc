@@ -55,13 +55,15 @@ Page::~Page() {
 }
 
 #if DCHECK_IS_ON()
-void Page::DcheckTransactionAssignmentIsValid(TransactionImpl* transaction) {
+
+void Page::DcheckTransactionAssignmentIsValid(
+    TransactionImpl* transaction) noexcept {
   DCHECK(transaction_ == nullptr);
   DCHECK(transaction != nullptr);
   DCHECK(transaction->store()->page_pool() == page_pool_);
 }
 
-void Page::DcheckDirtyValueIsValid(bool is_dirty) {
+void Page::DcheckDirtyValueIsValid(bool is_dirty) noexcept {
   // Dirty page pool entries must be assigned to non-init transactions.
   DCHECK(!is_dirty || (transaction_ != nullptr && !transaction_->IsInit()));
 
@@ -77,12 +79,18 @@ void Page::DcheckDirtyValueIsValid(bool is_dirty) {
   // DCHECK(is_dirty != is_dirty_);
 }
 
-void Page::DcheckTransactionReassignmentIsValid(TransactionImpl* transaction) {
+void Page::DcheckTransactionReassignmentIsValid(
+    TransactionImpl* transaction) noexcept {
   DCHECK(transaction != nullptr);
   DCHECK(transaction_ != nullptr);
   DCHECK(transaction_ != transaction);
   DCHECK(transaction_->IsInit() != transaction->IsInit());
 }
+
+void Page::DcheckPageSizeMatches(size_t page_size) const noexcept {
+  DCHECK_EQ(page_size, page_pool_->page_size());
+}
+
 #endif  // DCHECK_IS_ON()
 
 }  // namespace berrydb

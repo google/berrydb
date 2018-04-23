@@ -9,6 +9,7 @@
 #include "gtest/gtest.h"
 
 #include "berrydb/options.h"
+#include "berrydb/span.h"
 #include "berrydb/vfs.h"
 #include "./page_pool.h"
 #include "./pool_impl.h"
@@ -25,14 +26,16 @@ class PageTest : public ::testing::Test {
         log_file_deleter_(StoreImpl::LogFilePath(kStoreFileName)) { }
 
   void SetUp() override {
+    Status status;
     BlockAccessFile* raw_data_file;
-    ASSERT_EQ(Status::kSuccess, vfs_->OpenForBlockAccess(
-        data_file_deleter_.path(), kStorePageShift, true, false, &raw_data_file,
-        &data_file_size_));
+    std::tie(status, raw_data_file, data_file_size_) = vfs_->OpenForBlockAccess(
+        data_file_deleter_.path(), kStorePageShift, true, false);
+    ASSERT_EQ(Status::kSuccess, status);
     data_file_.reset(raw_data_file);
     RandomAccessFile* raw_log_file;
-    ASSERT_EQ(Status::kSuccess, vfs_->OpenForRandomAccess(
-        log_file_deleter_.path(), true, false, &raw_log_file, &log_file_size_));
+    std::tie(status, raw_log_file, log_file_size_) = vfs_->OpenForRandomAccess(
+        log_file_deleter_.path(), true, false);
+    ASSERT_EQ(Status::kSuccess, status);
     log_file_.reset(raw_log_file);
   }
 
@@ -122,6 +125,23 @@ TEST_F(PageTest, WillCacheStoreDataDoesNotCacheStoreData) {
 #endif  // DCHECK_IS_ON()
 
   page->Release(page_pool);
+}
+
+TEST_F(PageTest, Data) {
+  CreatePool(12, 42);
+  PagePool page_pool(pool_.get(), 12, 42);
+
+  Page* page = Page::Create(&page_pool);
+  EXPECT_FALSE(page->IsUnpinned());
+
+  constexpr const size_t kPageSize = 1 << 12;
+  EXPECT_EQ(page->data(), page->data(kPageSize).data());
+  EXPECT_EQ(kPageSize, page->data(kPageSize).size());
+  EXPECT_EQ(page->data(), page->mutable_data(kPageSize).data());
+  EXPECT_EQ(kPageSize, page->mutable_data(kPageSize).size());
+
+  page->RemovePin();
+  EXPECT_TRUE(page->IsUnpinned());
 }
 
 }  // namespace berrydb
