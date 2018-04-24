@@ -100,15 +100,15 @@ class Page {
   /** The page's data buffer.
    *
    * Prefer using data() when the page's size is readily computed. */
-  inline uint8_t* data() noexcept {
-    return reinterpret_cast<uint8_t*>(this + 1);
+  inline const uint8_t* buffer() const noexcept {
+    return reinterpret_cast<const uint8_t*>(this + 1);
   }
 
   /** The page's data buffer.
    *
    * Prefer using data() when the page's size is readily computed. */
-  inline const uint8_t* data() const noexcept {
-    return reinterpret_cast<const uint8_t*>(this + 1);
+  inline uint8_t* mutable_buffer() noexcept {
+    return reinterpret_cast<uint8_t*>(this + 1);
   }
 
   /** An immutable reference to the page's data.
@@ -121,7 +121,7 @@ class Page {
 #if DCHECK_IS_ON()
     DcheckPageSizeMatches(page_size);
 #endif  // DCHECK_IS_ON()
-    return span<const uint8_t>(data(), page_size);
+    return span<const uint8_t>(buffer(), page_size);
   }
 
   /** The page's data.
@@ -137,7 +137,7 @@ class Page {
 #if DCHECK_IS_ON()
     DcheckPageSizeMatches(page_size);
 #endif  // DCHECK_IS_ON()
-    return span<uint8_t>(data(), page_size);
+    return span<uint8_t>(mutable_buffer(), page_size);
   }
 
 #if DCHECK_IS_ON()

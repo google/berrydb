@@ -16,6 +16,7 @@
 #include "./pool_impl.h"
 #include "./test/block_access_file_wrapper.h"
 #include "./test/file_deleter.h"
+#include "./util/span_util.h"
 #include "./util/unique_ptr.h"
 
 namespace berrydb {
@@ -81,9 +82,11 @@ TEST_F(StoreImplTest, Constructor) {
 }
 
 TEST_F(StoreImplTest, WriteReadPage) {
-  uint8_t buffer[4 << kStorePageShift];
-  for (size_t i = 0; i < sizeof(buffer); ++i)
-    buffer[i] = static_cast<uint8_t>(rnd_());
+  uint8_t buffer[4][1 << kStorePageShift];
+  for (size_t i = 0; i < 4; ++i) {
+    for (size_t j = 0; j < 1 << kStorePageShift; ++j)
+      buffer[i][j] = static_cast<uint8_t>(rnd_());
+  }
 
   CreatePool(kStorePageShift, 2);
   PagePool* page_pool = pool_->page_pool();
@@ -100,17 +103,17 @@ TEST_F(StoreImplTest, WriteReadPage) {
 
     UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
     transaction->WillModifyPage(page);
-    std::memcpy(
-        page->data(), buffer + (i << kStorePageShift), 1 << kStorePageShift);
+    span<uint8_t> page_data = page->mutable_data(1 << kStorePageShift);
+    CopySpan(span<const uint8_t>(buffer[i]), page_data);
     ASSERT_EQ(Status::kSuccess, store->WritePage(page));
     EXPECT_TRUE(page->is_dirty());
 
     // Clear the page to make sure ReadPage fetches the correct content.
-    std::memset(page->data(), 0, 1 << kStorePageShift);
-    transaction->PageWasPersisted(page, store->init_transaction());  // Bypass DCHECKs in ReadPage.
+    FillSpan(page_data, 0);
+    // Bypass DCHECKs in ReadPage.
+    transaction->PageWasPersisted(page, store->init_transaction());
     ASSERT_EQ(Status::kSuccess, store->ReadPage(page));
-    ASSERT_EQ(0, std::memcmp(
-        page->data(), buffer + (i << kStorePageShift), 1 << kStorePageShift));
+    ASSERT_EQ(page->data(1 << kStorePageShift), make_span(buffer[i]));
 
     page_pool->UnassignPageFromStore(page);
     ASSERT_TRUE(!page->IsUnpinned());
@@ -125,11 +128,11 @@ TEST_F(StoreImplTest, WriteReadPage) {
     transaction->WillModifyPage(page);
 
     // Clear the page to make sure ReadPage fetches the correct content.
-    std::memset(page->data(), 0, 1 << kStorePageShift);
-    transaction->PageWasPersisted(page, store->init_transaction());  // Bypass DCHECKs in ReadPage.
+    FillSpan(page->mutable_data(1 << kStorePageShift), 0);
+    transaction->PageWasPersisted(page, store->init_transaction());
+    // Bypass DCHECKs in ReadPage.
     ASSERT_EQ(Status::kSuccess, store->ReadPage(page));
-    ASSERT_EQ(0, std::memcmp(
-        page->data(), buffer + (i << kStorePageShift), 1 << kStorePageShift));
+    ASSERT_EQ(page->data(1 << kStorePageShift), make_span(buffer[i]));
 
     page_pool->UnassignPageFromStore(page);
     ASSERT_TRUE(!page->IsUnpinned());

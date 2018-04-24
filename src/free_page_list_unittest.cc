@@ -4,7 +4,6 @@
 
 #include "./free_page_list.h"
 
-#include <cstring>
 #include <random>
 #include <string>
 
@@ -19,6 +18,7 @@
 #include "./store_impl.h"
 #include "./test/block_access_file_wrapper.h"
 #include "./test/file_deleter.h"
+#include "./util/span_util.h"
 #include "./util/unique_ptr.h"
 
 namespace berrydb {
@@ -50,17 +50,19 @@ class FreePageListTest : public ::testing::Test {
     pool_.reset(PoolImpl::Create(options));
   }
 
-  void WriteStorePage(StoreImpl* store, size_t page_id, const uint8_t* data) {
+  void WriteStorePage(StoreImpl* store, size_t page_id,
+                      span<const uint8_t> page_data) {
     ASSERT_TRUE(pool_.get() != nullptr);
     PagePool* page_pool = pool_->page_pool();
     Page* page = page_pool->AllocPage();
     ASSERT_TRUE(page != nullptr);
+    ASSERT_EQ(1U << kStorePageShift, page_data.size());
 
     UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
     ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
         page, store, page_id, PagePool::kIgnorePageData));
     transaction->WillModifyPage(page);
-    std::memcpy(page->data(), data, 1 << kStorePageShift);
+    FillSpan(page->mutable_data(1 << kStorePageShift), 0);
     ASSERT_EQ(Status::kSuccess, store->WritePage(page));
     transaction->PageWasPersisted(page, store->init_transaction());
     ASSERT_EQ(Status::kSuccess, transaction->Commit());
@@ -153,7 +155,8 @@ TEST_F(FreePageListTest, PushState) {
     EXPECT_EQ(alloc_transaction, list_head_page->transaction());
     EXPECT_TRUE(list_head_page->is_dirty());
 
-    uint8_t* list_head_data = list_head_page->data();
+    span<const uint8_t> list_head_data =
+        list_head_page->data(1 << kStorePageShift);
     EXPECT_EQ(
         FreePageList::kInvalidPageId,
         FreePageListFormat::NextPageId64(list_head_data));
@@ -165,8 +168,8 @@ TEST_F(FreePageListTest, PushState) {
       EXPECT_EQ(
           static_cast<uint64_t>(kBasePage + j),
           LoadUint64(
-              list_head_data + FreePageListFormat::kFirstEntryOffset +
-              (j - 1) * FreePageListFormat::kEntrySize));
+              &list_head_data[FreePageListFormat::kFirstEntryOffset +
+              (j - 1) * FreePageListFormat::kEntrySize]));
     }
 
     // Make sure that the list didn't touch any page unnecessarily.
@@ -194,7 +197,8 @@ TEST_F(FreePageListTest, PushState) {
   EXPECT_EQ(alloc_transaction, list_head_page->transaction());
   EXPECT_TRUE(list_head_page->is_dirty());
 
-  uint8_t* list_head_data = list_head_page->data();
+  span<const uint8_t> list_head_data =
+        list_head_page->data(1 << kStorePageShift);
   EXPECT_EQ(
       kBasePage, FreePageListFormat::NextPageId64(list_head_data));
   EXPECT_EQ(
@@ -207,7 +211,8 @@ TEST_F(FreePageListTest, PushState) {
   EXPECT_EQ(store->init_transaction(), list_tail_page->transaction());
   EXPECT_FALSE(list_tail_page->is_dirty());
 
-  uint8_t* list_tail_data = list_tail_page->data();
+  span<const uint8_t> list_tail_data =
+        list_tail_page->data(1 << kStorePageShift);
   EXPECT_EQ(
       FreePageList::kInvalidPageId,
       FreePageListFormat::NextPageId64(list_tail_data));
@@ -225,10 +230,13 @@ TEST_F(FreePageListTest, PushState) {
 
   // Test for the corrupted page case.
 
-  StoreUint64(19, list_head_data + FreePageListFormat::kNextEntryOffset);
+  span<uint8_t> list_head_mutable_data =
+      list_head_page->mutable_data(1 << kStorePageShift);
+  StoreUint64(19,
+              &list_head_mutable_data[FreePageListFormat::kNextEntryOffset]);
   uint8_t list_head_copy[1 << kStorePageShift];
   ASSERT_EQ(1U << kStorePageShift, page_pool->page_size());
-  std::memcpy(list_head_copy, list_head_data, page_pool->page_size());
+  CopySpan(list_head_data, make_span(list_head_copy));
   // Evict the head page so it's not dirty anymore.
   page_pool->UnassignPageFromStore(list_head_page);
   ASSERT_FALSE(list_head_page->is_dirty());
@@ -243,9 +251,8 @@ TEST_F(FreePageListTest, PushState) {
   EXPECT_EQ(store->init_transaction(), list_head_page->transaction());
   EXPECT_FALSE(list_head_page->is_dirty());
 
-  list_head_data = list_head_page->data();
-  EXPECT_EQ(0, std::memcmp(
-      list_head_copy, list_head_data, page_pool->page_size()));
+  list_head_data = list_head_page->data(1 << kStorePageShift);
+  EXPECT_EQ(make_span(list_head_copy), list_head_data);
 
   page_pool->UnpinStorePage(list_head_page, PagePool::kCachePage);
   page_pool->UnpinStorePage(list_tail_page, PagePool::kCachePage);
@@ -338,7 +345,8 @@ TEST_F(FreePageListTest, PopState) {
     EXPECT_EQ(alloc_transaction, list_head_page->transaction());
     EXPECT_TRUE(list_head_page->is_dirty());
 
-    uint8_t* list_head_data = list_head_page->data();
+    span<const uint8_t> list_head_data =
+        list_head_page->data(1 << kStorePageShift);
     EXPECT_EQ(
         FreePageList::kInvalidPageId,
         FreePageListFormat::NextPageId64(list_head_data));
@@ -351,8 +359,8 @@ TEST_F(FreePageListTest, PopState) {
       EXPECT_EQ(
           static_cast<uint64_t>(kBasePage + j),
           LoadUint64(
-              list_head_data + FreePageListFormat::kFirstEntryOffset +
-              (j - 1) * FreePageListFormat::kEntrySize));
+              &list_head_data[FreePageListFormat::kFirstEntryOffset +
+              (j - 1) * FreePageListFormat::kEntrySize]));
     }
 
     // Make sure that the list didn't touch any page unnecessarily.

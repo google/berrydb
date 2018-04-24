@@ -4,10 +4,12 @@
 
 #include "./page_pool.h"
 
+#include <algorithm>
 #include <cstring>
 
 #include "berrydb/platform.h"
 #include "./store_impl.h"
+#include "./util/span_util.h"
 
 namespace berrydb {
 
@@ -121,9 +123,10 @@ Status PagePool::FetchStorePage(Page *page, PageFetchMode fetch_mode) {
   // page dirty anyway.
 
 #if DCHECK_IS_ON()
+  span<uint8_t> page_data = page->mutable_data(page_size_);
   // Fill the page with recognizable garbage (as opposed to random garbage), to
   // make it easier to spot code that uses uninitialized page data.
-  std::memset(page->data(), 0xCD, page_size_);
+  FillSpan(page_data, 0xCD);
 #endif  // DCHECK_IS_ON()
 
   return Status::kSuccess;

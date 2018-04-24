@@ -34,8 +34,9 @@ inline uint64_t LoadUint64(const uint8_t* from) noexcept {
  * manner, but not depend on that in testing. This lets the embedder choose
  * portability or extra speed on big-endian platforms.
  *
- * @param  from memory holding the integer; must be 8-byte-aligned
- * @return      the integer stored at the given location
+ * @param  value the value to be stored
+ * @param  to    memory that will receive the integer; must be 8-byte-aligned
+ * @return       the integer stored at the given location
  */
 inline void StoreUint64(uint64_t value, uint8_t* to) noexcept {
   DCHECK_EQ(reinterpret_cast<uintptr_t>(to) & 7, 0U);

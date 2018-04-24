@@ -18,6 +18,7 @@
 #include "./transaction_impl.h"
 #include "./test/block_access_file_wrapper.h"
 #include "./test/file_deleter.h"
+#include "./util/span_util.h"
 #include "./util/unique_ptr.h"
 
 namespace berrydb {
@@ -50,7 +51,8 @@ class PagePoolTest : public ::testing::Test {
     pool_.reset(PoolImpl::Create(options));
   }
 
-  void WriteStorePage(StoreImpl* store, size_t page_id, const uint8_t* data) {
+  void WriteStorePage(StoreImpl* store, size_t page_id,
+                      span<const uint8_t> data) {
     ASSERT_TRUE(pool_.get() != nullptr);
     PagePool* page_pool = pool_->page_pool();
     Page* page = page_pool->AllocPage();
@@ -60,7 +62,7 @@ class PagePoolTest : public ::testing::Test {
     ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
         page, store, page_id, PagePool::kIgnorePageData));
     transaction->WillModifyPage(page);
-    std::memcpy(page->data(), data, 1 << kStorePageShift);
+    CopySpan(data, page->mutable_data(1 << kStorePageShift));
     ASSERT_EQ(Status::kSuccess, store->WritePage(page));
     transaction->PageWasPersisted(page, store->init_transaction());
     ASSERT_EQ(Status::kSuccess, transaction->Commit());
@@ -102,7 +104,7 @@ TEST_F(PagePoolTest, AllocPageState) {
 
   Page* page = page_pool.AllocPage();
   ASSERT_NE(nullptr, page);
-  EXPECT_NE(nullptr, page->data());
+  EXPECT_NE(nullptr, page->buffer());
   EXPECT_EQ(1U, page_pool.allocated_pages());
   EXPECT_EQ(0U, page_pool.unused_pages());
   EXPECT_EQ(1U, page_pool.pinned_pages());
@@ -261,9 +263,9 @@ TEST_F(PagePoolTest, UnassignPageFromStoreState) {
 
   UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
   transaction->WillModifyPage(page);
-  uint8_t* data = page->data();
-  ASSERT_NE(nullptr, data);
-  std::memset(data, 0, 1 << kStorePageShift);
+  span<uint8_t> page_data = page->mutable_data(1 << kStorePageShift);
+  ASSERT_TRUE(!page_data.empty());
+  FillSpan(page_data, 0);
 
   page_pool->UnassignPageFromStore(page);
   EXPECT_FALSE(page->is_dirty());
@@ -300,9 +302,9 @@ TEST_F(PagePoolTest, UnassignPageFromStoreIoError) {
 
   UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
   transaction->WillModifyPage(page);
-  uint8_t* data = page->data();
-  ASSERT_NE(nullptr, data);
-  std::memset(data, 0, 1 << kStorePageShift);
+  span<uint8_t> page_data = page->mutable_data(1 << kStorePageShift);
+  ASSERT_TRUE(!page_data.empty());
+  FillSpan(page_data, 0);
 
   data_file_wrapper.SetAccessError(Status::kIoError);
   page_pool->UnassignPageFromStore(page);
@@ -318,9 +320,11 @@ TEST_F(PagePoolTest, UnassignPageFromStoreIoError) {
 }
 
 TEST_F(PagePoolTest, AssignPageToStoreSuccess) {
-  uint8_t buffer[4 << kStorePageShift];
-  for(size_t i = 0; i < sizeof(buffer); ++i)
-    buffer[i] = static_cast<uint8_t>(rnd_());
+  uint8_t buffer[4][1 << kStorePageShift];
+  for (size_t i = 0; i < 4; ++i) {
+    for (size_t j = 0; j < 1 << kStorePageShift; ++j)
+      buffer[i][j] = static_cast<uint8_t>(rnd_());
+  }
 
   CreatePool(kStorePageShift, 1);
   PagePool* page_pool = pool_->page_pool();
@@ -329,7 +333,7 @@ TEST_F(PagePoolTest, AssignPageToStoreSuccess) {
       log_file1_size_, page_pool, StoreOptions()));
 
   for (size_t i = 0; i < 4; ++i)
-    WriteStorePage(store.get(), i, buffer + (i << kStorePageShift));
+    WriteStorePage(store.get(), i, buffer[i]);
 
   for (size_t i = 0; i < 4; ++i) {
     Page* page = page_pool->AllocPage();
@@ -340,16 +344,17 @@ TEST_F(PagePoolTest, AssignPageToStoreSuccess) {
     EXPECT_FALSE(page->IsUnpinned());
     EXPECT_EQ(store->init_transaction(), page->transaction());
     EXPECT_EQ(i, page->page_id());
-    EXPECT_EQ(0, std::memcmp(
-        page->data(), buffer + (i << kStorePageShift), 1 << kStorePageShift));
+    EXPECT_EQ(page->data(1 << kStorePageShift), make_span(buffer[i]));
     page_pool->UnpinStorePage(page);
   }
 }
 
 TEST_F(PagePoolTest, AssignPageToStoreIoError) {
-  uint8_t buffer[2 << kStorePageShift];
-  for(size_t i = 0; i < sizeof(buffer); ++i)
-    buffer[i] = static_cast<uint8_t>(rnd_());
+  uint8_t buffer[2][1 << kStorePageShift];
+  for (size_t i = 0; i < 2; ++i) {
+    for (size_t j = 0; j < 1 << kStorePageShift; ++j)
+      buffer[i][j] = static_cast<uint8_t>(rnd_());
+  }
 
   CreatePool(kStorePageShift, 1);
   PagePool* page_pool = pool_->page_pool();
@@ -359,7 +364,7 @@ TEST_F(PagePoolTest, AssignPageToStoreIoError) {
       log_file1_size_, page_pool, StoreOptions()));
 
   for (size_t i = 0; i < 2; ++i)
-    WriteStorePage(store.get(), i, buffer + (i << kStorePageShift));
+    WriteStorePage(store.get(), i, buffer[i]);
 
   Page* page = page_pool->AllocPage();
   ASSERT_NE(nullptr, page);
@@ -473,9 +478,11 @@ TEST_F(PagePoolTest, PinUnpinStorePage) {
 }
 
 TEST_F(PagePoolTest, StorePage) {
-  uint8_t buffer[4 << kStorePageShift];
-  for(size_t i = 0; i < sizeof(buffer); ++i)
-    buffer[i] = static_cast<uint8_t>(rnd_());
+  uint8_t buffer[4][1 << kStorePageShift];
+  for (size_t i = 0; i < 4; ++i) {
+    for (size_t j = 0; j < 1 << kStorePageShift; ++j)
+      buffer[i][j] = static_cast<uint8_t>(rnd_());
+  }
 
   CreatePool(kStorePageShift, 2);
   PagePool* page_pool = pool_->page_pool();
@@ -485,7 +492,7 @@ TEST_F(PagePoolTest, StorePage) {
       log_file1_size_, page_pool, StoreOptions()));
 
   for (size_t i = 0; i < 4; ++i)
-    WriteStorePage(store.get(), i, buffer + (i << kStorePageShift));
+    WriteStorePage(store.get(), i, buffer[i]);
 
   Page* page;
   ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
@@ -496,8 +503,7 @@ TEST_F(PagePoolTest, StorePage) {
   EXPECT_FALSE(page->IsUnpinned());
   EXPECT_EQ(store->init_transaction(), page->transaction());
   EXPECT_EQ(2U, page->page_id());
-  EXPECT_EQ(0, std::memcmp(
-      page->data(), buffer + (2 << kStorePageShift), 1 << kStorePageShift));
+  EXPECT_EQ(page->data(1 << kStorePageShift), make_span(buffer[2]));
 
   Page* page2;
   ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
@@ -507,8 +513,7 @@ TEST_F(PagePoolTest, StorePage) {
   EXPECT_FALSE(page2->IsUnpinned());
   EXPECT_EQ(store->init_transaction(), page->transaction());
   EXPECT_EQ(2U, page2->page_id());
-  EXPECT_EQ(0, std::memcmp(
-      page2->data(), buffer + (2 << kStorePageShift), 1 << kStorePageShift));
+  EXPECT_EQ(page2->data(1 << kStorePageShift), make_span(buffer[2]));
   EXPECT_EQ(1U, page_pool->allocated_pages());
   EXPECT_EQ(0U, page_pool->unused_pages());
   EXPECT_EQ(1U, page_pool->pinned_pages());

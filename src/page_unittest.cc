@@ -65,7 +65,7 @@ TEST_F(PageTest, CreateRelease) {
   PagePool page_pool(pool_.get(), 12, 42);
 
   Page* page = Page::Create(&page_pool);
-  EXPECT_NE(nullptr, page->data());
+  EXPECT_NE(nullptr, page->buffer());
 #if DCHECK_IS_ON()
   EXPECT_EQ(nullptr, page->transaction());
   EXPECT_EQ(&page_pool, page->page_pool());
@@ -135,9 +135,11 @@ TEST_F(PageTest, Data) {
   EXPECT_FALSE(page->IsUnpinned());
 
   constexpr const size_t kPageSize = 1 << 12;
-  EXPECT_EQ(page->data(), page->data(kPageSize).data());
+  EXPECT_NE(nullptr, page->buffer());
+  EXPECT_EQ(page->buffer(), page->mutable_buffer());
+  EXPECT_EQ(page->buffer(), page->data(kPageSize).data());
   EXPECT_EQ(kPageSize, page->data(kPageSize).size());
-  EXPECT_EQ(page->data(), page->mutable_data(kPageSize).data());
+  EXPECT_EQ(page->buffer(), page->mutable_data(kPageSize).data());
   EXPECT_EQ(kPageSize, page->mutable_data(kPageSize).size());
 
   page->RemovePin();

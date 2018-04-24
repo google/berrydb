@@ -11,6 +11,7 @@
 #include "./free_page_list.h"
 #include "./pool_impl.h"
 #include "./transaction_impl.h"
+#include "./util/span_util.h"
 
 namespace berrydb {
 
@@ -84,12 +85,13 @@ Status StoreImpl::Bootstrap() {
   TransactionImpl* transaction = CreateTransaction();
 
   transaction->WillModifyPage(header_page);
-  uint8_t* header_data = header_page->data();
-  std::memset(header_data, 0, static_cast<size_t>(1) << header_.page_shift);
+  span<uint8_t> header_page_data = header_page->mutable_data(
+      static_cast<size_t>(1) << header_.page_shift);
+  FillSpan(header_page_data, 0);
   header_.free_list_head_page = FreePageList::kInvalidPageId;
   header_.page_count = 2;
   // header.page_shift is already set correctly by the constructor.
-  header_.Serialize(header_data);
+  header_.Serialize(header_page_data.data());
   page_pool_->UnpinStorePage(header_page);
 
   Page* root_catalog_page;
@@ -102,9 +104,9 @@ Status StoreImpl::Bootstrap() {
   }
 
   transaction->WillModifyPage(root_catalog_page);
-  std::memset(
-      root_catalog_page->data(), 0,
+  span<uint8_t> root_catalog_page_data = root_catalog_page->mutable_data(
       static_cast<size_t>(1) << header_.page_shift);
+  FillSpan(root_catalog_page_data, 0);
   // TODO(pwnall): Bootstrap the root catalog here.
   page_pool_->UnpinStorePage(root_catalog_page);
 
