@@ -11,16 +11,19 @@
 
 namespace berrydb {
 
-Status Transaction::Get(Space* space, string_view key, string_view* value) {
-  return TransactionImpl::FromApi(this)->Get(space, key, value);
+std::tuple<Status, span<const uint8_t>> Transaction::Get(
+    Space* space, span<const uint8_t> key) {
+  return TransactionImpl::FromApi(this)->Get(SpaceImpl::FromApi(space), key);
 }
 
-Status Transaction::Put(Space* space, string_view key, string_view value) {
-  return TransactionImpl::FromApi(this)->Put(space, key, value);
+Status Transaction::Put(Space* space, span<const uint8_t> key,
+                        span<const uint8_t> value) {
+  return TransactionImpl::FromApi(this)->Put(SpaceImpl::FromApi(space), key,
+                                             value);
 }
 
-Status Transaction::Delete(Space* space, string_view key) {
-  return TransactionImpl::FromApi(this)->Delete(space, key);
+Status Transaction::Delete(Space* space, span<const uint8_t> key) {
+  return TransactionImpl::FromApi(this)->Delete(SpaceImpl::FromApi(space), key);
 }
 
 Status Transaction::Commit() {
@@ -31,27 +34,25 @@ Status Transaction::Rollback() {
   return TransactionImpl::FromApi(this)->Rollback();
 }
 
-Status Transaction::CreateSpace(
-    Catalog* catalog, string_view name, Space** result) {
+std::tuple<Status, Space*> Transaction::CreateSpace(
+    Catalog* catalog, span<const uint8_t> name) {
+  Status status;
   SpaceImpl* space;
-  Status status = TransactionImpl::FromApi(this)->CreateSpace(
-     CatalogImpl::FromApi(catalog), name, &space);
-  if (status == Status::kSuccess)
-    *result = space->ToApi();
-  return status;
+  std::tie(status, space) = TransactionImpl::FromApi(this)->CreateSpace(
+      CatalogImpl::FromApi(catalog), name);
+  return {status, space->ToApi()};
 }
 
-Status Transaction::CreateCatalog(
-    Catalog* catalog, string_view name, Catalog** result) {
+std::tuple<Status, Catalog*> Transaction::CreateCatalog(
+    Catalog* catalog, span<const uint8_t> name) {
+  Status status;
   CatalogImpl* new_catalog;
-  Status status = TransactionImpl::FromApi(this)->CreateCatalog(
-     CatalogImpl::FromApi(catalog), name, &new_catalog);
-  if (status == Status::kSuccess)
-    *result = new_catalog->ToApi();
-  return status;
+  std::tie(status, new_catalog) = TransactionImpl::FromApi(this)->CreateCatalog(
+     CatalogImpl::FromApi(catalog), name);
+  return {status, new_catalog->ToApi()};
 }
 
-Status Transaction::Delete(Catalog* catalog, string_view name) {
+Status Transaction::Delete(Catalog* catalog, span<const uint8_t> name) {
   return TransactionImpl::FromApi(this)->Delete(
       CatalogImpl::FromApi(catalog), name);
 }

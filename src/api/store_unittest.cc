@@ -43,46 +43,50 @@ class StoreTest : public ::testing::Test {
 TEST_F(StoreTest, CreateOptions) {
   // This test case doesn't use UniquePtr because the wrapping code would make
   // the test case double in size.
-  Store* store = nullptr;
+  Status status;
+  Store* store;
   StoreOptions options;
 
   // Setup guarantees that the store does not exist.
   options.create_if_missing = false;
-  ASSERT_NE(Status::kSuccess, pool_->OpenStore(kFileName, options, &store));
+  std::tie(status, store) = pool_->OpenStore(kFileName, options);
+  ASSERT_NE(Status::kSuccess, status);
   EXPECT_EQ(nullptr, store);
 
   options.create_if_missing = true;
   options.error_if_exists = true;
-  store = nullptr;
-  ASSERT_EQ(Status::kSuccess, pool_->OpenStore(kFileName, options, &store));
+  std::tie(status, store) = pool_->OpenStore(kFileName, options);
+  ASSERT_EQ(Status::kSuccess, status);
   ASSERT_NE(nullptr, store);
   EXPECT_EQ(Status::kSuccess, store->Close());
   store->Release();
 
   // The ASSERT above guarantees that the store was created.
-  store = nullptr;
-  ASSERT_NE(Status::kSuccess, pool_->OpenStore(kFileName, options, &store));
+  std::tie(status, store) = pool_->OpenStore(kFileName, options);
+  ASSERT_NE(Status::kSuccess, status);
   EXPECT_EQ(nullptr, store);
 
   options.error_if_exists = false;
-  store = nullptr;
-  ASSERT_EQ(Status::kSuccess, pool_->OpenStore(kFileName, options, &store));
+  std::tie(status, store) = pool_->OpenStore(kFileName, options);
+  ASSERT_EQ(Status::kSuccess, status);
   ASSERT_NE(nullptr, store);
   EXPECT_EQ(Status::kSuccess, store->Close());
   store->Release();
 
   options.create_if_missing = false;
-  store = nullptr;
-  ASSERT_EQ(Status::kSuccess, pool_->OpenStore(kFileName, options, &store));
+  std::tie(status, store) = pool_->OpenStore(kFileName, options);
+  ASSERT_EQ(Status::kSuccess, status);
   ASSERT_NE(nullptr, store);
   EXPECT_EQ(Status::kSuccess, store->Close());
   store->Release();
 }
 
 TEST_F(StoreTest, CloseAbortsTransaction) {
-  Store* raw_store = nullptr;
+  Status status;
+  Store* raw_store;
   StoreOptions options;
-  ASSERT_EQ(Status::kSuccess, pool_->OpenStore(kFileName, options, &raw_store));
+  std::tie(status, raw_store) = pool_->OpenStore(kFileName, options);
+  ASSERT_EQ(Status::kSuccess, status);
   UniquePtr<Store> store(raw_store);
 
   UniquePtr<Transaction> transaction(store->CreateTransaction());

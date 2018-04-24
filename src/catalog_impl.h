@@ -7,6 +7,8 @@
 
 #include "berrydb/catalog.h"
 #include "berrydb/platform.h"
+#include "berrydb/span.h"
+#include "berrydb/types.h"
 
 namespace berrydb {
 
@@ -35,8 +37,8 @@ class CatalogImpl {
 
   // See the public API documention for details.
   void Release();
-  Status OpenCatalog(string_view name, CatalogImpl** result);
-  Status OpenSpace(string_view name, SpaceImpl** result);
+  std::tuple<Status, CatalogImpl*> OpenCatalog(span<const uint8_t> name);
+  std::tuple<Status, SpaceImpl*> OpenSpace(span<const uint8_t> name);
 
  private:
   /** Use CatalogImpl::Create() to obtain SpaceImpl instances. */

@@ -5,7 +5,8 @@
 #ifndef BERRYDB_INCLUDE_BERRYDB_CATALOG_H_
 #define BERRYDB_INCLUDE_BERRYDB_CATALOG_H_
 
-#include "berrydb/string_view.h"
+#include "berrydb/span.h"
+#include "berrydb/types.h"
 
 namespace berrydb {
 
@@ -34,7 +35,7 @@ class Catalog {
    * @return       kNotFound if the catalog does not contain an entry with the
    *               given name; otherwise, most likely kSuccess or kIoError
    */
-  Status OpenCatalog(string_view name, Catalog** result);
+  std::tuple<Status, Catalog*> OpenCatalog(span<const uint8_t> name);
 
   /** Opens a (key/value name)space listed in this catalog.
    *
@@ -47,7 +48,7 @@ class Catalog {
    * @return       kNotFound if the catalog does not contain an entry with the
    *               given name; otherwise, most likely kSuccess or kIoError
    */
-  Status OpenSpace(string_view name, Space** result);
+  std::tuple<Status, Space*> OpenSpace(span<const uint8_t> name);
 
   /** Releases the memory associated with the catalog.
    *

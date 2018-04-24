@@ -17,13 +17,12 @@ void Pool::Release() {
   return PoolImpl::FromApi(this)->Release();
 }
 
-Status Pool::OpenStore(
-      const std::string& path, const StoreOptions& options, Store** result) {
+std::tuple<Status, Store*> Pool::OpenStore(const std::string& path,
+                                           const StoreOptions& options) {
+  Status status;
   StoreImpl* store;
-  Status status = PoolImpl::FromApi(this)->OpenStore(path, options, &store);
-  if (status == Status::kSuccess)
-    *result = store->ToApi();
-  return status;
+  std::tie(status, store) = PoolImpl::FromApi(this)->OpenStore(path, options);
+  return {status, store->ToApi()};
 }
 
 size_t Pool::page_size() const {

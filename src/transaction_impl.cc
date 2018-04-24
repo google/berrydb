@@ -68,7 +68,18 @@ bool TransactionImpl::IsInit() const noexcept {
 }
 #endif  // DCHECK_IS_ON()
 
-Status TransactionImpl::Get(Space* space, string_view key, string_view* value) {
+std::tuple<Status, span<const uint8_t>> TransactionImpl::Get(
+    SpaceImpl* space, span<const uint8_t> key) {
+  if (is_closed_)
+    return {Status::kAlreadyClosed, span<const uint8_t>()};
+
+  UNUSED(space);
+  UNUSED(key);
+  return {Status::kIoError, span<const uint8_t>()};
+}
+
+Status TransactionImpl::Put(SpaceImpl* space, span<const uint8_t> key,
+                            span<const uint8_t> value) {
   if (is_closed_)
     return Status::kAlreadyClosed;
 
@@ -78,17 +89,7 @@ Status TransactionImpl::Get(Space* space, string_view key, string_view* value) {
   return Status::kIoError;
 }
 
-Status TransactionImpl::Put(Space* space, string_view key, string_view value) {
-  if (is_closed_)
-    return Status::kAlreadyClosed;
-
-  UNUSED(space);
-  UNUSED(key);
-  UNUSED(value);
-  return Status::kIoError;
-}
-
-Status TransactionImpl::Delete(Space* space, string_view key) {
+Status TransactionImpl::Delete(SpaceImpl* space, span<const uint8_t> key) {
   if (is_closed_)
     return Status::kAlreadyClosed;
 
@@ -170,30 +171,28 @@ Status TransactionImpl::Rollback() {
   return Close();
 }
 
-Status TransactionImpl::CreateSpace(
-    CatalogImpl* catalog, string_view name, SpaceImpl** result) {
+std::tuple<Status, SpaceImpl*> TransactionImpl::CreateSpace(
+    CatalogImpl* catalog, span<const uint8_t> name) {
   if (is_closed_)
-    return Status::kAlreadyClosed;
+    return {Status::kAlreadyClosed, nullptr};
 
   UNUSED(catalog);
   UNUSED(name);
-  UNUSED(result);
-  return Status::kIoError;
+  return {Status::kIoError, nullptr};
 
 }
 
-Status TransactionImpl::CreateCatalog(
-    CatalogImpl* catalog, string_view name, CatalogImpl** result) {
+std::tuple<Status, CatalogImpl*> TransactionImpl::CreateCatalog(
+    CatalogImpl* catalog, span<const uint8_t> name) {
 
   if (is_closed_)
-    return Status::kAlreadyClosed;
+    return {Status::kAlreadyClosed, nullptr};
   UNUSED(catalog);
   UNUSED(name);
-  UNUSED(result);
-  return Status::kIoError;
+  return {Status::kIoError, nullptr};
 }
 
-Status TransactionImpl::Delete(CatalogImpl* catalog, string_view name) {
+Status TransactionImpl::Delete(CatalogImpl* catalog, span<const uint8_t> name) {
   if (is_closed_)
     return Status::kAlreadyClosed;
 

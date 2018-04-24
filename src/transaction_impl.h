@@ -5,8 +5,12 @@
 #ifndef BERRYDB_TRANSACTION_IMPL_H_
 #define BERRYDB_TRANSACTION_IMPL_H_
 
-#include "./page.h"
+#include <tuple>
+
+#include "berrydb/platform.h"
+#include "berrydb/span.h"
 #include "berrydb/transaction.h"
+#include "./page.h"
 // #include "./page_pool.h" would cause a cycle
 // #include "./store_impl.h" would cause a cycle
 #include "./util/linked_list.h"
@@ -218,18 +222,18 @@ class TransactionImpl {
   }
 
   // See the public API documention for details.
-  Status Get(Space* space, string_view key, string_view* value);
-  Status Put(Space* space, string_view key, string_view value);
-  Status Delete(Space* space, string_view key);
+  std::tuple<Status, span<const uint8_t>> Get(SpaceImpl* space,
+                                              span<const uint8_t> key);
+  Status Put(SpaceImpl* space, span<const uint8_t> key,
+             span<const uint8_t> value);
+  Status Delete(SpaceImpl* space, span<const uint8_t> key);
   Status Commit();
   Status Rollback();
-  Status CreateSpace(CatalogImpl* catalog,
-                     string_view name,
-                     SpaceImpl** result);
-  Status CreateCatalog(CatalogImpl* catalog,
-                       string_view name,
-                       CatalogImpl** result);
-  Status Delete(CatalogImpl* catalog, string_view name);
+  std::tuple<Status, SpaceImpl*> CreateSpace(CatalogImpl* catalog,
+                                             span<const uint8_t> name);
+  std::tuple<Status, CatalogImpl*> CreateCatalog(CatalogImpl* catalog,
+                                                 span<const uint8_t> name);
+  Status Delete(CatalogImpl* catalog, span<const uint8_t> name);
 
   inline bool IsClosed() const noexcept {
     DCHECK(!is_committed_ || is_closed_);

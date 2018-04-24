@@ -6,6 +6,7 @@
 #define BERRYDB_INCLUDE_BERRYDB_POOL_H_
 
 #include <string>
+#include <tuple>
 
 #include "berrydb/types.h"
 
@@ -33,9 +34,8 @@ class Pool {
   void Release();
 
   /** Open (or create) a store. */
-  Status OpenStore(const std::string& path,
-                   const StoreOptions& options,
-                   Store** result);
+  std::tuple<Status, Store*> OpenStore(const std::string& path,
+                                       const StoreOptions& options);
 
   /** The store page size supported by this resource pool. */
   size_t page_size() const;

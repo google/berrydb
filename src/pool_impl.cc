@@ -78,9 +78,8 @@ void PoolImpl::StoreClosed(StoreImpl* store) {
   stores_.erase(store);
 }
 
-Status PoolImpl::OpenStore(
-    const std::string& path, const StoreOptions& options,
-    StoreImpl** result) {
+std::tuple<Status, StoreImpl*> PoolImpl::OpenStore(
+    const std::string& path, const StoreOptions& options) {
   Status status;
   BlockAccessFile* data_file;
   size_t data_file_size;
@@ -88,12 +87,12 @@ Status PoolImpl::OpenStore(
       path, page_pool_.page_shift(), options.create_if_missing,
       options.error_if_exists);
   if (status != Status::kSuccess)
-    return status;
+    return {status, nullptr};
 
   status = data_file->Lock();
   if (status != Status::kSuccess) {
     data_file->Close();
-    return status;
+    return {status, nullptr};
   }
 
   std::string log_file_path = StoreImpl::LogFilePath(path);
@@ -103,7 +102,7 @@ Status PoolImpl::OpenStore(
       log_file_path, true /* create_if_missing */, false /* error_if_exists */);
   if (status != Status::kSuccess) {
     data_file->Close();
-    return status;
+    return {status, nullptr};
   }
 
   StoreImpl* store = StoreImpl::Create(
@@ -113,11 +112,10 @@ Status PoolImpl::OpenStore(
   status = store->Initialize(options);
   if (status != Status::kSuccess) {
     store->Close();
-    return status;
+    return {status, nullptr};
   }
 
-  *result = store;
-  return Status::kSuccess;
+  return {Status::kSuccess, store};
 }
 
 }  // namespace berrydb

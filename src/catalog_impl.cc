@@ -5,6 +5,7 @@
 #include "./catalog_impl.h"
 
 #include "berrydb/platform.h"
+#include "berrydb/status.h"
 
 namespace berrydb {
 
@@ -29,6 +30,18 @@ void CatalogImpl::Release() {
   this->~CatalogImpl();
   void* heap_block = static_cast<void*>(this);
   Deallocate(heap_block, sizeof(CatalogImpl));
+}
+
+std::tuple<Status, CatalogImpl*> CatalogImpl::OpenCatalog(
+    span<const uint8_t> name) {
+  UNUSED(name);
+  return {Status::kIoError, nullptr};
+}
+
+std::tuple<Status, SpaceImpl*> CatalogImpl::OpenSpace(
+    span<const uint8_t> name) {
+  UNUSED(name);
+  return {Status::kIoError, nullptr};
 }
 
 }  // namespace berrydb

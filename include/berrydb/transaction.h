@@ -5,7 +5,10 @@
 #ifndef BERRYDB_INCLUDE_BERRYDB_TRANSACTION_H_
 #define BERRYDB_INCLUDE_BERRYDB_TRANSACTION_H_
 
-#include "berrydb/string_view.h"
+#include <tuple>
+
+#include "berrydb/span.h"
+#include "berrydb/types.h"
 
 namespace berrydb {
 
@@ -25,13 +28,14 @@ enum class Status : int;
 class Transaction {
  public:
   /** Reads a store key. Sees Put()s and Delete()s made by this transaction. */
-  Status Get(Space* space, string_view key, string_view* value);
+  std::tuple<Status, span<const uint8_t>> Get(Space* space,
+                                              span<const uint8_t> key);
 
   /** Creates / updates a store key. Seen by Gets() made by this transaction. */
-  Status Put(Space* space, string_view key, string_view value);
+  Status Put(Space* space, span<const uint8_t> key, span<const uint8_t> value);
 
   /** Deletes a store key. Seen by Gets() made by this transaction. */
-  Status Delete(Space* space, string_view key);
+  Status Delete(Space* space, span<const uint8_t> key);
 
   /**
    * Writes Put()s and Deletes() in this transaction to durable storage.
@@ -51,25 +55,27 @@ class Transaction {
 
   /** Creates a (key/value name)space.
    *
-   * @param catalog will store the reference to the new (key/value name)space
-   * @param name    the name of the newly created namespace
-   * @param result  if the operation succeeds, receives a pointer to the newly
-   *                created catalog
-   * @return        kAlreadyExists if the catalog already contains an entry with
-   *                the given name; otherwise, most likely kSuccess or kIoError
+   * @param catalog  the parent of the newly created namespace
+   * @param name     the name of the newly created namespace
+   * @return status  kAlreadyExists if the catalog already contains an entry
+   *                 with the given name; otherwise, most likely kSuccess or
+   *                 kIoError
+   * @return catalog the newly created (key/value name)space
    */
-  Status CreateSpace(Catalog* catalog, string_view name, Space** result);
+  std::tuple<Status, Space*> CreateSpace(Catalog* catalog,
+                                         span<const uint8_t> name);
 
   /** Creates a catalog.
    *
-   * @param catalog will store the reference to the new catalog
-   * @param name    the name of the newly created namespace
-   * @param result  if the operation succeeds, receives a pointer to the newly
-   *                created space
-   * @return        kAlreadyExists if the catalog already contains an entry with
-   *                the given name; otherwise, most likely kSuccess or kIoError
+   * @param catalog  the parent of the newly created catalog
+   * @param name     the name of the newly created catalog
+   * @return status  kAlreadyExists if the catalog already contains an entry
+   *                 with the given name; otherwise, most likely kSuccess or
+   *                 kIoError
+   * @return catalog the newly created catalog
    */
-  Status CreateCatalog(Catalog* catalog, string_view name, Catalog** result);
+  std::tuple<Status, Catalog*> CreateCatalog(Catalog* catalog,
+                                             span<const uint8_t> name);
 
   /** Deletes a (key/value name)space and all its content, or a catalog.
    *
@@ -80,7 +86,7 @@ class Transaction {
    * @return        kNotFound if the catalog does not contain an entry with the
    *                given name; otherwise, most likely kSuccess or kIoError
    */
-  Status Delete(Catalog* catalog, string_view name);
+  Status Delete(Catalog* catalog, span<const uint8_t> name);
 
   /** True if the transaction was committed or rolled back. */
   bool IsClosed();

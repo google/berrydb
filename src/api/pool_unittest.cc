@@ -46,11 +46,13 @@ TEST_F(PoolTest, ReleaseClosesStore) {
   pool_options.page_pool_size = 16;
   UniquePtr<Pool> pool(Pool::Create(pool_options));
 
-  Store* raw_store = nullptr;
+  Status status;
+  Store* raw_store;
   StoreOptions options;
   options.create_if_missing = true;
   options.error_if_exists = false;
-  ASSERT_EQ(Status::kSuccess, pool->OpenStore(kFileName, options, &raw_store));
+  std::tie(status, raw_store) = pool->OpenStore(kFileName, options);
+  ASSERT_EQ(Status::kSuccess, status);
   UniquePtr<Store> store(raw_store);
 
   EXPECT_FALSE(store->IsClosed());

@@ -6,6 +6,7 @@
 #define BERRYDB_POOL_IMPL_H_
 
 #include <functional>
+#include <tuple>
 #include <unordered_set>
 
 #include "./page_pool.h"
@@ -44,9 +45,8 @@ class PoolImpl {
 
   // See the public API documention for details.
   void Release();
-  Status OpenStore(const std::string& path,
-                   const StoreOptions& options,
-                   StoreImpl** result);
+  std::tuple<Status, StoreImpl*> OpenStore(const std::string& path,
+                                           const StoreOptions& options);
   inline size_t page_size() const noexcept { return page_pool_.page_size(); }
   inline size_t page_pool_size() const noexcept {
     return page_pool_.page_capacity();

@@ -14,20 +14,18 @@ void Catalog::Release() {
   return CatalogImpl::FromApi(this)->Release();
 }
 
-Status Catalog::OpenCatalog(string_view name, Catalog** result) {
+std::tuple<Status, Catalog*> Catalog::OpenCatalog(span<const uint8_t> name) {
+  Status status;
   CatalogImpl* catalog;
-  Status status = CatalogImpl::FromApi(this)->OpenCatalog(name, &catalog);
-  if (status == Status::kSuccess)
-    *result = catalog->ToApi();
-  return status;
+  std::tie(status, catalog) = CatalogImpl::FromApi(this)->OpenCatalog(name);
+  return {status, catalog->ToApi()};
 }
 
-Status Catalog::OpenSpace(string_view name, Space** result) {
+std::tuple<Status, Space*> Catalog::OpenSpace(span<const uint8_t> name) {
+  Status status;
   SpaceImpl* space;
-  Status status = CatalogImpl::FromApi(this)->OpenSpace(name, &space);
-  if (status == Status::kSuccess)
-    *result = space->ToApi();
-  return status;
+  std::tie(status, space) = CatalogImpl::FromApi(this)->OpenSpace(name);
+  return {status, space->ToApi()};
 }
 
 }  // namespace berrydb
