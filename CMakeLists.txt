@@ -60,10 +60,6 @@ option(BERRYDB_BUILD_CLI "Build CLI for demo" ON)
 option(BERRYDB_BUILD_BENCHMARKS "Build BerryDB's benchmarks" ON)
 option(BERRYDB_USE_GLOG "Build with Google Logging" ON)
 
-include(CheckIncludeFiles)
-include(CheckIncludeFileCXX)
-check_include_file_cxx("string_view" BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW)
-
 include(CheckCXXCompilerFlag)
 # Used by glog.
 check_cxx_compiler_flag(-Wno-deprecated BERRYDB_HAVE_NO_DEPRECATED)
@@ -165,7 +161,6 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/include/berrydb/span.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/status.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/store.h"
-    "${PROJECT_SOURCE_DIR}/include/berrydb/string_view.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/transaction.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/types.h"
     "${PROJECT_SOURCE_DIR}/include/berrydb/version.h"
@@ -218,7 +213,6 @@ if(BERRYDB_BUILD_TESTS)
       "${PROJECT_SOURCE_DIR}/src/api/span_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/api/status_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/api/store_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/api/string_view_unittest.cc"
       "${PROJECT_BINARY_DIR}/src/api/version_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/alloc_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/endianness_unittest.cc"
