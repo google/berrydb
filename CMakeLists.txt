@@ -144,6 +144,7 @@ target_sources(berrydb
     "${PROJECT_SOURCE_DIR}/src/util/linked_list.h"
     "${PROJECT_SOURCE_DIR}/src/util/platform_allocator.h"
     "${PROJECT_SOURCE_DIR}/src/util/platform_deleter.h"
+    "${PROJECT_SOURCE_DIR}/src/util/span_util.h"
     "${PROJECT_SOURCE_DIR}/src/util/unique_ptr.h"
     "${PROJECT_SOURCE_DIR}/src/vfs/libc_vfs.cc"
   PUBLIC
@@ -232,6 +233,7 @@ if(BERRYDB_BUILD_TESTS)
       "${PROJECT_SOURCE_DIR}/src/util/linked_list_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/util/platform_allocator_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/util/platform_deleter_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/util/span_util_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/util/unique_ptr_unittest.cc"
   )
   target_link_libraries(berrydb_tests berrydb gtest)

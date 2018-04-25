@@ -23,8 +23,28 @@ class span {
   using value_type = std::remove_cv_t<ElementType>;
   using pointer = ElementType*;
   using reference = ElementType&;
+
+#if defined(_MSC_VER) && !defined(_LIBCPP_STD_VER)
+  // Checked iterators are a Visual Studio C++ specific extension. They're
+  // necessary to avoid warnings when using standard library methods that
+  // operate on iterators, like std::copy.
+  using iterator = stdext::checked_array_iterator<ElementType*>;
+
+  // const_iterator should use checked_array_iterator<const ElementType*>.
+  // However, checked_array_iterator<T*> is not convertible to
+  // checked_array_iterator<const T*>, and this causes compilation errors in
+  // googletest's DefaultPrintTo code, which uses something like:
+  //   Container::const_iterator it = container.begin();
+  //
+  // This simplistic workaround is acceptable because this project has other
+  // compilers on CI, which alias const_iterator to const ElementType*, so const
+  // errors can't get through.
+  using const_iterator = stdext::checked_array_iterator<ElementType*>;
+#else
   using iterator = ElementType*;
   using const_iterator = const ElementType*;
+#endif  // defined(_MSC_VER) && !defined(_LIBCPP_STD_VER)
+
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
@@ -36,7 +56,7 @@ class span {
 
   // The template is a workaround for disqualifying this constructor in the
   // lookup for span(pointer, 0).
-  template <typename _ = void>
+  template <typename = void>
   inline constexpr span(ElementType* begin, ElementType* end)
       : data_(begin), size_(end - begin) {
     assert(begin <= end);
@@ -51,14 +71,12 @@ class span {
   // TODO(pwnall): Switch to std::is_convertible_v when migrating to C++17.
   template <
       typename OtherElementType,
-      typename _ = std::enable_if_t<std::is_convertible<
+      typename = std::enable_if_t<std::is_convertible<
           OtherElementType (*)[], ElementType (*)[]>::value>>
   inline constexpr span(const span<OtherElementType>& other)
       : data_(other.data()), size_(other.size()) {}
 
-  template <
-      std::size_t ArraySize,
-      typename _ = std::enable_if_t<true>>
+  template <std::size_t ArraySize>
   inline constexpr span(ElementType (&array)[ArraySize]) noexcept :
       data_(array), size_(ArraySize) {
     assert(!size_ || data_ != nullptr);
@@ -99,10 +117,25 @@ class span {
   }
   inline constexpr ElementType* data() const noexcept { return data_; }
 
+#if defined(_MSC_VER) && !defined(_LIBCPP_STD_VER)
+  inline constexpr iterator begin() const noexcept {
+    return stdext::checked_array_iterator<ElementType*>(data_, size_);
+  }
+  inline constexpr iterator end() const noexcept {
+    return stdext::checked_array_iterator<ElementType*>(data_, size_, size_);
+  }
+  inline constexpr const_iterator cbegin() const noexcept {
+    return stdext::checked_array_iterator<ElementType*>(data_, size_);
+  }
+  inline constexpr const_iterator cend() const noexcept {
+    return stdext::checked_array_iterator<ElementType*>(data_, size_, size_);
+  }
+#else
   inline constexpr iterator begin() const noexcept { return data_; }
   inline constexpr iterator end() const noexcept { return data_ + size_; }
   inline constexpr const_iterator cbegin() const noexcept { return begin(); }
   inline constexpr const_iterator cend() const noexcept { return end(); }
+#endif  // defined(_MSC_VER) && !defined(_LIBCPP_STD_VER)
 
   inline constexpr reverse_iterator rbegin() const noexcept {
     return reverse_iterator(end());
