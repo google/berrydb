@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <iterator>
 #include <type_traits>
 
@@ -28,8 +29,10 @@ class span {
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
   inline constexpr span() noexcept : data_(nullptr), size_(0) {}
-  inline constexpr span(ElementType* data, size_t size) noexcept
-      : data_(data), size_(size) {}
+  inline constexpr span(ElementType* data, std::size_t size) noexcept
+      : data_(data), size_(size) {
+    assert(!size_ || data_ != nullptr);
+  }
 
   // The template is a workaround for disqualifying this constructor in the
   // lookup for span(pointer, 0).
@@ -37,6 +40,7 @@ class span {
   inline constexpr span(ElementType* begin, ElementType* end)
       : data_(begin), size_(end - begin) {
     assert(begin <= end);
+    assert(!size_ || data_ != nullptr);
   }
 
   // TODO(pwnall): Add container and array constructors, if/when necessary.
@@ -53,40 +57,43 @@ class span {
       : data_(other.data()), size_(other.size()) {}
 
   template <
-      size_t ArraySize,
+      std::size_t ArraySize,
       typename _ = std::enable_if_t<true>>
   inline constexpr span(ElementType (&array)[ArraySize]) noexcept :
-      data_(array), size_(ArraySize) {}
+      data_(array), size_(ArraySize) {
+    assert(!size_ || data_ != nullptr);
+  }
 
   inline ~span() noexcept = default;
 
-  inline constexpr span first(size_t count) const noexcept {
+  inline constexpr span first(std::size_t count) const noexcept {
     assert(count <= size_);
     return span(data_, count);
   }
-  inline constexpr span last(size_t count) const noexcept {
+  inline constexpr span last(std::size_t count) const noexcept {
     assert(count <= size_);
     return span(data_ + (size_ - count), count);
   }
-  inline constexpr span subspan(size_t pos, size_t count = -1) const noexcept {
+  inline constexpr span subspan(std::size_t pos,
+                                std::size_t count = -1) const noexcept {
     // Value of std::dynamic_extent.
-    size_t dynamic_extent = static_cast<size_t>(-1);
+    std::size_t dynamic_extent = static_cast<std::size_t>(-1);
     assert(pos <= size_);
     assert(count == dynamic_extent || count <= size_ - pos);
     return span(data_ + pos, (count == dynamic_extent) ? size_ - pos : count);
   }
 
-  inline constexpr size_t size() const noexcept { return size_; }
-  inline constexpr size_t size_bytes() const noexcept {
+  inline constexpr std::size_t size() const noexcept { return size_; }
+  inline constexpr std::size_t size_bytes() const noexcept {
     return size_ * sizeof(ElementType);
   }
   inline constexpr bool empty() const noexcept { return !size_; }
 
-  inline constexpr ElementType& operator[](size_t index) const noexcept {
+  inline constexpr ElementType& operator[](std::size_t index) const noexcept {
     assert(index < size_);
     return data_[index];
   }
-  inline constexpr ElementType& operator()(size_t index) const noexcept {
+  inline constexpr ElementType& operator()(std::size_t index) const noexcept {
     assert(index < size_);
     return data_[index];
   }
@@ -112,7 +119,7 @@ class span {
 
  private:
   ElementType* data_;
-  size_t size_;
+  std::size_t size_;
 };
 
 template <typename ElementType, typename OtherElementType>
@@ -148,8 +155,8 @@ inline constexpr bool operator>=(span<ElementType> lhs,
 }
 
 template <typename ElementType>
-inline constexpr span<ElementType> make_span(ElementType* data, size_t size)
-    noexcept {
+inline constexpr span<ElementType> make_span(ElementType* data,
+                                             std::size_t size) noexcept {
   return span<ElementType>(data, size);
 }
 template <typename ElementType>
@@ -157,7 +164,7 @@ inline constexpr span<ElementType> make_span(ElementType* begin,
                                              ElementType* end) noexcept {
   return span<ElementType>(begin, end);
 }
-template <typename ElementType, size_t ArraySize>
+template <typename ElementType, std::size_t ArraySize>
 constexpr span<ElementType> make_span(ElementType (&array)[ArraySize])
     noexcept {
   return span<ElementType>(array);
