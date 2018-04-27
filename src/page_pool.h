@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <tuple>
 #include <unordered_map>
 
 #include "./page.h"
@@ -129,15 +130,13 @@ class PagePool {
    * @param  store      the store to fetch a page from
    * @param  page_id    the page that will be fetched from the store
    * @param  fetch_mode desired fetching behavior
-   * @param  result     if the call succeeds, will receive a pointer to the page
-   *                    pool entry holding the page
-   * @return            may return kPoolFull if the page pool is (almost) full
+   * @return status     may return kPoolFull if the page pool is (almost) full
    *                    and cannot find a free page, or kIoError if reading the
-   *                    store page failed */
-  Status StorePage(StoreImpl* store,
-                   size_t page_id,
-                   PageFetchMode fetch_mode,
-                   Page** result);
+   *                    store page failed
+   * @return page       if the call succeeds, points to the page pool entry
+   *                    holding the page */
+  std::tuple<Status, Page*> StorePage(StoreImpl* store, size_t page_id,
+                                      PageFetchMode fetch_mode);
 
   /** Releases a Page previously obtained by StorePage().
    *

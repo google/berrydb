@@ -27,9 +27,10 @@ std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
 
   StoreImpl* store = transaction->store();
   PagePool* page_pool = store->page_pool();
+  Status status;
   Page* head_page;
-  Status status = page_pool->StorePage(
-      store, head_page_id_, PagePool::kFetchPageData, &head_page);
+  std::tie(status, head_page) = page_pool->StorePage(store, head_page_id_,
+                                                     PagePool::kFetchPageData);
   if (status != Status::kSuccess)
     return {status, kInvalidPageId};
 
@@ -104,8 +105,9 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
   Page* head_page;
 
   if (head_page_id_ != kInvalidPageId) {
-    Status status = page_pool->StorePage(
-        store, head_page_id_, PagePool::kFetchPageData, &head_page);
+    Status status;
+    std::tie(status, head_page) = page_pool->StorePage(
+        store, head_page_id_, PagePool::kFetchPageData);
     if (status != Status::kSuccess)
       return status;
 
@@ -142,8 +144,9 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
   // The page that just freed up will be set up as a list data page, and used to
   // store the list's entries (free page IDs).
 
-  Status status = page_pool->StorePage(
-      store, page_id, PagePool::kIgnorePageData, &head_page);
+  Status status;
+  std::tie(status, head_page) = page_pool->StorePage(store, page_id,
+                                                     PagePool::kIgnorePageData);
   if (status != Status::kSuccess)
     return status;
 
@@ -179,9 +182,10 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
 
   StoreImpl* store = transaction->store();
   PagePool* page_pool = store->page_pool();
+  Status status;
   Page* head_page;
-  Status status = page_pool->StorePage(
-      store, head_page_id_, PagePool::kFetchPageData, &head_page);
+  std::tie(status, head_page) = page_pool->StorePage(store, head_page_id_,
+                                                     PagePool::kFetchPageData);
   if (status != Status::kSuccess)
     return status;
   // Relying on the compiler to optimize the span size away.
@@ -190,8 +194,8 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
 
   size_t other_head_page_id = other->head_page_id_;
   Page* other_head_page;
-  status = page_pool->StorePage(
-      store, other_head_page_id, PagePool::kFetchPageData, &other_head_page);
+  std::tie(status, other_head_page) = page_pool->StorePage(
+      store, other_head_page_id, PagePool::kFetchPageData);
   if (status != Status::kSuccess) {
     page_pool->UnpinStorePage(head_page);
     return status;
@@ -218,8 +222,8 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
     // The pages must be joined in this precise order because the other list is
     // guaranteed to have a well-tracked tail page, whereas this list does not.
     Page* other_tail_page;
-    status = page_pool->StorePage(store, other_tail_page_id,
-                                  PagePool::kFetchPageData, &other_tail_page);
+    std::tie(status, other_tail_page) = page_pool->StorePage(
+        store, other_tail_page_id, PagePool::kFetchPageData);
     if (status != Status::kSuccess) {
       page_pool->UnpinStorePage(other_head_page);
       page_pool->UnpinStorePage(head_page);

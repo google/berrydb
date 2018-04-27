@@ -6,6 +6,7 @@
 
 #include <random>
 #include <string>
+#include <tuple>
 
 #include "gtest/gtest.h"
 
@@ -493,9 +494,11 @@ TEST_F(PagePoolTest, StorePage) {
   for (size_t i = 0; i < 4; ++i)
     WriteStorePage(store.get(), i, buffer[i]);
 
+  Status status;
   Page* page;
-  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
-      store.get(), 2, PagePool::kFetchPageData, &page));
+  std::tie(status, page) = page_pool->StorePage(store.get(), 2,
+                                                PagePool::kFetchPageData);
+  ASSERT_EQ(Status::kSuccess, status);
 
   ASSERT_TRUE(page != nullptr);
   EXPECT_FALSE(page->is_dirty());
@@ -505,8 +508,9 @@ TEST_F(PagePoolTest, StorePage) {
   EXPECT_EQ(page->data(1 << kStorePageShift), make_span(buffer[2]));
 
   Page* page2;
-  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
-      store.get(), 2, PagePool::kFetchPageData, &page2));
+  std::tie(status, page2) = page_pool->StorePage(store.get(), 2,
+                                                 PagePool::kFetchPageData);
+  ASSERT_EQ(Status::kSuccess, status);
   EXPECT_EQ(page, page2);
   EXPECT_FALSE(page2->is_dirty());
   EXPECT_FALSE(page2->IsUnpinned());
@@ -539,8 +543,8 @@ TEST_F(PagePoolTest, StorePage) {
 
   data_file_wrapper.SetAccessError(Status::kIoError);
   page = nullptr;
-  EXPECT_EQ(Status::kIoError, page_pool->StorePage(
-      store.get(), 2, PagePool::kFetchPageData, &page));
+  std::tie(status, page) = page_pool->StorePage(store.get(), 2,
+                                                PagePool::kFetchPageData);
   EXPECT_EQ(nullptr, page);
   EXPECT_EQ(1U, page_pool->allocated_pages());
   EXPECT_EQ(1U, page_pool->unused_pages());

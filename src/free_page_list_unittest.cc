@@ -152,9 +152,11 @@ TEST_F(FreePageListTest, PushState) {
     EXPECT_EQ(kBasePage, free_page_list.head_page_id());
     EXPECT_EQ(kBasePage, free_page_list.tail_page_id());
 
+    Status status;
     Page* list_head_page;
-    ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
-        store.get(), kBasePage, PagePool::kFetchPageData, &list_head_page));
+    std::tie(status, list_head_page) = page_pool->StorePage(
+        store.get(), kBasePage, PagePool::kFetchPageData);
+    ASSERT_EQ(Status::kSuccess, status);
     EXPECT_EQ(alloc_transaction, list_head_page->transaction());
     EXPECT_TRUE(list_head_page->is_dirty());
 
@@ -195,10 +197,11 @@ TEST_F(FreePageListTest, PushState) {
   EXPECT_EQ(kBasePage + kEntriesPerPage + 1, free_page_list.head_page_id());
   EXPECT_EQ(kBasePage, free_page_list.tail_page_id());
 
+  Status status;
   Page* list_head_page;
-  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
-      store.get(), kBasePage + kEntriesPerPage + 1, PagePool::kFetchPageData,
-      &list_head_page));
+  std::tie(status, list_head_page) = page_pool->StorePage(
+      store.get(), kBasePage + kEntriesPerPage + 1, PagePool::kFetchPageData);
+  ASSERT_EQ(Status::kSuccess, status);
   EXPECT_EQ(alloc_transaction, list_head_page->transaction());
   EXPECT_TRUE(list_head_page->is_dirty());
 
@@ -211,8 +214,9 @@ TEST_F(FreePageListTest, PushState) {
       FreePageListFormat::NextEntryOffset(list_head_data));
 
   Page* list_tail_page;
-  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
-      store.get(), kBasePage, PagePool::kFetchPageData, &list_tail_page));
+  std::tie(status, list_tail_page) = page_pool->StorePage(
+      store.get(), kBasePage, PagePool::kFetchPageData);
+  ASSERT_EQ(Status::kSuccess, status);
   EXPECT_EQ(store->init_transaction(), list_tail_page->transaction());
   EXPECT_FALSE(list_tail_page->is_dirty());
 
@@ -251,9 +255,9 @@ TEST_F(FreePageListTest, PushState) {
   EXPECT_EQ(Status::kDataCorrupted, free_page_list.Push(
       alloc_transaction, kBasePage + kEntriesPerPage + 1));
 
-  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
-      store.get(), kBasePage + kEntriesPerPage + 1, PagePool::kFetchPageData,
-      &list_head_page));
+  std::tie(status, list_head_page) = page_pool->StorePage(
+      store.get(), kBasePage + kEntriesPerPage + 1, PagePool::kFetchPageData);
+  ASSERT_EQ(Status::kSuccess, status);
   EXPECT_EQ(store->init_transaction(), list_head_page->transaction());
   EXPECT_FALSE(list_head_page->is_dirty());
 
@@ -286,16 +290,18 @@ TEST_F(FreePageListTest, PopState) {
   ASSERT_EQ(kBasePage + kEntriesPerPage + 1, free_page_list.head_page_id());
   ASSERT_EQ(kBasePage, free_page_list.tail_page_id());
 
+  Status status;
   Page* list_head_page;
-  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
-      store.get(), kBasePage + kEntriesPerPage + 1, PagePool::kFetchPageData,
-      &list_head_page));
+  std::tie(status, list_head_page) = page_pool->StorePage(
+      store.get(), kBasePage + kEntriesPerPage + 1, PagePool::kFetchPageData);
+  ASSERT_EQ(Status::kSuccess, status);
   ASSERT_EQ(alloc_transaction, list_head_page->transaction());
   ASSERT_TRUE(list_head_page->is_dirty());
 
   Page* list_tail_page;
-  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
-      store.get(), kBasePage, PagePool::kFetchPageData, &list_tail_page));
+  std::tie(status, list_tail_page) = page_pool->StorePage(
+      store.get(), kBasePage, PagePool::kFetchPageData);
+  ASSERT_EQ(Status::kSuccess, status);
   ASSERT_EQ(alloc_transaction, list_tail_page->transaction());
   ASSERT_TRUE(list_tail_page->is_dirty());
 
@@ -312,7 +318,6 @@ TEST_F(FreePageListTest, PopState) {
 
   // Test for the empty page case.
 
-  Status status;
   size_t page_id;
   std::tie(status, page_id) = free_page_list.Pop(alloc_transaction);
   ASSERT_EQ(Status::kSuccess, status);
@@ -320,9 +325,9 @@ TEST_F(FreePageListTest, PopState) {
   EXPECT_EQ(kBasePage, free_page_list.head_page_id());
   EXPECT_EQ(kBasePage, free_page_list.tail_page_id());
 
-  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
-      store.get(), kBasePage + kEntriesPerPage + 1, PagePool::kFetchPageData,
-      &list_tail_page));
+  std::tie(status, list_tail_page) = page_pool->StorePage(
+      store.get(), kBasePage + kEntriesPerPage + 1, PagePool::kFetchPageData);
+  ASSERT_EQ(Status::kSuccess, status);
 
   EXPECT_EQ(store->init_transaction(), list_head_page->transaction());
   EXPECT_FALSE(list_head_page->is_dirty());
@@ -346,8 +351,9 @@ TEST_F(FreePageListTest, PopState) {
     EXPECT_EQ(kBasePage, free_page_list.head_page_id());
     EXPECT_EQ(kBasePage, free_page_list.tail_page_id());
 
-    ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
-        store.get(), kBasePage, PagePool::kFetchPageData, &list_head_page));
+    std::tie(status, list_head_page) = page_pool->StorePage(
+        store.get(), kBasePage, PagePool::kFetchPageData);
+    ASSERT_EQ(Status::kSuccess, status);
     EXPECT_EQ(alloc_transaction, list_head_page->transaction());
     EXPECT_TRUE(list_head_page->is_dirty());
 
@@ -390,8 +396,9 @@ TEST_F(FreePageListTest, PopState) {
   EXPECT_EQ(FreePageList::kInvalidPageId, free_page_list.head_page_id());
   EXPECT_EQ(FreePageList::kInvalidPageId, free_page_list.tail_page_id());
 
-  ASSERT_EQ(Status::kSuccess, page_pool->StorePage(
-      store.get(), kBasePage, PagePool::kFetchPageData, &list_head_page));
+  std::tie(status, list_head_page) = page_pool->StorePage(
+      store.get(), kBasePage, PagePool::kFetchPageData);
+  ASSERT_EQ(Status::kSuccess, status);
   EXPECT_EQ(store->init_transaction(), list_head_page->transaction());
   EXPECT_FALSE(list_head_page->is_dirty());
 

@@ -179,8 +179,8 @@ void PagePool::PinTransactionPages(
   }
 }
 
-Status PagePool::StorePage(
-    StoreImpl* store, size_t page_id, PageFetchMode fetch_mode, Page** result) {
+std::tuple<Status, Page*> PagePool::StorePage(StoreImpl* store, size_t page_id,
+                                              PageFetchMode fetch_mode) {
   DCHECK(store != nullptr);
 
   const auto& it = page_map_.find(std::make_pair(store, page_id));
@@ -197,29 +197,27 @@ Status PagePool::StorePage(
     // and waiting in the LRU list. The check in PinStorePage() is needed for
     // correctness.
     PinStorePage(page);
-    *result = page;
-    return Status::kSuccess;
+    return {Status::kSuccess, page};
   }
 
   Page* page = AllocPage();
   if (page == nullptr)
-    return Status::kPoolFull;
+    return {Status::kPoolFull, nullptr};
 #if DCHECK_IS_ON()
   DCHECK_EQ(page->page_pool(), this);
 #endif  // DCHECK_IS_ON()
 
   Status status = AssignPageToStore(page, store, page_id, fetch_mode);
-  if (status == Status::kSuccess) {
-    *result = page;
-  } else {
-    // Calling UnpinUnassignedPage will perform an extra check compared to
-    // inlining the code, because the inlined version would know that the page
-    // is unpinned. We favor code size over speed here because this is an error
-    // condition.
-    UnpinUnassignedPage(page);
-    DCHECK(page->IsUnpinned());
-  }
-  return status;
+  if (status == Status::kSuccess)
+    return {status, page};
+
+  // Calling UnpinUnassignedPage will perform an extra check compared to
+  // inlining the code, because the inlined version would know that the page
+  // is unpinned. We favor code size over speed here because this is an error
+  // condition.
+  UnpinUnassignedPage(page);
+  DCHECK(page->IsUnpinned());
+  return {status, nullptr};
 }
 
 }  // namespace berrydb

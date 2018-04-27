@@ -4,6 +4,8 @@
 
 #include "./store_impl.h"
 
+#include <tuple>
+
 #include "berrydb/options.h"
 #include "berrydb/vfs.h"
 #include "./free_page_list.h"
@@ -74,9 +76,10 @@ Status StoreImpl::Initialize(const StoreOptions &options) {
 }
 
 Status StoreImpl::Bootstrap() {
+  Status fetch_status;
   Page* header_page;
-  Status fetch_status = page_pool_->StorePage(
-      this, 0, PagePool::kIgnorePageData, &header_page);
+  std::tie(fetch_status, header_page) = page_pool_->StorePage(
+      this, 0, PagePool::kIgnorePageData);
   if (fetch_status != Status::kSuccess)
     return fetch_status;
 
@@ -93,8 +96,8 @@ Status StoreImpl::Bootstrap() {
   page_pool_->UnpinStorePage(header_page);
 
   Page* root_catalog_page;
-  fetch_status = page_pool_->StorePage(
-      this, 1, PagePool::kIgnorePageData, &root_catalog_page);
+  std::tie(fetch_status, root_catalog_page) = page_pool_->StorePage(
+      this, 1, PagePool::kIgnorePageData);
   if (fetch_status != Status::kSuccess) {
     transaction->Rollback();
     transaction->Release();
