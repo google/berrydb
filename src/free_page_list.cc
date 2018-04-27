@@ -12,6 +12,7 @@
 #include "./page.h"
 #include "./store_impl.h"
 #include "./transaction_impl.h"
+#include "./util/span_util.h"
 
 namespace berrydb {
 
@@ -80,8 +81,8 @@ Status FreePageList::Pop(TransactionImpl* transaction, size_t* page_id) {
     return Status::kDataCorrupted;
   }
 
-  DCHECK_GE(head_page_data.size(), next_entry_offset + 8);
-  uint64_t free_page_id64 = LoadUint64(&head_page_data[next_entry_offset]);
+  uint64_t free_page_id64 =
+      LoadUint64(head_page_data.subspan(next_entry_offset, 8));
   size_t free_page_id = static_cast<size_t>(free_page_id64);
   // This check should be optimized out on 64-bit architectures.
   if (free_page_id != free_page_id64) {
@@ -132,7 +133,7 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
       span<uint8_t> head_page_data =
           head_page->mutable_data(page_pool->page_size());
       StoreUint64(static_cast<uint64_t>(page_id),
-                  &head_page_data[next_entry_offset]);
+                  head_page_data.subspan(next_entry_offset, 8));
       next_entry_offset += FreePageListFormat::kEntrySize;
       FreePageListFormat::SetNextEntryOffset(next_entry_offset, head_page_data);
       page_pool->UnpinStorePage(head_page);
@@ -277,12 +278,14 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
         FreePageListFormat::kEntrySize, page_size);
 
     StoreUint64(static_cast<uint64_t>(other_head_page_id),
-                &head_page_data[next_entry_offset]);
+                head_page_data.subspan(next_entry_offset, 8));
     next_entry_offset += FreePageListFormat::kEntrySize;
-    std::memcpy(
-        &head_page_data[next_entry_offset],
-        &other_head_page_readonly_data[FreePageListFormat::kFirstEntryOffset],
-        needed_space_minus_one_entry);
+    CopySpan(
+        other_head_page_readonly_data.subspan(
+            FreePageListFormat::kFirstEntryOffset,
+            needed_space_minus_one_entry),
+        head_page_data.subspan(next_entry_offset,
+                               needed_space_minus_one_entry));
     next_entry_offset += needed_space_minus_one_entry;
   } else {
     // This list's head page cannot accomodate all page IDs. Move IDs from this
@@ -299,9 +302,9 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
     // a single page, so the capacity check above is broken.
     DCHECK_LE(empty_space, next_entry_offset);
     size_t new_next_entry_offset = next_entry_offset - empty_space;
-    std::memcpy(
-        &other_head_page_data[other_next_entry_offset],
-        &head_page_data[new_next_entry_offset], empty_space);
+    CopySpan(
+        head_page_data.subspan(new_next_entry_offset, empty_space),
+        other_head_page_data.subspan(other_next_entry_offset, empty_space));
     FreePageListFormat::SetNextEntryOffset(page_size, other_head_page_data);
     next_entry_offset = new_next_entry_offset;
 

@@ -6,6 +6,8 @@
 #define BERRYDB_STORE_HEADER_H_
 
 #include "berrydb/platform.h"
+#include "berrydb/span.h"
+#include "berrydb/types.h"
 
 namespace berrydb {
 
@@ -29,7 +31,7 @@ struct StoreHeader {
    *
    * @param  to the buffer that receives the on-disk layout header data
    */
-  void Serialize(uint8_t* to);
+  void Serialize(span<uint8_t> to);
 
   /** Reads the header data from a buffer that uses the on-disk layout.
    *
@@ -41,7 +43,7 @@ struct StoreHeader {
    *              data should come from a previous Serialize() call
    * @return      true if the read succeeded
    */
-  bool Deserialize(const uint8_t* from);
+  bool Deserialize(span<const uint8_t> from);
 
   /** The number of pages in the store's data file.
    *

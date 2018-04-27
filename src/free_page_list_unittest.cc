@@ -168,8 +168,10 @@ TEST_F(FreePageListTest, PushState) {
       EXPECT_EQ(
           static_cast<uint64_t>(kBasePage + j),
           LoadUint64(
-              &list_head_data[FreePageListFormat::kFirstEntryOffset +
-              (j - 1) * FreePageListFormat::kEntrySize]));
+              list_head_data.subspan(
+                  FreePageListFormat::kFirstEntryOffset +
+                      (j - 1) * FreePageListFormat::kEntrySize,
+                  8)));
     }
 
     // Make sure that the list didn't touch any page unnecessarily.
@@ -232,8 +234,9 @@ TEST_F(FreePageListTest, PushState) {
 
   span<uint8_t> list_head_mutable_data =
       list_head_page->mutable_data(1 << kStorePageShift);
-  StoreUint64(19,
-              &list_head_mutable_data[FreePageListFormat::kNextEntryOffset]);
+  StoreUint64(
+      19,
+      list_head_mutable_data.subspan(FreePageListFormat::kNextEntryOffset, 8));
   uint8_t list_head_copy[1 << kStorePageShift];
   ASSERT_EQ(1U << kStorePageShift, page_pool->page_size());
   CopySpan(list_head_data, make_span(list_head_copy));
@@ -359,8 +362,10 @@ TEST_F(FreePageListTest, PopState) {
       EXPECT_EQ(
           static_cast<uint64_t>(kBasePage + j),
           LoadUint64(
-              &list_head_data[FreePageListFormat::kFirstEntryOffset +
-              (j - 1) * FreePageListFormat::kEntrySize]));
+              list_head_data.subspan(
+                  FreePageListFormat::kFirstEntryOffset +
+                      (j - 1) * FreePageListFormat::kEntrySize,
+                  8)));
     }
 
     // Make sure that the list didn't touch any page unnecessarily.

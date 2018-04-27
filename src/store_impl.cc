@@ -91,7 +91,7 @@ Status StoreImpl::Bootstrap() {
   header_.free_list_head_page = FreePageList::kInvalidPageId;
   header_.page_count = 2;
   // header.page_shift is already set correctly by the constructor.
-  header_.Serialize(header_page_data.data());
+  header_.Serialize(header_page_data);
   page_pool_->UnpinStorePage(header_page);
 
   Page* root_catalog_page;

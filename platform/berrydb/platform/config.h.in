@@ -10,10 +10,7 @@
 //
 // The macros are namespaced because they end up in BerryDB's public header
 // files.
-//
-// After C++17 gains widespread support, the macros can be replaced with
-// __has_include and most of the configuration can go away.
-#cmakedefine BERRYDB_PLATFORM_HAVE_STD_STRING_VIEW
+
 #cmakedefine BERRYDB_PLATFORM_BUILT_WITH_GLOG
 
 #endif  // BERRYDB_PLATFORM_CONFIG_H_

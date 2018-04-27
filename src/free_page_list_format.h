@@ -24,19 +24,19 @@ class FreePageListFormat {
    *                   data is not corrupted, this is a number in [0, page size]
    */
   static inline size_t NextEntryOffset(span<const uint8_t> page_data) noexcept {
-    // The span size is only used in the DCHECK.
+    // The span size is only used in asserts.
     //
     // The implementation relies on the compiler to optimize away the span's
     // size and only pass the pointer in release builds.
-    DCHECK_GE(page_data.size(), kNextEntryOffset + 8);
-
+    //
     // Casting is safe because the page size must be smaller than size_t. The
     // next entry offset must be at most page_size, so it must be smaller than
     // size_t.
     //
     // The 64-bit load is safe because page data is at least 64-bit-aligned, and
     // list data pages are made up of 64-bit numbers.
-    return static_cast<size_t>(LoadUint64(&page_data[kNextEntryOffset]));
+    return static_cast<size_t>(
+        LoadUint64(page_data.subspan(kNextEntryOffset, 8)));
   }
 
   /** Sets the offset of the next entry (page ID) to be added to a list page.
@@ -49,19 +49,18 @@ class FreePageListFormat {
    */
   static inline void SetNextEntryOffset(size_t next_entry_offset,
                                         span<uint8_t> page_data) noexcept {
-    // The span size is only used in the DCHECK.
+    // The span size is only used in asserts.
     //
     // The implementation relies on the compiler to optimize away the span's
     // size and only pass the pointer in release builds.
-    DCHECK_GE(page_data.size(), kNextEntryOffset + 8);
-
+    //
     // The next_entry_offset value is not DCHECKed on purpose, so this method
     // can be used by data corruption tests.
-
+    //
     // The 64-bit store is safe because page data is at least 64-bit-aligned,
     // and list data pages are made up of 64-bit numbers.
     StoreUint64(static_cast<uint64_t>(next_entry_offset),
-                &page_data[kNextEntryOffset]);
+                page_data.subspan(kNextEntryOffset, 8));
   }
 
   /** Reads the page ID of the successor to a list page.
@@ -77,15 +76,14 @@ class FreePageListFormat {
    *                   data is not corrupted, this will not be kInvalidPageId
    */
   static inline uint64_t NextPageId64(span<const uint8_t> page_data) noexcept {
-    // The span size is only used in the DCHECK.
+    // The span size is only used in asserts.
     //
     // The implementation relies on the compiler to optimize away the span's
     // size and only pass the pointer in release builds.
-    DCHECK_GE(page_data.size(), kNextPageIdOffset + 8);
-
+    //
     // The 64-bit load is safe because page data is at least 64-bit-aligned, and
     // list data pages are made up of 64-bit numbers.
-    return LoadUint64(&page_data[kNextPageIdOffset]);
+    return LoadUint64(page_data.subspan(kNextPageIdOffset, 8));
   }
 
   /** Sets the page ID of the successor to a list page.
@@ -108,7 +106,7 @@ class FreePageListFormat {
 
     // The 64-bit store is safe because page data is at least 64-bit-aligned,
     // and list data pages are made up of 64-bit numbers.
-    return StoreUint64(next_page_id64, &page_data[kNextPageIdOffset]);
+    return StoreUint64(next_page_id64, page_data.subspan(kNextPageIdOffset, 8));
   }
 
   /** True if a list entry (page ID) offset is guranteed to be invalid.

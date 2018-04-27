@@ -31,40 +31,40 @@ StoreHeader::StoreHeader(size_t page_shift, size_t page_count)
     {
 }
 
-void StoreHeader::Serialize(uint8_t* to) {
-  StoreUint64(StoreHeader::kGlobalMagic, to);
-  StoreUint64(StoreHeader::kStoreMagic, to + 8);
-  StoreUint64(0, to + 16);
-  StoreUint64(page_count, to + 24);
-  StoreUint64(free_list_head_page, to + 32);
+void StoreHeader::Serialize(span<uint8_t> to) {
+  StoreUint64(StoreHeader::kGlobalMagic, to.subspan(0, 8));
+  StoreUint64(StoreHeader::kStoreMagic, to.subspan(8, 8));
+  StoreUint64(0, to.subspan(16, 8));
+  StoreUint64(page_count, to.subspan(24, 8));
+  StoreUint64(free_list_head_page, to.subspan(32, 8));
 
   // This is guaranteed to set all the bytes 40..47 to 0.
-  StoreUint64(0, to + 40);
+  StoreUint64(0, to.subspan(40, 8));
   DCHECK_LT(page_shift, 32U);
   to[40] = static_cast<uint8_t>(page_shift);
 }
 
-bool StoreHeader::Deserialize(const uint8_t *from) {
-  uint64_t global_magic = LoadUint64(from);
+bool StoreHeader::Deserialize(span<const uint8_t> from) {
+  uint64_t global_magic = LoadUint64(from.subspan(0, 8));
   if (global_magic != kGlobalMagic)
     return false;
 
-  uint64_t store_magic = LoadUint64(from + 8);
+  uint64_t store_magic = LoadUint64(from.subspan(8, 8));
   if (store_magic != kStoreMagic)
     return false;
 
-  uint64_t format_version = LoadUint64(from + 16);
+  uint64_t format_version = LoadUint64(from.subspan(16, 8));
   if (format_version != 0)
     return false;
 
-  uint64_t number = LoadUint64(from + 24);
+  uint64_t number = LoadUint64(from.subspan(24, 8));
   page_count = static_cast<size_t>(number);
   if (page_count != number) {
     // This can happen on 32-bit systems that try to load a large database.
     return false;
   }
 
-  number = LoadUint64(from + 32);
+  number = LoadUint64(from.subspan(32, 8));
   free_list_head_page = static_cast<size_t>(number);
   if (free_list_head_page != number) {
     // This should not happen if the size test above passed. Still, we currently

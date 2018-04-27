@@ -6,13 +6,18 @@
 
 #include <cstring>
 
+#include "berrydb/span.h"
+#include "berrydb/types.h"
+#include "../util/span_util.h"
+
 #include "gtest/gtest.h"
 
 namespace berrydb {
 
 TEST(StoreHeaderTest, SerializeDeserialize) {
-  alignas(8) uint8_t buffer[2 * StoreHeader::kSerializedSize];
-  std::memset(buffer, 0xCD, sizeof(buffer));
+  alignas(8) uint8_t buffer_bytes[2 * StoreHeader::kSerializedSize];
+  span<uint8_t> buffer(buffer_bytes);
+  FillSpan(buffer, 0xCD);
 
   StoreHeader header;
   header.page_shift = 12;
@@ -20,7 +25,7 @@ TEST(StoreHeaderTest, SerializeDeserialize) {
   header.free_list_head_page = 0x12345678;
   header.Serialize(buffer);
 
-  for (size_t i = StoreHeader::kSerializedSize; i < sizeof(buffer); ++i)
+  for (size_t i = StoreHeader::kSerializedSize; i < buffer.size(); ++i)
     EXPECT_EQ(0xCD, buffer[i]);
 
   StoreHeader header2;
@@ -31,7 +36,8 @@ TEST(StoreHeaderTest, SerializeDeserialize) {
 }
 
 TEST(StoreHeaderTest, HeaderErrors) {
-  alignas(8) uint8_t buffer[StoreHeader::kSerializedSize];
+  alignas(8) uint8_t buffer_bytes[StoreHeader::kSerializedSize];
+  span<uint8_t> buffer(buffer_bytes);
   StoreHeader header;
   header.page_shift = 12;
   header.free_list_head_page = 0x12345678;
