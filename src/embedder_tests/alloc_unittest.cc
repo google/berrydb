@@ -4,9 +4,10 @@
 
 #include "berrydb/platform.h"
 
-#include <cstring>
-
 #include "gtest/gtest.h"
+
+#include "berrydb/span.h"
+#include "../util/span_util.h"
 
 namespace berrydb {
 
@@ -14,9 +15,12 @@ static_assert((sizeof(size_t) & (sizeof(size_t) - 1)) == 0,
     "Allocate and Deallocate assume that sizeof(size_t) is a power of two");
 
 TEST(AllocTest, DoesNotCrash) {
-  void* buffer = Allocate(64);
-  std::memset(buffer, '\0', 64);
-  Deallocate(buffer, 64);
+  void* buffer_bytes = Allocate(64);
+
+  span<uint8_t> buffer(static_cast<uint8_t*>(buffer_bytes), 64);
+  FillSpan(buffer, 0);
+
+  Deallocate(buffer_bytes, 64);
 }
 
 }  // namespace berrydb

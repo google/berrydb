@@ -4,7 +4,6 @@
 
 #include "berrydb/vfs.h"
 
-#include <cstring>
 #include <random>
 #include <string>
 
@@ -90,7 +89,7 @@ TEST_F(VfsTest, BlockAccessFilePersistence) {
   EXPECT_EQ(Status::kSuccess, file->Read(0, in_buffer));
   EXPECT_EQ(Status::kSuccess, file->Close());
 
-  EXPECT_EQ(0, std::memcmp(buffer, in_buffer, 1 << kBlockShift));
+  EXPECT_EQ(make_span(buffer), make_span(in_buffer));
   EXPECT_EQ(Status::kSuccess, vfs_->RemoveFile(kFileName));
 }
 
@@ -119,16 +118,16 @@ TEST_F(VfsTest, BlockAccessFileReadWriteOffsets) {
 
   // Read the blocks back out of order.
   EXPECT_EQ(Status::kSuccess, file->Read(2 << kBlockShift, in_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[3], in_buffer, 1 << kBlockShift));
+  EXPECT_EQ(make_span(buffer[3]), make_span(in_buffer));
 
   EXPECT_EQ(Status::kSuccess, file->Read(1 << kBlockShift, in_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[1], in_buffer, 1 << kBlockShift));
+  EXPECT_EQ(make_span(buffer[1]), make_span(in_buffer));
 
   EXPECT_EQ(Status::kSuccess, file->Read(0 << kBlockShift, in_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[2], in_buffer, 1 << kBlockShift));
+  EXPECT_EQ(make_span(buffer[2]), make_span(in_buffer));
 
   EXPECT_EQ(Status::kSuccess, file->Read(3 << kBlockShift, in_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[0], in_buffer, 1 << kBlockShift));
+  EXPECT_EQ(make_span(buffer[0]), make_span(in_buffer));
 
   // Rewrite blocks 0, 2, and 3.
   EXPECT_EQ(Status::kSuccess, file->Write(buffer[2], 2 << kBlockShift));
@@ -137,16 +136,16 @@ TEST_F(VfsTest, BlockAccessFileReadWriteOffsets) {
 
   // Read the blocks back out of order.
   EXPECT_EQ(Status::kSuccess, file->Read(1 << kBlockShift, in_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[1], in_buffer, 1 << kBlockShift));
+  EXPECT_EQ(make_span(buffer[1]), make_span(in_buffer));
 
   EXPECT_EQ(Status::kSuccess, file->Read(0 << kBlockShift, in_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[0], in_buffer, 1 << kBlockShift));
+  EXPECT_EQ(make_span(buffer[0]), make_span(in_buffer));
 
   EXPECT_EQ(Status::kSuccess, file->Read(3 << kBlockShift, in_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[3], in_buffer, 1 << kBlockShift));
+  EXPECT_EQ(make_span(buffer[3]), make_span(in_buffer));
 
   EXPECT_EQ(Status::kSuccess, file->Read(2 << kBlockShift, in_buffer));
-  EXPECT_EQ(0, std::memcmp(buffer[2], in_buffer, 1 << kBlockShift));
+  EXPECT_EQ(make_span(buffer[2]), make_span(in_buffer));
 
   EXPECT_EQ(Status::kSuccess, file->Close());
   EXPECT_EQ(Status::kSuccess, vfs_->RemoveFile(kFileName));

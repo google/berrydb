@@ -4,7 +4,6 @@
 
 #include "./store_impl.h"
 
-#include <cstring>
 #include <random>
 #include <string>
 

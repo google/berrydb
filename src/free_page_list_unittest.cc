@@ -6,6 +6,7 @@
 
 #include <random>
 #include <string>
+#include <tuple>
 
 #include "gtest/gtest.h"
 
@@ -115,17 +116,19 @@ TEST_F(FreePageListTest, PushPop) {
   // Test for the empty page and entry-available-in-page case.
 
   for (size_t i = 128 + kBasePage - 1; i >= kBasePage; --i) {
-    size_t page_id = FreePageList::kInvalidPageId;
-    ASSERT_EQ(Status::kSuccess, free_page_list.Pop(
-        alloc_transaction, &page_id));
+    Status status;
+    size_t page_id;
+    std::tie(status, page_id) = free_page_list.Pop(alloc_transaction);
+    ASSERT_EQ(Status::kSuccess, status);
     EXPECT_EQ(i, page_id);
   }
 
   // Test for the empty list case.
 
-  size_t page_id = kBasePage;
-  ASSERT_EQ(Status::kSuccess, free_page_list.Pop(
-      alloc_transaction, &page_id));
+  Status status;
+  size_t page_id;
+  std::tie(status, page_id) = free_page_list.Pop(alloc_transaction);
+  ASSERT_EQ(Status::kSuccess, status);
   EXPECT_EQ(FreePageList::kInvalidPageId, page_id);
 }
 
@@ -309,9 +312,10 @@ TEST_F(FreePageListTest, PopState) {
 
   // Test for the empty page case.
 
-  size_t page_id = FreePageList::kInvalidPageId;
-  ASSERT_EQ(Status::kSuccess, free_page_list.Pop(
-      alloc_transaction, &page_id));
+  Status status;
+  size_t page_id;
+  std::tie(status, page_id) = free_page_list.Pop(alloc_transaction);
+  ASSERT_EQ(Status::kSuccess, status);
   EXPECT_EQ(kBasePage + kEntriesPerPage + 1, page_id);
   EXPECT_EQ(kBasePage, free_page_list.head_page_id());
   EXPECT_EQ(kBasePage, free_page_list.tail_page_id());
@@ -336,9 +340,8 @@ TEST_F(FreePageListTest, PopState) {
   // Test for the entry-available-in-page case.
 
   for (size_t i = 0; i < kEntriesPerPage; ++i) {
-    page_id = FreePageList::kInvalidPageId;
-    ASSERT_EQ(Status::kSuccess, free_page_list.Pop(
-        alloc_transaction, &page_id));
+    std::tie(status, page_id) = free_page_list.Pop(alloc_transaction);
+    ASSERT_EQ(Status::kSuccess, status);
     EXPECT_EQ(kBasePage + kEntriesPerPage - i, page_id);
     EXPECT_EQ(kBasePage, free_page_list.head_page_id());
     EXPECT_EQ(kBasePage, free_page_list.tail_page_id());
@@ -381,9 +384,8 @@ TEST_F(FreePageListTest, PopState) {
 
   // Test for the case of an empty page leading to an empty list.
 
-  page_id = FreePageList::kInvalidPageId;
-  ASSERT_EQ(Status::kSuccess, free_page_list.Pop(
-      alloc_transaction, &page_id));
+  std::tie(status, page_id) = free_page_list.Pop(alloc_transaction);
+  ASSERT_EQ(Status::kSuccess, status);
   EXPECT_EQ(kBasePage, page_id);
   EXPECT_EQ(FreePageList::kInvalidPageId, free_page_list.head_page_id());
   EXPECT_EQ(FreePageList::kInvalidPageId, free_page_list.tail_page_id());
@@ -405,9 +407,8 @@ TEST_F(FreePageListTest, PopState) {
 
   // Test for the empty list case.
 
-  page_id = kBasePage;
-  ASSERT_EQ(Status::kSuccess, free_page_list.Pop(
-      alloc_transaction, &page_id));
+  std::tie(status, page_id) = free_page_list.Pop(alloc_transaction);
+  ASSERT_EQ(Status::kSuccess, status);
   EXPECT_EQ(FreePageList::kInvalidPageId, page_id);
   EXPECT_EQ(FreePageList::kInvalidPageId, free_page_list.head_page_id());
   EXPECT_EQ(FreePageList::kInvalidPageId, free_page_list.tail_page_id());

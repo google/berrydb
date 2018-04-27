@@ -4,8 +4,6 @@
 
 #include "./free_page_list.h"
 
-#include <cstring>
-
 #include "berrydb/status.h"
 #include "./free_page_list_format.h"
 #include "./page_pool.h"
@@ -16,17 +14,15 @@
 
 namespace berrydb {
 
-Status FreePageList::Pop(TransactionImpl* transaction, size_t* page_id) {
+std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
   DCHECK(transaction != nullptr);
   DCHECK(transaction != transaction->store()->init_transaction());
-  DCHECK(page_id != nullptr);
 #if DCHECK_IS_ON()
   DCHECK(!was_merged_);
 #endif  // DCHECK_IS_ON()
 
   if (is_empty()) {
-    *page_id = kInvalidPageId;
-    return Status::kSuccess;
+    return {Status::kSuccess, kInvalidPageId};
   }
 
   StoreImpl* store = transaction->store();
@@ -35,7 +31,7 @@ Status FreePageList::Pop(TransactionImpl* transaction, size_t* page_id) {
   Status status = page_pool->StorePage(
       store, head_page_id_, PagePool::kFetchPageData, &head_page);
   if (status != Status::kSuccess)
-    return status;
+    return {status, kInvalidPageId};
 
   // The code below only uses the span size for DCHECKs, and relies on the
   // compiler to optimize the span into a pointer in release mode.
@@ -53,10 +49,10 @@ Status FreePageList::Pop(TransactionImpl* transaction, size_t* page_id) {
     // This check should be optimized out on 64-bit architectures.
     if (new_head_page_id != new_head_page_id64) {
       page_pool->UnpinStorePage(head_page);
-      return Status::kDatabaseTooLarge;
+      return {Status::kDatabaseTooLarge, kInvalidPageId};
     }
 
-    *page_id = head_page_id_;
+    size_t free_page_id = head_page_id_;
     head_page_id_ = new_head_page_id;
     if (new_head_page_id == kInvalidPageId) {
       tail_page_id_ = kInvalidPageId;
@@ -71,14 +67,14 @@ Status FreePageList::Pop(TransactionImpl* transaction, size_t* page_id) {
     }
 
     page_pool->UnpinStorePage(head_page);
-    return Status::kSuccess;
+    return {Status::kSuccess, free_page_id};
   }
 
   next_entry_offset -= FreePageListFormat::kEntrySize;
   if (FreePageListFormat::IsCorruptEntryOffset(
       next_entry_offset, page_pool->page_size())) {
     page_pool->UnpinStorePage(head_page);
-    return Status::kDataCorrupted;
+    return {Status::kDataCorrupted, kInvalidPageId};
   }
 
   uint64_t free_page_id64 =
@@ -87,13 +83,12 @@ Status FreePageList::Pop(TransactionImpl* transaction, size_t* page_id) {
   // This check should be optimized out on 64-bit architectures.
   if (free_page_id != free_page_id64) {
     page_pool->UnpinStorePage(head_page);
-    return Status::kDatabaseTooLarge;
+    return {Status::kDatabaseTooLarge, kInvalidPageId};
   }
   transaction->WillModifyPage(head_page);
   FreePageListFormat::SetNextEntryOffset(next_entry_offset, head_page_data);
-  *page_id = free_page_id;
   page_pool->UnpinStorePage(head_page);
-  return Status::kSuccess;
+  return {Status::kSuccess, free_page_id};
 }
 
 Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {

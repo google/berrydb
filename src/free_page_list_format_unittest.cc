@@ -4,16 +4,18 @@
 
 #include "./free_page_list_format.h"
 
-#include <cstring>
+#include "berrydb/span.h"
+#include "berrydb/types.h"
+#include "./util/span_util.h"
 
 #include "gtest/gtest.h"
 
 namespace berrydb {
 
 TEST(FreePageListFormatTest, NextEntryOffset) {
-  alignas(8) uint8_t page_data[256];
-
-  std::memset(page_data, 0xCC, 256);
+  alignas(8) uint8_t page_data_bytes[256];
+  span<uint8_t> page_data(page_data_bytes);
+  FillSpan(page_data, 0xCC);
 
   size_t next_entry_offset = 0x12345678;
   FreePageListFormat::SetNextEntryOffset(next_entry_offset, page_data);
@@ -28,9 +30,9 @@ TEST(FreePageListFormatTest, NextEntryOffset) {
 }
 
 TEST(FreePageListFormatTest, NextPageId64) {
-  alignas(8) uint8_t page_data[256];
-
-  std::memset(page_data, 0xCC, 256);
+  alignas(8) uint8_t page_data_bytes[256];
+  span<uint8_t> page_data(page_data_bytes);
+  FillSpan(page_data, 0xCC);
 
   uint64_t next_page_id64 = 0x1234567890ABCDEF;
   FreePageListFormat::SetNextPageId64(next_page_id64, page_data);
@@ -45,9 +47,9 @@ TEST(FreePageListFormatTest, NextPageId64) {
 }
 
 TEST(FreePageListFormatTest, PageFields) {
-  alignas(8) uint8_t page_data[256];
-
-  std::memset(page_data, 0xCC, 256);
+  alignas(8) uint8_t page_data_bytes[256];
+  span<uint8_t> page_data(page_data_bytes);
+  FillSpan(page_data, 0xCC);
 
   size_t next_entry_offset = 0x12345678;
   uint64_t next_page_id64 = 0x1234567890ABCDEF;

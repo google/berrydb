@@ -23,7 +23,8 @@ class FreePageListFormat {
    *                   entry (page ID of a free page) will be stored; if the
    *                   data is not corrupted, this is a number in [0, page size]
    */
-  static inline size_t NextEntryOffset(span<const uint8_t> page_data) noexcept {
+  static inline constexpr size_t NextEntryOffset(
+      span<const uint8_t> page_data) noexcept {
     // The span size is only used in asserts.
     //
     // The implementation relies on the compiler to optimize away the span's
@@ -75,7 +76,8 @@ class FreePageListFormat {
    * @return           the page ID of the next data page in the list; if the
    *                   data is not corrupted, this will not be kInvalidPageId
    */
-  static inline uint64_t NextPageId64(span<const uint8_t> page_data) noexcept {
+  static constexpr inline uint64_t NextPageId64(
+      span<const uint8_t> page_data) noexcept {
     // The span size is only used in asserts.
     //
     // The implementation relies on the compiler to optimize away the span's
@@ -99,11 +101,10 @@ class FreePageListFormat {
     //
     // The implementation relies on the compiler to optimize away the span's
     // size and only pass the pointer in release builds.
-    DCHECK_GE(page_data.size(), kNextPageIdOffset + 8);
-
+    //
     // The next_page_id64 value is not DCHECKed on purpose, so this method can
     // be used by data corruption tests.
-
+    //
     // The 64-bit store is safe because page data is at least 64-bit-aligned,
     // and list data pages are made up of 64-bit numbers.
     return StoreUint64(next_page_id64, page_data.subspan(kNextPageIdOffset, 8));
@@ -119,15 +120,17 @@ class FreePageListFormat {
    *                      page list resides
    * @return              true if the given offset is guaranteed to be invalid
    */
-  static inline bool IsCorruptEntryOffset(size_t entry_offset,
-                                          size_t page_size) noexcept {
+  static inline constexpr bool IsCorruptEntryOffset(size_t entry_offset,
+                                                    size_t page_size) noexcept {
     static_assert(
         (kEntrySize & (kEntrySize - 1)) == 0,
         "kEntrySize must be a power of two for bit masking tricks to work");
 
+    // DCHECK doesn't work with constexpr.
+    //
     // TODO(pwnall): Consider the benefits / costs of checking if entry_offset
     //               is >= kFirstEntryOffset in release builds.
-    DCHECK_GE(entry_offset, kFirstEntryOffset);
+    assert(entry_offset >= kFirstEntryOffset);
 
     // The checks below are the minimum needed to protect against an invalid
     // memory access.

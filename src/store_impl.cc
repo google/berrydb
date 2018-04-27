@@ -4,8 +4,6 @@
 
 #include "./store_impl.h"
 
-#include <cstring>
-
 #include "berrydb/options.h"
 #include "berrydb/vfs.h"
 #include "./free_page_list.h"

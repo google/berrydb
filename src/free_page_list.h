@@ -5,7 +5,10 @@
 #ifndef BERRYDB_FREE_PAGE_LIST_H
 #define BERRYDB_FREE_PAGE_LIST_H
 
+#include <tuple>
+
 #include "berrydb/platform.h"
+#include "berrydb/types.h"
 
 namespace berrydb {
 
@@ -41,14 +44,14 @@ class FreePageList {
    *
    * @param  transaction used to modify the list; must be committed for the
    *                     list modifications to go live
-   * @param  page_id     receives the ID of the page that was removed from this
-   *                     free list; kInvalidPageId if there are no free pages in
-   *                     this list
-   * @return             kSuccess if the list operation completed successfully,
+   * @return status      kSuccess if the list operation completed successfully,
    *                     even if the page list is empty; a different status
    *                     means that an error occurred
+   * @return page_id     the ID of the page that was removed from this free
+   *                     list; kInvalidPageId if there are no free pages in this
+   *                     list
    */
-  Status Pop(TransactionImpl* transaction, size_t* page_id);
+  std::tuple<Status, size_t> Pop(TransactionImpl* transaction);
 
   /** Adds a page to this free list.
    *

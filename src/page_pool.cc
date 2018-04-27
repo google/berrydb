@@ -5,7 +5,6 @@
 #include "./page_pool.h"
 
 #include <algorithm>
-#include <cstring>
 
 #include "berrydb/platform.h"
 #include "./store_impl.h"

@@ -4,8 +4,6 @@
 
 #include "./store_header.h"
 
-#include <cstring>
-
 #include "berrydb/span.h"
 #include "berrydb/types.h"
 #include "../util/span_util.h"
