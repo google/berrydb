@@ -21,9 +21,8 @@ std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
   DCHECK(!was_merged_);
 #endif  // DCHECK_IS_ON()
 
-  if (is_empty()) {
+  if (is_empty())
     return {Status::kSuccess, kInvalidPageId};
-  }
 
   StoreImpl* store = transaction->store();
   PagePool* page_pool = store->page_pool();

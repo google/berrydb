@@ -27,10 +27,10 @@ class Vfs {
   Vfs() noexcept;
   virtual ~Vfs();
 
-  Vfs(const Vfs& other) = delete;
-  Vfs(Vfs&& other) = delete;
-  Vfs& operator=(const Vfs& other) = delete;
-  Vfs& operator=(Vfs&& other) = delete;
+  Vfs(const Vfs&) = delete;
+  Vfs(Vfs&&) = delete;
+  Vfs& operator=(const Vfs&) = delete;
+  Vfs& operator=(Vfs&&) = delete;
 
   /** Opens a file without any assumptions on the I/O access pattern.
    *
@@ -162,10 +162,10 @@ class RandomAccessFile {
 
   // Copy and move assignment + construction are protected so that subclasses
   // can enable them, if they wish to do so.
-  RandomAccessFile(const RandomAccessFile& other) noexcept;
-  RandomAccessFile(RandomAccessFile&& other) noexcept;
-  RandomAccessFile& operator=(const RandomAccessFile& other) noexcept;
-  RandomAccessFile& operator=(RandomAccessFile&& other) noexcept;
+  RandomAccessFile(const RandomAccessFile& rhs) noexcept;
+  RandomAccessFile(RandomAccessFile&& rhs) noexcept;
+  RandomAccessFile& operator=(const RandomAccessFile& rhs) noexcept;
+  RandomAccessFile& operator=(RandomAccessFile&& rhs) noexcept;
 };
 
 /** Interface for accessing files via block-based I/O.
@@ -244,10 +244,10 @@ class BlockAccessFile {
   /** Instances must be destroyed using Close(). */
   virtual ~BlockAccessFile() = 0;
 
-  BlockAccessFile(const BlockAccessFile& other) noexcept;
-  BlockAccessFile(BlockAccessFile&& other) noexcept;
-  BlockAccessFile& operator=(const BlockAccessFile& other) noexcept;
-  BlockAccessFile& operator=(BlockAccessFile&& other) noexcept;
+  BlockAccessFile(const BlockAccessFile& rhs) noexcept;
+  BlockAccessFile(BlockAccessFile&& rhs) noexcept;
+  BlockAccessFile& operator=(const BlockAccessFile& rhs) noexcept;
+  BlockAccessFile& operator=(BlockAccessFile&& rhs) noexcept;
 };
 
 /**

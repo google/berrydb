@@ -28,7 +28,7 @@ class TransactionImpl;
  *
  * Each entry in a page pool has a control block (the members of this class),
  * which is laid out in memory right before the buffer that holds the content of
- * of the cached store page.
+ * the cached store page.
  *
  * An entry belongs to the same PagePool for its entire lifetime. The entry's
  * control block does not hold a reference to the pool (in release mode) to save
@@ -47,8 +47,6 @@ class TransactionImpl;
  * page control block without a page data buffer.
  */
 class Page {
-  enum class Status;
-
  public:
   /** Allocates an entry that will belong to the given page pool.
    *
@@ -95,8 +93,6 @@ class Page {
     return is_dirty_;
   }
 
-  // TODO(pwnall): Rename data to buffer + mutable_buffer.
-
   /** The page's data buffer.
    *
    * Prefer using data() when the page's size is readily computed. */
@@ -106,7 +102,9 @@ class Page {
 
   /** The page's data buffer.
    *
-   * Prefer using data() when the page's size is readily computed. */
+   * The caller must own a pin to this page.
+   *
+   * Prefer using mutable_data() when the page's size is readily computed. */
   inline uint8_t* mutable_buffer() noexcept {
     return reinterpret_cast<uint8_t*>(this + 1);
   }
@@ -171,13 +169,11 @@ class Page {
    * must be pinned. */
   inline void WillCacheStoreData(TransactionImpl* transaction,
                                  size_t page_id) noexcept {
-    // NOTE: It'd be nice to DCHECK_EQ(page_pool_, store->page_pool()).
-    //       Unfortunately, that requires a dependency on store_impl.h, which
-    //       absolutely needs to include page.h.
-    DCHECK(transaction_ == nullptr);
+    DCHECK(transaction != nullptr);
     DCHECK(pin_count_ != 0);
     DCHECK(!is_dirty_);
 #if DCHECK_IS_ON()
+    DCHECK(transaction_ == nullptr);
     DCHECK(transaction_list_node_.list_sentinel() == nullptr);
     DCHECK(linked_list_node_.list_sentinel() == nullptr);
     DcheckTransactionAssignmentIsValid(transaction);
@@ -219,8 +215,9 @@ class Page {
    */
   inline void SetDirty(bool is_dirty) noexcept {
 #if DCHECK_IS_ON()
-    DcheckDirtyValueIsValid(is_dirty);
+    DcheckNewDirtyValueIsValid(is_dirty);
 #endif  // DCHECK_IS_ON()
+
     is_dirty_ = is_dirty;
   }
 
@@ -238,6 +235,8 @@ class Page {
    * @param transaction the transaction that the Page is reassigned to
    */
   inline void ReassignToTransaction(TransactionImpl* transaction) noexcept {
+    DCHECK(transaction != nullptr);
+    DCHECK(transaction_ != nullptr);
 #if DCHECK_IS_ON()
     DcheckTransactionReassignmentIsValid(transaction);
 #endif  // DCHECK_IS_ON()
@@ -279,7 +278,7 @@ class Page {
   /** DCHECKs that the given dirty flag value makes sense for this page.
    *
    * @param is_dirty the new value of the dirty's page flag */
-  void DcheckDirtyValueIsValid(bool is_dirty) noexcept;
+  void DcheckNewDirtyValueIsValid(bool is_dirty) noexcept;
 
   /** DCHECKs that a transaction reassignment for this page is valid.
    *

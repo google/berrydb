@@ -63,7 +63,7 @@ void Page::DcheckTransactionAssignmentIsValid(
   DCHECK(transaction->store()->page_pool() == page_pool_);
 }
 
-void Page::DcheckDirtyValueIsValid(bool is_dirty) noexcept {
+void Page::DcheckNewDirtyValueIsValid(bool is_dirty) noexcept {
   // Dirty page pool entries must be assigned to non-init transactions.
   DCHECK(!is_dirty || (transaction_ != nullptr && !transaction_->IsInit()));
 

@@ -11,24 +11,20 @@ Vfs::~Vfs() = default;
 
 BlockAccessFile::BlockAccessFile() noexcept = default;
 BlockAccessFile::~BlockAccessFile() = default;
-BlockAccessFile::BlockAccessFile(
-    const BlockAccessFile& other) noexcept = default;
-BlockAccessFile::BlockAccessFile(
-    BlockAccessFile&& other) noexcept = default;
+BlockAccessFile::BlockAccessFile(const BlockAccessFile&) noexcept = default;
+BlockAccessFile::BlockAccessFile(BlockAccessFile&&) noexcept = default;
 BlockAccessFile& BlockAccessFile::operator =(
-    const BlockAccessFile& other) noexcept = default;
+    const BlockAccessFile&) noexcept = default;
 BlockAccessFile& BlockAccessFile::operator =(
-    BlockAccessFile&& other) noexcept = default;
+    BlockAccessFile&&) noexcept = default;
 
 RandomAccessFile::RandomAccessFile() noexcept = default;
 RandomAccessFile::~RandomAccessFile() = default;
-RandomAccessFile::RandomAccessFile(
-    const RandomAccessFile& other) noexcept = default;
-RandomAccessFile::RandomAccessFile(
-    RandomAccessFile&& other) noexcept = default;
+RandomAccessFile::RandomAccessFile(const RandomAccessFile&) noexcept = default;
+RandomAccessFile::RandomAccessFile(RandomAccessFile&&) noexcept = default;
 RandomAccessFile& RandomAccessFile::operator =(
-    const RandomAccessFile& other) noexcept = default;
+    const RandomAccessFile&) noexcept = default;
 RandomAccessFile& RandomAccessFile::operator =(
-    RandomAccessFile&& other) noexcept = default;
+    RandomAccessFile&&) noexcept = default;
 
 }  // namespace berrydb
