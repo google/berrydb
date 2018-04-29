@@ -9,6 +9,7 @@
 #include "berrydb/options.h"
 #include "berrydb/vfs.h"
 #include "./free_page_list.h"
+#include "./pinned_page.h"
 #include "./pool_impl.h"
 #include "./transaction_impl.h"
 #include "./util/span_util.h"
@@ -76,40 +77,47 @@ Status StoreImpl::Initialize(const StoreOptions &options) {
 }
 
 Status StoreImpl::Bootstrap() {
-  Status fetch_status;
-  Page* header_page;
-  std::tie(fetch_status, header_page) = page_pool_->StorePage(
-      this, 0, PagePool::kIgnorePageData);
-  if (fetch_status != Status::kSuccess)
-    return fetch_status;
-
   TransactionImpl* transaction = CreateTransaction();
 
-  transaction->WillModifyPage(header_page);
-  span<uint8_t> header_page_data = header_page->mutable_data(
-      static_cast<size_t>(1) << header_.page_shift);
-  FillSpan(header_page_data, 0);
-  header_.free_list_head_page = FreePageList::kInvalidPageId;
-  header_.page_count = 2;
-  // header.page_shift is already set correctly by the constructor.
-  header_.Serialize(header_page_data);
-  page_pool_->UnpinStorePage(header_page);
+  Status fetch_status;
+  {
+    Page* raw_header_page;
+    std::tie(fetch_status, raw_header_page) = page_pool_->StorePage(
+        this, 0, PagePool::kIgnorePageData);
+    if (fetch_status != Status::kSuccess) {
+      DCHECK(raw_header_page == nullptr);
+      transaction->Release();  // Rolls back the transaction.
+      return fetch_status;
+    }
+    PinnedPage header_page(raw_header_page, page_pool_);
 
-  Page* root_catalog_page;
-  std::tie(fetch_status, root_catalog_page) = page_pool_->StorePage(
-      this, 1, PagePool::kIgnorePageData);
-  if (fetch_status != Status::kSuccess) {
-    transaction->Rollback();
-    transaction->Release();
-    return fetch_status;
+    transaction->WillModifyPage(header_page.get());
+    span<uint8_t> header_page_data = header_page->mutable_data(
+        static_cast<size_t>(1) << header_.page_shift);
+    FillSpan(header_page_data, 0);
+    header_.free_list_head_page = FreePageList::kInvalidPageId;
+    header_.page_count = 2;
+    // header.page_shift is already set correctly by the constructor.
+    header_.Serialize(header_page_data);
   }
 
-  transaction->WillModifyPage(root_catalog_page);
-  span<uint8_t> root_catalog_page_data = root_catalog_page->mutable_data(
-      static_cast<size_t>(1) << header_.page_shift);
-  FillSpan(root_catalog_page_data, 0);
-  // TODO(pwnall): Bootstrap the root catalog here.
-  page_pool_->UnpinStorePage(root_catalog_page);
+  {
+    Page* raw_root_catalog_page;
+    std::tie(fetch_status, raw_root_catalog_page) = page_pool_->StorePage(
+        this, 1, PagePool::kIgnorePageData);
+    if (fetch_status != Status::kSuccess) {
+      DCHECK(raw_root_catalog_page == nullptr);
+      transaction->Release();  // Rolls back the transaction.
+      return fetch_status;
+    }
+    PinnedPage root_catalog_page(raw_root_catalog_page, page_pool_);
+
+    transaction->WillModifyPage(root_catalog_page.get());
+    span<uint8_t> root_catalog_page_data = root_catalog_page->mutable_data(
+        static_cast<size_t>(1) << header_.page_shift);
+    FillSpan(root_catalog_page_data, 0);
+    // TODO(pwnall): Bootstrap the root catalog here.
+  }
 
   Status commit_status = transaction->Commit();
   if (commit_status != Status::kSuccess)

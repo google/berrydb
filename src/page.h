@@ -5,6 +5,7 @@
 #ifndef BERRYDB_PAGE_H_
 #define BERRYDB_PAGE_H_
 
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
@@ -72,14 +73,16 @@ class Page {
    * transaction. When DCHECKs are disabled, the value is undefined when the
    * page is not assigend to a transaction.
    */
-  inline TransactionImpl* transaction() const noexcept { return transaction_; }
+  inline constexpr TransactionImpl* transaction() const noexcept {
+    return transaction_;
+  }
 
   /** The page ID of the store page whose data is cached by this pool page.
    *
    * This is undefined if the page pool entry isn't storing a store page's data.
    */
-  inline size_t page_id() const noexcept {
-    DCHECK(transaction_ != nullptr);
+  inline constexpr size_t page_id() const noexcept {
+    assert(transaction_ != nullptr);  // DCHECK doesn't work in constexpr.
     return page_id_;
   }
 
@@ -88,8 +91,9 @@ class Page {
    * This should only be true for pool pages that cache store pages. When a
    * dirty page is removed from the pool, its content must be written to disk.
    */
-  inline bool is_dirty() const noexcept {
-    DCHECK(!is_dirty_ || transaction_ != nullptr);
+  inline constexpr bool is_dirty() const noexcept {
+    // DCHECK doesn't work in constexpr.
+    assert(!is_dirty_ || transaction_ != nullptr);
     return is_dirty_;
   }
 
@@ -140,11 +144,15 @@ class Page {
 
 #if DCHECK_IS_ON()
   /** The pool that this page belongs to. Solely intended for use in DCHECKs. */
-  inline const PagePool* page_pool() const noexcept { return page_pool_; }
+  inline constexpr const PagePool* page_pool() const noexcept {
+    return page_pool_;
+  }
 #endif  // DCHECK_IS_ON
 
   /** True if the pool page's contents can be replaced. */
-  inline bool IsUnpinned() const noexcept { return pin_count_ == 0; }
+  inline constexpr bool IsUnpinned() const noexcept {
+    return pin_count_ == 0;
+  }
 
   /** Increments the page's pin count. */
   inline void AddPin() noexcept {

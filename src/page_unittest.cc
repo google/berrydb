@@ -6,16 +6,17 @@
 
 #include <string>
 
-#include "gtest/gtest.h"
-
 #include "berrydb/options.h"
 #include "berrydb/span.h"
+#include "berrydb/types.h"
 #include "berrydb/vfs.h"
 #include "./page_pool.h"
 #include "./pool_impl.h"
 #include "./store_impl.h"
 #include "./test/file_deleter.h"
 #include "./util/unique_ptr.h"
+
+#include "gtest/gtest.h"
 
 namespace berrydb {
 
@@ -144,6 +145,7 @@ TEST_F(PageTest, Data) {
 
   page->RemovePin();
   EXPECT_TRUE(page->IsUnpinned());
+  page->Release(&page_pool);
 }
 
 }  // namespace berrydb

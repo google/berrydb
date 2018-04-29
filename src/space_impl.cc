@@ -19,11 +19,9 @@ SpaceImpl* SpaceImpl::Create() {
   return space;
 }
 
-SpaceImpl::SpaceImpl()
-    : api_() {
-}
+SpaceImpl::SpaceImpl() = default;
 
-SpaceImpl::~SpaceImpl() { }
+SpaceImpl::~SpaceImpl() = default;
 
 void SpaceImpl::Release() {
   this->~SpaceImpl();

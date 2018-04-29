@@ -20,11 +20,9 @@ CatalogImpl* CatalogImpl::Create() {
   return catalog;
 }
 
-CatalogImpl::CatalogImpl()
-    : api_() {
-}
+CatalogImpl::CatalogImpl() = default;
 
-CatalogImpl::~CatalogImpl() { }
+CatalogImpl::~CatalogImpl() = default;
 
 void CatalogImpl::Release() {
   this->~CatalogImpl();
