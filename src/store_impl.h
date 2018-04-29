@@ -41,6 +41,11 @@ class StoreImpl {
                            PagePool* page_pool,
                            const StoreOptions& options);
 
+  StoreImpl(const StoreImpl&) = delete;
+  StoreImpl(StoreImpl&&) = delete;
+  StoreImpl& operator=(const StoreImpl&) = delete;
+  StoreImpl& operator=(StoreImpl&&) = delete;
+
   /** Computes the internal representation for a pointer from the public API. */
   static inline StoreImpl* FromApi(Store* api) noexcept {
     StoreImpl* impl = reinterpret_cast<StoreImpl*>(api);
@@ -55,26 +60,28 @@ class StoreImpl {
   }
 
   /** Computes the public API representation for this store. */
-  inline Store* ToApi() noexcept { return &api_; }
+  inline constexpr Store* ToApi() noexcept { return &api_; }
 
   /** The store's init transaction.
    *
    * This method is not const because callers may need to modify the init
    * transaction. For example, assigning a page to a transaction inserts it into
    * a linked list, and therefore modifies the transaction. */
-  inline TransactionImpl* init_transaction() noexcept {
+  inline constexpr TransactionImpl* init_transaction() noexcept {
     return &init_transaction_;
   }
 
   /** The page pool used by this store. */
-  inline PagePool* page_pool() const noexcept { return page_pool_; }
+  inline constexpr PagePool* page_pool() const noexcept { return page_pool_; }
 
   // See the public API documention for details.
   static std::string LogFilePath(const std::string& store_path);
   TransactionImpl* CreateTransaction();
-  inline CatalogImpl* RootCatalog() noexcept { return nullptr; }
+  inline constexpr CatalogImpl* RootCatalog() noexcept { return nullptr; }
   Status Close();
-  inline bool IsClosed() const noexcept { return state_ == State::kClosed; }
+  inline constexpr bool IsClosed() const noexcept {
+    return state_ == State::kClosed;
+  }
   void Release();
 
   /** Initializes a store obtained by Store::Create.
@@ -133,12 +140,6 @@ class StoreImpl {
             const StoreOptions& options);
   /** Use Release() to destroy StoreImpl instances. */
   ~StoreImpl();
-
-  // Stores cannot be copied or moved.
-  StoreImpl(const StoreImpl& other) = delete;
-  StoreImpl(StoreImpl&& other) = delete;
-  StoreImpl& operator=(const StoreImpl& other) = delete;
-  StoreImpl& operator=(StoreImpl&& other) = delete;
 
   enum class State {
     kOpen = 0,

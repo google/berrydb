@@ -118,6 +118,11 @@ class PagePool {
   /** Deallocates the memory used by the pool's pages. */
   ~PagePool();
 
+  PagePool(const PagePool&) = delete;
+  PagePool(Page&&) = delete;
+  PagePool& operator=(const PagePool&) = delete;
+  PagePool& operator=(PagePool&&) = delete;
+
   /** Fetches a page from a store and pins it.
    *
    * The caller owns a pin of the page, and must remove the pin by calling
@@ -191,16 +196,20 @@ class PagePool {
   void UnpinAndWriteStorePage(Page* page);
 
   /** The base-2 log of the pool's page size. */
-  inline size_t page_shift() const noexcept { return page_shift_; }
+  inline constexpr size_t page_shift() const noexcept { return page_shift_; }
 
   /** Size of a page. Guaranteed to be a power of two. */
-  inline size_t page_size() const noexcept { return page_size_; }
+  inline constexpr size_t page_size() const noexcept { return page_size_; }
 
   /** Maximum number of pages cached by this page pool. */
-  inline size_t page_capacity() const noexcept { return page_capacity_; }
+  inline constexpr size_t page_capacity() const noexcept {
+    return page_capacity_;
+  }
 
   /** Total number of pages allocated for this pool. */
-  inline size_t allocated_pages() const noexcept { return page_count_; }
+  inline constexpr size_t allocated_pages() const noexcept {
+    return page_count_;
+  }
 
   /** Number of pages that were allocated and are now unused.
    *
@@ -208,19 +217,21 @@ class PagePool {
    * errors. These pages are added to a free list, so future demand can be met
    * without invoking the platform allocator.
    */
-  inline size_t unused_pages() const noexcept { return free_list_.size(); }
+  inline constexpr size_t unused_pages() const noexcept {
+    return free_list_.size();
+  }
 
   /** Number of pages that are pinned by running transactions.
    *
    * Only unpinned pages can be evicted and reused to meed demands for new
    * pages. If all pages in the pool become pinned, transactions that need more
    * page pool entries will be rolled back. */
-  inline size_t pinned_pages() const noexcept {
+  inline constexpr size_t pinned_pages() const noexcept {
     return page_count_ - free_list_.size() - lru_list_.size();
   }
 
   /** The resource pool that this page pool belongs to. */
-  inline PoolImpl* pool() const noexcept { return pool_; }
+  inline constexpr PoolImpl* pool() const noexcept { return pool_; }
 
   /**
    * Allocates a page and pins it.
@@ -300,12 +311,6 @@ class PagePool {
       LinkedList<Page, Page::TransactionLinkedListBridge>* page_list);
 
  private:
-  // Page pools cannot be copied or moved.
-  PagePool(const PagePool& other) = delete;
-  PagePool(Page&& other) = delete;
-  PagePool& operator=(const PagePool& other) = delete;
-  PagePool& operator=(PagePool&& other) = delete;
-
   /** Entries that belong to this page pool that are assigned to stores. */
   using PageMapKey = std::pair<StoreImpl*, size_t>;
   std::unordered_map<PageMapKey,

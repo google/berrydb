@@ -24,6 +24,11 @@ class PoolImpl {
   // See the public API documention for details.
   static PoolImpl* Create(const PoolOptions& options);
 
+  PoolImpl(const PoolImpl&) = delete;
+  PoolImpl(PoolImpl&&) = delete;
+  PoolImpl& operator=(const PoolImpl&) = delete;
+  PoolImpl& operator=(PoolImpl&&) = delete;
+
   /** Computes the PoolImpl* for a Pool* coming from the public API. */
   static inline PoolImpl* FromApi(Pool* api) noexcept {
     PoolImpl* impl = reinterpret_cast<PoolImpl*>(api);
@@ -38,17 +43,19 @@ class PoolImpl {
   }
 
   /** Computes the public API Pool* for this resource pool. */
-  inline Pool* ToApi() noexcept { return &api_; }
+  inline constexpr Pool* ToApi() noexcept { return &api_; }
 
   /** This resource pool's page pool. */
-  inline PagePool* page_pool() noexcept { return &page_pool_; }
+  inline constexpr PagePool* page_pool() noexcept { return &page_pool_; }
 
   // See the public API documention for details.
   void Release();
   std::tuple<Status, StoreImpl*> OpenStore(const std::string& path,
                                            const StoreOptions& options);
-  inline size_t page_size() const noexcept { return page_pool_.page_size(); }
-  inline size_t page_pool_size() const noexcept {
+  inline constexpr size_t page_size() const noexcept {
+    return page_pool_.page_size();
+  }
+  inline constexpr size_t page_pool_size() const noexcept {
     return page_pool_.page_capacity();
   }
 

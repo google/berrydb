@@ -39,6 +39,11 @@ class TransactionImpl {
    * Use Release() to destroy instances created by TransactionImpl::Create(). */
   ~TransactionImpl();
 
+  TransactionImpl(const TransactionImpl&) = delete;
+  TransactionImpl(TransactionImpl&&) = delete;
+  TransactionImpl& operator=(const TransactionImpl&) = delete;
+  TransactionImpl& operator=(TransactionImpl&&) = delete;
+
   /** Create a TransactionImpl instance. */
   static TransactionImpl* Create(StoreImpl* store);
 
@@ -57,10 +62,10 @@ class TransactionImpl {
   }
 
   /** Computes the public API representation for this transaction. */
-  inline Transaction* ToApi() noexcept { return &api_; }
+  inline constexpr Transaction* ToApi() noexcept { return &api_; }
 
   /** The store this transaction is running against. */
-  inline StoreImpl* store() const noexcept { return store_; }
+  inline constexpr StoreImpl* store() const noexcept { return store_; }
 
 #if DCHECK_IS_ON()
   /** Number of pool pages assigned to this transaction. DCHECK use only.
@@ -253,12 +258,6 @@ class TransactionImpl {
  private:
   /** Use TransactionImpl::Create() to obtain TransactionImpl instances. */
   TransactionImpl(StoreImpl* store);
-
-  // Transactions cannot be copied or moved.
-  TransactionImpl(const TransactionImpl& other) = delete;
-  TransactionImpl(TransactionImpl&& other) = delete;
-  TransactionImpl& operator=(const TransactionImpl& other) = delete;
-  TransactionImpl& operator=(TransactionImpl&& other) = delete;
 
   /** Common functionality in Commit() and Rollback(). */
   Status Close();

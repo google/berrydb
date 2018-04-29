@@ -30,6 +30,11 @@ class FreePageManager {
   FreePageManager(StoreImpl* store);
   ~FreePageManager();
 
+  FreePageManager(const FreePageManager&) = delete;
+  FreePageManager(FreePageManager&&) = delete;
+  FreePageManager& operator=(const FreePageManager&) = delete;
+  FreePageManager& operator=(FreePageManager&&) = delete;
+
   /** Page ID that's guaranteed to be invalid in the context of free page lists.
    *
    * Zero is a good value because the first page in a store file will always be

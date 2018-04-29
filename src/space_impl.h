@@ -15,6 +15,11 @@ class SpaceImpl {
  public:
   static SpaceImpl* Create();
 
+  SpaceImpl(const SpaceImpl&) = delete;
+  SpaceImpl(SpaceImpl&&) = delete;
+  SpaceImpl& operator=(const SpaceImpl&) = delete;
+  SpaceImpl& operator=(SpaceImpl&&) = delete;
+
   /** Computes the internal representation for a pointer from the public API. */
   static inline SpaceImpl* FromApi(Space* api) noexcept {
     SpaceImpl* impl = reinterpret_cast<SpaceImpl*>(api);
@@ -29,7 +34,7 @@ class SpaceImpl {
   }
 
   /** Computes the public API representation for this store. */
-  inline Space* ToApi() noexcept { return &api_; }
+  inline constexpr Space* ToApi() noexcept { return &api_; }
 
   // See the public API documention for details.
   void Release();

@@ -28,10 +28,15 @@ class FreePageList {
    * This constructor initializes transaction free page lists correctly. The
    * free page lists used by store data files need an additional call to
    * set_head_page_id(). */
-  constexpr inline FreePageList() noexcept
+  inline constexpr FreePageList() noexcept
       : head_page_id_(kInvalidPageId), tail_page_id_(kInvalidPageId) {}
   // The destructor is inlined because it should generate no code.
   inline ~FreePageList() noexcept = default;
+
+  FreePageList(const FreePageList&) = delete;
+  FreePageList(FreePageList&&) = delete;
+  FreePageList& operator=(const FreePageList&) = delete;
+  FreePageList& operator=(FreePageList&&) = delete;
 
   /** Page ID that's guaranteed to be invalid in the context of free page lists.
    *
@@ -76,7 +81,7 @@ class FreePageList {
   Status Merge(TransactionImpl* transaction, FreePageList* other);
 
   /** The first page in the free list. */
-  inline size_t head_page_id() const noexcept {
+  inline constexpr size_t head_page_id() const noexcept {
 #if DCHECK_IS_ON()
     DCHECK(!was_merged_);
 #endif  // DCHECK_IS_ON()
@@ -88,7 +93,7 @@ class FreePageList {
    * This method is an implementation detail and is only exposed for testing.
    * This method should not be used for lists where set_head_page_id() was
    * called. */
-  inline size_t tail_page_id() const noexcept {
+  inline constexpr size_t tail_page_id() const noexcept {
 #if DCHECK_IS_ON()
     DCHECK(!was_merged_);
     DCHECK(tail_page_is_defined_);
@@ -112,7 +117,7 @@ class FreePageList {
   }
 
   /** True if this list is not tracking any free pages. */
-  inline bool is_empty() const noexcept {
+  inline constexpr bool is_empty() const noexcept {
     return head_page_id_ == kInvalidPageId;
   }
 
@@ -120,7 +125,7 @@ class FreePageList {
   /** True if this list has been was_merged into another list.
    *
    * This method should only be used in DCHECKs. */
-  inline bool was_merged() const noexcept { return was_merged_; }
+  inline constexpr bool was_merged() const noexcept { return was_merged_; }
 #endif  // DCHECK_IS_ON()
 
  private:

@@ -53,6 +53,11 @@ class Page {
    * The returned page has one pin on it, which is owned by the caller. */
   static Page* Create(PagePool* page_pool);
 
+  Page(const Page&) = delete;
+  Page(Page&&) = delete;
+  Page& operator=(const Page&) = delete;
+  Page& operator=(Page&&) = delete;
+
   /** Releases the memory resources used up by this page pool entry.
    *
    * This method invalidates the Page instance, so it must not be used
@@ -254,12 +259,6 @@ class Page {
   /** Use Page::Create() to construct Page instances. */
   Page(PagePool* page);
   ~Page();
-
-  // Pages cannot be copied or moved.
-  Page(const Page& other) = delete;
-  Page(Page&& other) = delete;
-  Page& operator=(const Page& other) = delete;
-  Page& operator=(Page&& other) = delete;
 
 #if DCHECK_IS_ON()
   /** The maximum value that pin_count_ can hold.

@@ -19,6 +19,11 @@ class CatalogImpl {
  public:
   static CatalogImpl* Create();
 
+  CatalogImpl(const CatalogImpl&) = delete;
+  CatalogImpl(CatalogImpl&&) = delete;
+  CatalogImpl& operator=(const CatalogImpl&) = delete;
+  CatalogImpl& operator=(CatalogImpl&&) = delete;
+
   /** Computes the internal representation for a pointer from the public API. */
   static inline CatalogImpl* FromApi(Catalog* api) noexcept {
     CatalogImpl* impl = reinterpret_cast<CatalogImpl*>(api);
@@ -33,7 +38,7 @@ class CatalogImpl {
   }
 
   /** Computes the public API representation for this store. */
-  inline Catalog* ToApi() noexcept { return &api_; }
+  inline constexpr Catalog* ToApi() noexcept { return &api_; }
 
   // See the public API documention for details.
   void Release();

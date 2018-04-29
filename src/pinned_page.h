@@ -38,6 +38,11 @@ class PinnedPage {
 
   inline ~PinnedPage() { page_pool_->UnpinStorePage(page_); }
 
+  PinnedPage(const PinnedPage&) = delete;
+  PinnedPage(PinnedPage&&) = delete;
+  PinnedPage& operator=(const PinnedPage&) = delete;
+  PinnedPage& operator=(PinnedPage&&) = delete;
+
   /** Convenience proxy to Page::data(). */
   inline span<const uint8_t> data() const noexcept {
     return page_->data(page_pool_->page_size());
