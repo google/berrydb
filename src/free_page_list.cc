@@ -35,14 +35,14 @@ std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
 
   // The code below only uses the span size for DCHECKs, and relies on the
   // compiler to optimize the span into a pointer in release mode.
-  span<uint8_t> head_page_data =
+  span<const uint8_t> head_page_data =
       head_page->mutable_data(page_pool->page_size());
 
   size_t next_entry_offset =
       FreePageListFormat::NextEntryOffset(head_page_data);
   if (next_entry_offset == FreePageListFormat::kFirstEntryOffset) {
-    // All the entries on this page have been removed. The page itself can be
-    // used as a free page.
+    // All the entries on the head page have been removed. The head page itself
+    // can be used as a free page.
     uint64_t new_head_page_id64 =
         FreePageListFormat::NextPageId64(head_page_data);
     size_t new_head_page_id = static_cast<size_t>(new_head_page_id64);
@@ -86,7 +86,8 @@ std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
     return {Status::kDatabaseTooLarge, kInvalidPageId};
   }
   transaction->WillModifyPage(head_page);
-  FreePageListFormat::SetNextEntryOffset(next_entry_offset, head_page_data);
+  FreePageListFormat::SetNextEntryOffset(
+      next_entry_offset, head_page->mutable_data(page_pool->page_size()));
   page_pool->UnpinStorePage(head_page);
   return {Status::kSuccess, free_page_id};
 }

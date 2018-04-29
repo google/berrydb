@@ -126,14 +126,15 @@ class FreePageListFormat {
         (kEntrySize & (kEntrySize - 1)) == 0,
         "kEntrySize must be a power of two for bit masking tricks to work");
 
-    // DCHECK doesn't work with constexpr.
-    //
-    // TODO(pwnall): Consider the benefits / costs of checking if entry_offset
-    //               is >= kFirstEntryOffset in release builds.
-    assert(entry_offset >= kFirstEntryOffset);
-
     // The checks below are the minimum needed to protect against an invalid
     // memory access.
+    //
+    // A more complete check would also cover the case where entry_offset points
+    // to list metadata (below kFirstEntryOffset). However, the extra check
+    // costs more code, and doesn't have significant benefits. If the free list
+    // pages get corrupted, the page pointers are most likely incorrect, and
+    // that will cause the system to completely trash the store data file. The
+    // best we can do in this case is not crash.
     return entry_offset >= page_size || (entry_offset & (kEntrySize - 1)) != 0;
   }
 
