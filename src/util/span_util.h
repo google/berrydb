@@ -6,7 +6,6 @@
 #define BERRYDB_UTIL_SPAN_UTIL_H_
 
 #include <algorithm>
-#include <cassert>
 #include <type_traits>
 
 #include "berrydb/platform.h"
@@ -48,7 +47,7 @@ template <
     typename = std::enable_if_t<std::is_same<std::remove_cv_t<FromType>,
                                              ToType>::value>>
 constexpr void CopySpan(span<FromType> from, span<ToType> to) {
-  assert(from.size() <= to.size());  // DCHECK doesn't work in constexpr.
+  DCHECK(from.size() <= to.size());  // DCHECK_GE doesn't work in constexpr.
 
   // TODO(pwnall): Benchmark replacing std::copy with std::memcpy.
   std::copy(from.begin(), from.end(), to.begin());

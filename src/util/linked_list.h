@@ -88,7 +88,7 @@ class LinkedList {
   using EmbedderType = Embedder;
   using BridgeType = Bridge;
 
-  inline LinkedList() noexcept : sentinel_(true), size_(0) {}
+  inline constexpr LinkedList() noexcept : sentinel_(true), size_(0) {}
   inline LinkedList(LinkedList&& other) noexcept
       : sentinel_(std::move(other.sentinel_)), size_(other.size_) {
     other.size_ = 0;
@@ -98,14 +98,20 @@ class LinkedList {
   LinkedList(const LinkedList&) = delete;
   LinkedList& operator=(const LinkedList&) = delete;
 
-  inline bool empty() const noexcept { return sentinel_.next() == &sentinel_; }
-  inline size_t size() const noexcept { return size_; }
+  inline constexpr bool empty() const noexcept {
+    return sentinel_.next() == &sentinel_;
+  }
+  inline constexpr size_t size() const noexcept { return size_; }
 
-  inline iterator begin() noexcept { return iterator{sentinel_.next()}; }
-  inline iterator end() noexcept { return iterator{&sentinel_}; }
+  inline constexpr iterator begin() noexcept {
+    return iterator{sentinel_.next()};
+  }
+  inline constexpr iterator end() noexcept {
+    return iterator{&sentinel_};
+  }
 
-  inline value_type front() noexcept { return *begin(); }
-  inline value_type back() noexcept { return *(--end()); }
+  inline constexpr value_type front() noexcept { return *begin(); }
+  inline constexpr value_type back() noexcept { return *(--end()); }
 
   inline void insert(iterator pos, value_type value) noexcept {
     DCHECK(value != nullptr);
@@ -155,27 +161,25 @@ class LinkedList {
   /** BidirectionalIterator wrapper around a Node pointer. */
   class iterator {
    public:
-    inline iterator(const iterator&) noexcept = default;
-    inline iterator(iterator&&) noexcept = default;
-    inline iterator& operator=(const iterator&) noexcept = default;
-    inline iterator& operator=(iterator&&) noexcept = default;
+    inline constexpr iterator(const iterator&) noexcept = default;
+    inline constexpr iterator& operator=(const iterator&) noexcept = default;
     inline ~iterator() noexcept = default;
 
-    inline bool operator==(const iterator& other) const noexcept {
+    inline constexpr bool operator==(const iterator& other) const noexcept {
       return node_ == other.node_;
     }
-    inline bool operator!=(const iterator& other) const noexcept {
+    inline constexpr bool operator!=(const iterator& other) const noexcept {
       return node_ != other.node_;
     }
 
-    inline iterator& operator++() noexcept {
+    inline constexpr iterator& operator++() noexcept {
 #if DCHECK_IS_ON()
       DCHECK(!node_->is_sentinel());  // Already at cend().
 #endif                                // DCHECK_IS_ON()
       node_ = node_->next();
       return *this;
     }
-    inline iterator operator++(int)noexcept {
+    inline constexpr iterator operator++(int)noexcept {
 #if DCHECK_IS_ON()
       DCHECK(!node_->is_sentinel());  // Already at cend().
 #endif                                // DCHECK_IS_ON()
@@ -183,14 +187,14 @@ class LinkedList {
       node_ = node_->next();
       return iterator(old_node);
     }
-    inline iterator& operator--() noexcept {
+    inline constexpr iterator& operator--() noexcept {
 #if DCHECK_IS_ON()
       DCHECK(!node_->prev()->is_sentinel());  // Already at cbegin().
 #endif                                        // DCHECK_IS_ON()
       node_ = node_->prev();
       return *this;
     }
-    inline iterator operator--(int)noexcept {
+    inline constexpr iterator operator--(int) noexcept {
 #if DCHECK_IS_ON()
       DCHECK(!node_->prev()->is_sentinel());  // Already at cbegin().
 #endif                                        // DCHECK_IS_ON()
@@ -205,7 +209,7 @@ class LinkedList {
 
    private:
     /** Constructor used by the list. */
-    iterator(Node* node) : node_(node) { DCHECK(node != nullptr); }
+    constexpr iterator(Node* node) : node_(node) { DCHECK(node != nullptr); }
 
     friend class LinkedList;
 
@@ -225,7 +229,7 @@ template <typename Embedder>
 class LinkedListNode {
  public:
   /** Constructor for non-sentinel nodes. */
-  inline LinkedListNode()
+  constexpr inline LinkedListNode() noexcept
 #if DCHECK_IS_ON()
       : next_(nullptr),
         prev_(nullptr),
@@ -236,16 +240,18 @@ class LinkedListNode {
 
 #if DCHECK_IS_ON()
   /** Only intended for use in DCHECKs. */
-  inline LinkedListNode* list_sentinel() const noexcept {
+  inline constexpr LinkedListNode* list_sentinel() const noexcept {
     return list_sentinel_;
   }
   /** Only intended for use in DCHECKs. */
-  inline bool is_sentinel() const noexcept { return this == list_sentinel_; }
+  inline constexpr bool is_sentinel() const noexcept {
+    return this == list_sentinel_;
+  }
 #endif  // DCHECK_ISON()
 
  private:
   /** Constructor for sentinel nodes. */
-  inline LinkedListNode(bool is_sentinel)
+  inline constexpr LinkedListNode(bool is_sentinel)
       : next_(this),
         prev_(this)
 #if DCHECK_IS_ON()
@@ -255,8 +261,9 @@ class LinkedListNode {
   {
 #if DCHECK_IS_ON()
     DCHECK(is_sentinel);
-#endif  // DCHECK_IS_ON()
+#else
     UNUSED(is_sentinel);
+#endif  // DCHECK_IS_ON()
   }
 
   /** Used by the list move-constructor for sentinel nodes. */
@@ -305,7 +312,7 @@ class LinkedListNode {
   /** The node's successor in the linked list.
    *
    * This must not be called while the node is not in a linked list. */
-  inline LinkedListNode* next() const noexcept {
+  inline constexpr LinkedListNode* next() const noexcept {
 #if DCHECK_IS_ON()
     DCHECK(list_sentinel_ != nullptr);
 #endif  // DCHECK_IS_ON()
@@ -320,7 +327,7 @@ class LinkedListNode {
   /** The node's predecessor in the linked list.
    *
    * This must not be called while the node is not in a linked list. */
-  inline LinkedListNode* prev() const noexcept {
+  inline constexpr LinkedListNode* prev() const noexcept {
 #if DCHECK_IS_ON()
     DCHECK(list_sentinel_ != nullptr);
 #endif  // DCHECK_IS_ON()
@@ -407,12 +414,14 @@ template <typename Embedder>
 class LinkedListBridge {
  public:
   /** Extracts the LinkedListNode from an embedder object. */
-  static inline LinkedListNode<Embedder>* NodeForHost(Embedder* host) noexcept {
+  static inline LinkedListNode<Embedder>* NodeForHost(
+      Embedder* host) noexcept {
     return &host->linked_list_node_;
   }
 
   /** Converts a LinkedListNode pointer back to an embedder pointer. */
-  static inline Embedder* HostForNode(LinkedListNode<Embedder>* node) noexcept {
+  static inline Embedder* HostForNode(
+      LinkedListNode<Embedder>* node) noexcept {
     static_assert(std::is_standard_layout<Embedder>::value,
                   "Linked list embedders must be standard layout types");
 #if DCHECK_IS_ON()

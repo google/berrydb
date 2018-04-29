@@ -5,7 +5,6 @@
 #ifndef BERRYDB_PAGE_H_
 #define BERRYDB_PAGE_H_
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
@@ -82,7 +81,7 @@ class Page {
    * This is undefined if the page pool entry isn't storing a store page's data.
    */
   inline constexpr size_t page_id() const noexcept {
-    assert(transaction_ != nullptr);  // DCHECK doesn't work in constexpr.
+    DCHECK(transaction_ != nullptr);
     return page_id_;
   }
 
@@ -92,8 +91,7 @@ class Page {
    * dirty page is removed from the pool, its content must be written to disk.
    */
   inline constexpr bool is_dirty() const noexcept {
-    // DCHECK doesn't work in constexpr.
-    assert(!is_dirty_ || transaction_ != nullptr);
+    DCHECK(!is_dirty_ || transaction_ != nullptr);
     return is_dirty_;
   }
 

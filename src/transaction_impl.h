@@ -66,7 +66,7 @@ class TransactionImpl {
   /** Number of pool pages assigned to this transaction. DCHECK use only.
    *
    * This includes pinned pages and pages in the LRU list. */
-  inline size_t AssignedPageCount() const noexcept {
+  inline constexpr size_t AssignedPageCount() const noexcept {
     return pool_pages_.size();
   }
 
@@ -235,16 +235,16 @@ class TransactionImpl {
                                                  span<const uint8_t> name);
   Status Delete(CatalogImpl* catalog, span<const uint8_t> name);
 
-  inline bool IsClosed() const noexcept {
+  inline constexpr bool IsClosed() const noexcept {
     DCHECK(!is_committed_ || is_closed_);
     return is_closed_;
   }
-  inline bool IsCommitted() const noexcept {
+  inline constexpr bool IsCommitted() const noexcept {
     DCHECK(!is_committed_ || is_closed_);
     return is_committed_;
   }
   /** True if the transaction was rolled back. */
-  inline bool IsRolledBack() const noexcept {
+  inline constexpr bool IsRolledBack() const noexcept {
     DCHECK(!is_committed_ || is_closed_);
     return is_closed_ && !is_committed_;
   }
