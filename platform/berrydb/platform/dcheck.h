@@ -5,6 +5,8 @@
 #ifndef BERRYDB_PLATFORM_DCHECK_H_
 #define BERRYDB_PLATFORM_DCHECK_H_
 
+#include <cassert>
+
 #include "berrydb/platform/config.h"
 
 #if defined(BERRYDB_PLATFORM_BUILT_WITH_GLOG)
@@ -12,8 +14,6 @@
 #include <glog/logging.h>
 
 #else  // !defined(BERRYDB_PLATFORM_BUILT_WITH_GLOG)
-
-#include <cassert>
 
 /** Google-style assert.
  *

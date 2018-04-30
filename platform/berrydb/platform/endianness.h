@@ -8,9 +8,9 @@
 // Embedders can reimplement the methods below to emit and consume databases
 // across platforms with different endianness.
 
-#include "berrydb/platform.h"
 #include "berrydb/span.h"
 #include "berrydb/types.h"
+#include "./dcheck.h"
 
 namespace berrydb {
 

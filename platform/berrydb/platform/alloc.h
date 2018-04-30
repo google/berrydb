@@ -11,7 +11,6 @@
 #include <cstdlib>
 
 #include "berrydb/types.h"
-
 #include "./dcheck.h"
 
 #if DCHECK_IS_ON()
