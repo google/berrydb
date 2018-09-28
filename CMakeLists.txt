@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.7.2)
 # Update include/berrydb/version.h when changing the version number.
 project(BerryDB VERSION 0.1.0 LANGUAGES C CXX)
 
