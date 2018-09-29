@@ -11,32 +11,17 @@
 
 namespace berrydb {
 
-#ifndef _MSC_VER  // Visual Studio's std::standard_layout is buggy.
-#ifndef __ANDROID__  // The Android NDK;s std::standard_layout is buggy.
-
-// TODO(pwnall): Fix this assert.
-// static_assert(std::is_standard_layout<PoolImpl>::value,
-//     "PoolImpl must be a standard layout type so its public API can be "
-//     "exposed cheaply");
-
-#endif  // __ANDROID__
-#endif  // _MSC_VER
-
-PoolImpl* PoolImpl::Create(const PoolOptions& options) {
-  void* heap_block = Allocate(sizeof(PoolImpl));
-  PoolImpl* pool = new (heap_block) PoolImpl(options);
-  DCHECK_EQ(heap_block, static_cast<void*>(pool));
-  return pool;
+std::unique_ptr<PoolImpl> PoolImpl::Create(const PoolOptions& options) {
+  return std::make_unique<PoolImpl>(options, PassKey());
 }
 
-PoolImpl::PoolImpl(const PoolOptions& options)
-    : api_(), page_pool_(this, options.page_shift, options.page_pool_size),
+PoolImpl::PoolImpl(const PoolOptions& options, PassKey)
+    : Pool(PassKey()),
+      page_pool_(this, options.page_shift, options.page_pool_size),
       vfs_((options.vfs == nullptr) ? DefaultVfs() : options.vfs) {
 }
 
-PoolImpl::~PoolImpl() { }
-
-void PoolImpl::Release() {
+PoolImpl::~PoolImpl() {
   // Replace the entire store list so StoreClosed() doesn't invalidate our
   // iterator.
   StoreSet close_queue;
@@ -52,10 +37,11 @@ void PoolImpl::Release() {
   // The difference between allocated pages and unused pages is pages in the LRU
   // queue. All the stores should have been closed, so the LRU should be empty.
   DCHECK_EQ(page_pool_.allocated_pages(), page_pool_.unused_pages());
+}
 
-  this->~PoolImpl();
-  void* heap_block = static_cast<void*>(this);
-  Deallocate(heap_block, sizeof(PoolImpl));
+// static
+void* PoolImpl::operator new(size_t instance_size) {
+  return Allocate(instance_size);
 }
 
 void PoolImpl::StoreCreated(StoreImpl* store) {
@@ -81,7 +67,7 @@ void PoolImpl::StoreClosed(StoreImpl* store) {
   stores_.erase(store);
 }
 
-std::tuple<Status, StoreImpl*> PoolImpl::OpenStore(
+std::tuple<Status, Store*> PoolImpl::OpenStore(
     const std::string& path, const StoreOptions& options) {
   Status status;
   BlockAccessFile* data_file;
@@ -118,7 +104,14 @@ std::tuple<Status, StoreImpl*> PoolImpl::OpenStore(
     return {status, nullptr};
   }
 
-  return {Status::kSuccess, store};
+  return {Status::kSuccess, store->ToApi()};
+}
+
+size_t PoolImpl::PageSize() const noexcept {
+  return page_pool_.page_size();
+}
+size_t PoolImpl::PagePoolSize() const noexcept {
+  return page_pool_.page_capacity();
 }
 
 }  // namespace berrydb

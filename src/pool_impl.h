@@ -6,6 +6,7 @@
 #define BERRYDB_POOL_IMPL_H_
 
 #include <functional>
+#include <memory>
 #include <tuple>
 #include <unordered_set>
 
@@ -19,45 +20,29 @@ class StoreImpl;
 class Vfs;
 
 /** Internal representation for the Pool class in the public API. */
-class PoolImpl {
+class PoolImpl final : public Pool {
  public:
   // See the public API documention for details.
-  static PoolImpl* Create(const PoolOptions& options);
+  static std::unique_ptr<PoolImpl> Create(const PoolOptions& options);
+  PoolImpl(const PoolOptions& options, PassKey);
+  ~PoolImpl() override;
 
   PoolImpl(const PoolImpl&) = delete;
   PoolImpl(PoolImpl&&) = delete;
   PoolImpl& operator=(const PoolImpl&) = delete;
   PoolImpl& operator=(PoolImpl&&) = delete;
 
-  /** Computes the PoolImpl* for a Pool* coming from the public API. */
-  static inline PoolImpl* FromApi(Pool* api) noexcept {
-    PoolImpl* impl = reinterpret_cast<PoolImpl*>(api);
-    DCHECK_EQ(api, &impl->api_);
-    return impl;
-  }
-  /** Computes the PoolImpl* for a Pool* coming from the public API. */
-  static inline const PoolImpl* FromApi(const Pool* api) noexcept {
-    const PoolImpl* impl = reinterpret_cast<const PoolImpl*>(api);
-    DCHECK_EQ(api, &impl->api_);
-    return impl;
-  }
-
-  /** Computes the public API Pool* for this resource pool. */
-  inline constexpr Pool* ToApi() noexcept { return &api_; }
+  /** Invokes the platform allocator. */
+  static void* operator new(size_t instance_size);
 
   /** This resource pool's page pool. */
   inline constexpr PagePool* page_pool() noexcept { return &page_pool_; }
 
   // See the public API documention for details.
-  void Release();
-  std::tuple<Status, StoreImpl*> OpenStore(const std::string& path,
-                                           const StoreOptions& options);
-  inline constexpr size_t page_size() const noexcept {
-    return page_pool_.page_size();
-  }
-  inline constexpr size_t page_pool_size() const noexcept {
-    return page_pool_.page_capacity();
-  }
+  std::tuple<Status, Store*> OpenStore(const std::string& path,
+                                       const StoreOptions& options) override;
+  size_t PageSize() const noexcept override;
+  size_t PagePoolSize() const noexcept override;
 
   /** Called upon the creation of a Store instance that uses this pool. */
   void StoreCreated(StoreImpl* store);
@@ -66,14 +51,6 @@ class PoolImpl {
   void StoreClosed(StoreImpl* store);
 
  private:
-  /** Use PoolImpl::Create() to obtain PoolImpl instances. */
-  PoolImpl(const PoolOptions& options);
-  /** Use Release() to delete PoolImpl instances. */
-  ~PoolImpl();
-
-  /* The public API version of this class. */
-  Pool api_;  // Must be the first class member.
-
   /** The page pool part of this resource pool. */
   PagePool page_pool_;
 

@@ -22,13 +22,13 @@ class StoreTest : public ::testing::Test {
  protected:
   StoreTest()
       : vfs_(DefaultVfs()), data_file_deleter_(kFileName),
-        log_file_deleter_(Store::LogFilePath(kFileName)) { }
+        log_file_deleter_(Store::LogFilePath(kFileName)) {}
 
   void SetUp() override {
     PoolOptions options;
     options.page_shift = 12;
     options.page_pool_size = 42;
-    pool_.reset(Pool::Create(options));
+    pool_ = Pool::Create(options);
   }
 
   const std::string kFileName = "test_store.berry";
@@ -37,7 +37,7 @@ class StoreTest : public ::testing::Test {
   // closed before the files can be deleted.
   FileDeleter data_file_deleter_, log_file_deleter_;
 
-  UniquePtr<Pool> pool_;
+  std::unique_ptr<Pool> pool_;
 };
 
 TEST_F(StoreTest, CreateOptions) {

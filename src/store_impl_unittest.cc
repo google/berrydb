@@ -47,7 +47,7 @@ class StoreImplTest : public ::testing::Test {
     PoolOptions options;
     options.page_shift = page_shift;
     options.page_pool_size = page_capacity;
-    pool_.reset(PoolImpl::Create(options));
+    pool_ = PoolImpl::Create(options);
   }
 
   Vfs* vfs_;
@@ -55,7 +55,7 @@ class StoreImplTest : public ::testing::Test {
   // closed before the files can be deleted.
   FileDeleter data_file_deleter_, log_file_deleter_;
 
-  UniquePtr<PoolImpl> pool_;
+  std::unique_ptr<PoolImpl> pool_;
   UniquePtr<BlockAccessFile> data_file_;
   size_t data_file_size_;
   UniquePtr<RandomAccessFile> log_file_;

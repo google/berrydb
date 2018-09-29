@@ -48,7 +48,7 @@ class PagePoolTest : public ::testing::Test {
     PoolOptions options;
     options.page_shift = page_shift;
     options.page_pool_size = page_capacity;
-    pool_.reset(PoolImpl::Create(options));
+    pool_ = PoolImpl::Create(options);
   }
 
   void WriteStorePage(StoreImpl* store, size_t page_id,
@@ -78,7 +78,7 @@ class PagePoolTest : public ::testing::Test {
   // closed before the files can be deleted.
   FileDeleter data_file1_deleter_, log_file1_deleter_;
 
-  UniquePtr<PoolImpl> pool_;
+  std::unique_ptr<PoolImpl> pool_;
   UniquePtr<BlockAccessFile> data_file1_;
   size_t data_file1_size_;
   UniquePtr<RandomAccessFile> log_file1_;

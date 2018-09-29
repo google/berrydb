@@ -4,6 +4,7 @@
 
 #include "berrydb/pool.h"
 
+#include <memory>
 #include <string>
 
 #include "gtest/gtest.h"
@@ -35,16 +36,16 @@ TEST_F(PoolTest, CreateOptions) {
   options.page_shift = 12;
   options.page_pool_size = 42;
 
-  UniquePtr<Pool> pool(Pool::Create(options));
-  EXPECT_EQ(4096U, pool->page_size());
-  EXPECT_EQ(42U, pool->page_pool_size());
+  std::unique_ptr<Pool> pool = Pool::Create(options);
+  EXPECT_EQ(4096U, pool->PageSize());
+  EXPECT_EQ(42U, pool->PagePoolSize());
 }
 
 TEST_F(PoolTest, ReleaseClosesStore) {
   PoolOptions pool_options;
   pool_options.page_shift = 12;
   pool_options.page_pool_size = 16;
-  UniquePtr<Pool> pool(Pool::Create(pool_options));
+  std::unique_ptr<Pool> pool = Pool::Create(pool_options);
 
   Status status;
   Store* raw_store;

@@ -5,6 +5,7 @@
 #ifndef BERRYDB_INCLUDE_BERRYDB_POOL_H_
 #define BERRYDB_INCLUDE_BERRYDB_POOL_H_
 
+#include <memory>
 #include <string>
 #include <tuple>
 
@@ -25,31 +26,40 @@ class Store;
  */
 class Pool {
  public:
+  // Access control for the Pool constructor.
+  class PassKey {
+   private:
+    constexpr PassKey() noexcept = default;
+
+    friend class Pool;
+    friend class PoolImpl;
+  };
+
   /** Construct a new resource pool. */
-  static Pool* Create(const PoolOptions& options);
+  static std::unique_ptr<Pool> Create(const PoolOptions& options);
+
+  /** Use Pool::Create() to create Pool instances.
+   *
+   * This constructor is public for use by std::make_unique. */
+  constexpr Pool(PassKey) noexcept {}
 
   /** Releases all resources held by this pool.
    *
    * This closes all the databases opened using this resource pool. */
-  void Release();
+  virtual ~Pool() noexcept = default;
+
+  /** Invokes the platform allocator. */
+  static void operator delete(void* instance, size_t instance_size);
 
   /** Open (or create) a store. */
-  std::tuple<Status, Store*> OpenStore(const std::string& path,
-                                       const StoreOptions& options);
+  virtual std::tuple<Status, Store*> OpenStore(const std::string& path,
+                                               const StoreOptions& options) = 0;
 
   /** The store page size supported by this resource pool. */
-  size_t page_size() const;
+  virtual size_t PageSize() const noexcept = 0;
 
   /** The maximum number of store pages cached by the page pool. */
-  size_t page_pool_size() const;
-
- private:
-  friend class PoolImpl;
-
-  /** Use Pool::Create() to create Pool instances. */
-  constexpr Pool() noexcept = default;
-  /** Use Release() to destroy Pool instances. */
-  ~Pool() noexcept = default;
+  virtual size_t PagePoolSize() const noexcept = 0;
 };
 
 }  // namespace berrydb
