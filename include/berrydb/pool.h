@@ -29,7 +29,7 @@ class Pool {
   // Access control for the Pool constructor.
   class PassKey {
    private:
-    constexpr PassKey() noexcept = default;
+    constexpr PassKey() noexcept {}
 
     friend class Pool;
     friend class PoolImpl;
