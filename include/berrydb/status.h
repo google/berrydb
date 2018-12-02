@@ -7,6 +7,12 @@
 
 namespace berrydb {
 
+// Success / error results for BerryDB operations.
+//
+// BerryDB does not use exceptions, per the Google C++ style guide. To make up
+// for that, functions that would have otherwise thrown return Status instances.
+//
+// Status is designed to always be passed by value.
 enum class Status : int {
   // Everything went well.
   kSuccess = 0,
@@ -42,6 +48,10 @@ enum class Status : int {
   kFirstInvalidValue,  // This must remain at the end of the enum's block.
 };
 
+// Developer-friendly string explaining an error code.
+//
+// Returns a pointer to a C-style string that is guaranteed to be valid for the
+// entire life of the binary containing BerryDB.
 const char* StatusToCString(Status status) noexcept;
 
 }  // namespace berrydb

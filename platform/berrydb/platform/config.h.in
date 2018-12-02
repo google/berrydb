@@ -7,10 +7,6 @@
 
 // These have to be preprocessor macros because they are used to gate #include
 // directives.
-//
-// The macros are namespaced because they end up in BerryDB's public header
-// files.
-
 #cmakedefine BERRYDB_PLATFORM_BUILT_WITH_GLOG
 
 #endif  // BERRYDB_PLATFORM_CONFIG_H_

@@ -2,8 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// This is a subset of std::span from C++ 2a. When compiler support becomes
-// sufficiently advanced, this file will be reduced to a "using std::span".
+// C++14 implementation of a subset of std::span from C++ 2a.
+//
+// When compiler support becomes sufficiently advanced, this file will be
+// reduced to a "using std::span".
 
 #ifndef BERRYDB_INCLUDE_BERRYDB_SPAN_H_
 #define BERRYDB_INCLUDE_BERRYDB_SPAN_H_
@@ -16,6 +18,7 @@
 
 namespace berrydb {
 
+// Equivalent to an alias of std::span from C++ 2a.
 template <typename ElementType>
 class span {
  public:
