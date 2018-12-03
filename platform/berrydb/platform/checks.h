@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BERRYDB_PLATFORM_DCHECK_H_
-#define BERRYDB_PLATFORM_DCHECK_H_
+#ifndef BERRYDB_PLATFORM_CHECKS_H_
+#define BERRYDB_PLATFORM_CHECKS_H_
 
 #include <cassert>
 
@@ -56,11 +56,9 @@
 
 #endif  // defined(BERRYDB_PLATFORM_BUILT_WITH_GLOG)
 
-/** Silences compiler warnings about unused variables.
- *
- * This is generally necessary in code that uses DCHECK_IS_ON(). */
+// TODO(pwnall): Remove this in favor of MAYBE_UNUSED.
 #if !defined(UNUSED)
 #define UNUSED(x) (void)(x)
 #endif  // !defined(UNUSED)
 
-#endif  // BERRYDB_PLATFORM_DCHECK_H_
+#endif  // BERRYDB_PLATFORM_COMPILER_H_

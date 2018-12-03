@@ -10,7 +10,7 @@
 
 #include "berrydb/span.h"
 #include "berrydb/types.h"
-#include "./dcheck.h"
+#include "./checks.h"
 
 namespace berrydb {
 

@@ -19,7 +19,8 @@
 #include "berrydb/platform/config.h"
 
 #include "./platform/alloc.h"
-#include "./platform/dcheck.h"
+#include "./platform/checks.h"
+#include "./platform/compiler.h"
 #include "./platform/endianness.h"
 #include "./platform/hashing.h"
 
