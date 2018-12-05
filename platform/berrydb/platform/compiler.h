@@ -103,5 +103,31 @@
 #endif  // defined(__clang__) || defined(__GNUC__)
 #endif  // !defined(UNREACHABLE)
 
+// ALWAYS_INLINE asks the compiler to ignore its heuristics and inline a method.
+// This macro must be used instead of the inline keyword, not in addition to it.
+#if !defined(ALWAYS_INLINE)
+#if defined(__clang__) || defined(__GNUC__)
+// GCC warns if the attribute is used without the "inline" keyword.
+#define ALWAYS_INLINE __attribute__((always_inline)) inline
+#elif defined(_MSC_VER)
+// MSVC warns if "inline" is used together with __forceinline.
+#define ALWAYS_INLINE __forceinline
+#else
+#define ALWAYS_INLINE inline
+#endif  // defined(__clang__) || defined(__GNUC__)
+#endif  // !defined(ALWAYS_INLINE)
+
+// NOINLINE asks the compiler to never inline a method. It is useful for error
+// handling code.
+#if !defined(NOINLINE)
+#if defined(__clang__) || defined(__GNUC__)
+#define NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define NOINLINE __declspec(noinline)
+#else
+#define NOINLINE
+#endif  // defined(__clang__) || defined(__GNUC__)
+#endif  // !defined(NOINLINE)
+
 #endif  // BERRYDB_PLATFORM_COMPILER_H_
 

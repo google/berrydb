@@ -8,6 +8,8 @@
 
 namespace berrydb {
 
+namespace {
+
 NODISCARD int NoDiscardCompilationTest() {
   return 42;
 }
@@ -62,14 +64,29 @@ int UnlikelyEqualsFive(int value) {
   return 0;
 }
 
+ALWAYS_INLINE int AlwaysInline() {
+  return 42;
+}
+
+NOINLINE int NoInline() {
+  return 5;
+}
+
+}  // namespace
+
+TEST(CompilerTest, NoDiscardCompiles) {
+  EXPECT_EQ(42, NoDiscardCompilationTest());
+}
+
 TEST(CompilerTest, MaybeUnusedCompiles) {
   MaybeUnusedCompilationTest test_instance;
   test_instance.UnusedLocal();
   test_instance.UnusedArgument(42);
 }
 
-TEST(CompilerTest, NoDiscardCompiles) {
-  EXPECT_EQ(42, NoDiscardCompilationTest());
+TEST(CompilerTest, UnreachableCompiles) {
+  EXPECT_EQ(2, UnreachableCompilationTest(1));
+  EXPECT_EQ(5, UnreachableCompilationTest(3));
 }
 
 TEST(CompilerTest, AssumeCompiles) {
@@ -86,6 +103,14 @@ TEST(CompilerTest, UnlikelyIsNotAssume) {
   EXPECT_EQ(1, UnlikelyEqualsFive(5));
   EXPECT_EQ(0, UnlikelyEqualsFive(4));
   EXPECT_EQ(0, UnlikelyEqualsFive(6));
+}
+
+TEST(CompilerTest, AlwaysInlineCompiles) {
+  EXPECT_EQ(42, AlwaysInline());
+}
+
+TEST(CompilerTest, NoInlineCompiles) {
+  EXPECT_EQ(5, NoInline());
 }
 
 }  // namespace berrydb

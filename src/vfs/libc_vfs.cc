@@ -105,7 +105,7 @@ Status SyncLibcFile(std::FILE* fp) {
   return (std::fflush(fp) == 0) ? Status::kSuccess : Status::kIoError;
 }
 
-}  // anonymous namespace
+}  // namespace
 
 class LibcBlockAccessFile : public BlockAccessFile {
  public:

@@ -18,7 +18,7 @@ namespace {
 template<typename T, typename U>
 constexpr bool is_same_v = std::is_same<T, U>::value;
 
-}  // anonymous namespace
+}  // namespace
 
 static_assert(
     is_same_v<uint32_t, berrydb::span<uint32_t>::element_type>,
