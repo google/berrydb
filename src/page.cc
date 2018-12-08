@@ -37,13 +37,12 @@ void Page::Release(PagePool *page_pool) {
   Deallocate(heap_block, block_size);
 }
 
-Page::Page(PagePool* page_pool)
+Page::Page(MAYBE_UNUSED PagePool* page_pool)
     : pin_count_(1)
 #if DCHECK_IS_ON()
     , page_pool_(page_pool)
 #endif  // DCHECK_IS_ON()
     {
-  UNUSED(page_pool);
 
 #if DCHECK_IS_ON()
   transaction_ = nullptr;

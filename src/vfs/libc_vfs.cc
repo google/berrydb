@@ -109,15 +109,13 @@ Status SyncLibcFile(std::FILE* fp) {
 
 class LibcBlockAccessFile : public BlockAccessFile {
  public:
-  LibcBlockAccessFile(FILE* fp, size_t block_shift)
+  LibcBlockAccessFile(FILE* fp, MAYBE_UNUSED size_t block_shift)
       : fp_(fp)
 #if DCHECK_IS_ON()
       , block_size_(static_cast<size_t>(1) << block_shift)
 #endif  // DCHECK_IS_ON()
       {
     DCHECK(fp != nullptr);
-
-    UNUSED(block_shift);
 
     // Disable buffering, because we're doing block I/O.
     // NOTE(pwnall): This is an incomplete substitute for O_DIRECT.

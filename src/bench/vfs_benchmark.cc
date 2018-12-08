@@ -29,9 +29,8 @@ class VfsBenchmark : public benchmark::Fixture {
     DCHECK(block_bytes_ != nullptr);
   }
 
-  void TearDown(const benchmark::State& state) override {
+  void TearDown(MAYBE_UNUSED const benchmark::State& state) override {
     Deallocate(block_bytes_, block_size_);
-    UNUSED(state);
   }
 
  protected:

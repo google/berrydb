@@ -17,20 +17,23 @@ static_assert(
     FreePageManager::kInvalidPageId == FreePageList::kInvalidPageId,
     "kInvalidPageId must be the same in FreePageManager and FreePageList");
 
-FreePageManager::FreePageManager(StoreImpl* store) : store_(store) {
+FreePageManager::FreePageManager(MAYBE_UNUSED StoreImpl* store)
+#if DCHECK_IS_ON()
+    : store_(store)
+#endif  // DCHECK_IS_ON()
+    {
+  DCHECK(store);
 }
 
-FreePageManager::~FreePageManager() {
-}
+FreePageManager::~FreePageManager() = default;
 
 size_t FreePageManager::AllocPage(
-    TransactionImpl* transaction, TransactionImpl* alloc_transaction) {
+    MAYBE_UNUSED TransactionImpl* transaction,
+    MAYBE_UNUSED TransactionImpl* alloc_transaction) {
+#if DCHECK_IS_ON()
   DCHECK_EQ(store_, transaction->store());
   DCHECK_EQ(store_, alloc_transaction->store());
-
-  UNUSED(store_);
-  UNUSED(transaction);
-  UNUSED(alloc_transaction);
+#endif  // DCHECK_IS_ON()
 
   // TODO(pwnall): Check for free pages scoped to the transaction.
 
@@ -41,13 +44,8 @@ size_t FreePageManager::AllocPage(
 }
 
 Status FreePageManager::FreePage(
-    size_t page_id, TransactionImpl *transaction,
-    TransactionImpl *alloc_transaction) {
-
-  UNUSED(store_);
-  UNUSED(page_id);
-  UNUSED(transaction);
-  UNUSED(alloc_transaction);
+    MAYBE_UNUSED size_t page_id, MAYBE_UNUSED TransactionImpl *transaction,
+    MAYBE_UNUSED TransactionImpl *alloc_transaction) {
 
   return Status::kIoError;
 }

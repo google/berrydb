@@ -27,9 +27,7 @@ struct PlatformDeleter {
   inline PlatformDeleter() noexcept = default;
 
   template <typename U>
-  inline PlatformDeleter(const PlatformDeleter<U>& other) noexcept {
-    UNUSED(other);
-  }
+  inline PlatformDeleter(const PlatformDeleter<U>&) noexcept {}
 
   void operator()(T* data) const { data->Release(); }
 };

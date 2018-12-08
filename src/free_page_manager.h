@@ -79,7 +79,9 @@ class FreePageManager {
                   TransactionImpl* alloc_transaction);
 
  private:
+#if DCHECK_IS_ON()
   const StoreImpl* store_;
+#endif  // DCHECK_IS_ON()
 };
 
 }  // namespace berrydb

@@ -39,7 +39,7 @@ TransactionImpl::TransactionImpl(StoreImpl* store)
   DCHECK(store != nullptr);
 }
 
-TransactionImpl::TransactionImpl(StoreImpl* store, bool is_init)
+TransactionImpl::TransactionImpl(StoreImpl* store, MAYBE_UNUSED bool is_init)
     : store_(store)
 #if DCHECK_IS_ON()
     , is_init_(true)
@@ -47,7 +47,6 @@ TransactionImpl::TransactionImpl(StoreImpl* store, bool is_init)
     {
   DCHECK(store != nullptr);
   DCHECK(is_init == true);
-  UNUSED(is_init);
 }
 
 TransactionImpl::~TransactionImpl() {
@@ -69,32 +68,27 @@ bool TransactionImpl::IsInit() const noexcept {
 #endif  // DCHECK_IS_ON()
 
 std::tuple<Status, span<const uint8_t>> TransactionImpl::Get(
-    SpaceImpl* space, span<const uint8_t> key) {
+    MAYBE_UNUSED SpaceImpl* space, MAYBE_UNUSED span<const uint8_t> key) {
   if (is_closed_)
     return {Status::kAlreadyClosed, span<const uint8_t>()};
 
-  UNUSED(space);
-  UNUSED(key);
   return {Status::kIoError, span<const uint8_t>()};
 }
 
-Status TransactionImpl::Put(SpaceImpl* space, span<const uint8_t> key,
-                            span<const uint8_t> value) {
+Status TransactionImpl::Put(MAYBE_UNUSED SpaceImpl* space,
+                            MAYBE_UNUSED span<const uint8_t> key,
+                            MAYBE_UNUSED span<const uint8_t> value) {
   if (is_closed_)
     return Status::kAlreadyClosed;
 
-  UNUSED(space);
-  UNUSED(key);
-  UNUSED(value);
   return Status::kIoError;
 }
 
-Status TransactionImpl::Delete(SpaceImpl* space, span<const uint8_t> key) {
+Status TransactionImpl::Delete(MAYBE_UNUSED SpaceImpl* space,
+                               MAYBE_UNUSED span<const uint8_t> key) {
   if (is_closed_)
     return Status::kAlreadyClosed;
 
-  UNUSED(space);
-  UNUSED(key);
   return Status::kIoError;
 }
 
@@ -146,11 +140,10 @@ Status TransactionImpl::Commit() {
 
     // TODO(pwnall): Write REDO records for the pages to the log instead. The
     //               log write status handling code will remain the same.
-    Status status = store_->WritePage(page);
+    MAYBE_UNUSED Status status = store_->WritePage(page);
 
     // TODO(pwnall): Handle errors, once we have logging in place.
     DCHECK_EQ(status, Status::kSuccess);
-    UNUSED(status);
 
     PageWasPersisted(page, init_transaction);
     page_pool->UnpinStorePage(page);
@@ -172,32 +165,27 @@ Status TransactionImpl::Rollback() {
 }
 
 std::tuple<Status, SpaceImpl*> TransactionImpl::CreateSpace(
-    CatalogImpl* catalog, span<const uint8_t> name) {
+    MAYBE_UNUSED CatalogImpl* catalog, MAYBE_UNUSED span<const uint8_t> name) {
   if (is_closed_)
     return {Status::kAlreadyClosed, nullptr};
 
-  UNUSED(catalog);
-  UNUSED(name);
   return {Status::kIoError, nullptr};
 
 }
 
 std::tuple<Status, CatalogImpl*> TransactionImpl::CreateCatalog(
-    CatalogImpl* catalog, span<const uint8_t> name) {
+    MAYBE_UNUSED CatalogImpl* catalog, MAYBE_UNUSED span<const uint8_t> name) {
 
   if (is_closed_)
     return {Status::kAlreadyClosed, nullptr};
-  UNUSED(catalog);
-  UNUSED(name);
   return {Status::kIoError, nullptr};
 }
 
-Status TransactionImpl::Delete(CatalogImpl* catalog, span<const uint8_t> name) {
+Status TransactionImpl::Delete(MAYBE_UNUSED CatalogImpl* catalog,
+                               MAYBE_UNUSED span<const uint8_t> name) {
   if (is_closed_)
     return Status::kAlreadyClosed;
 
-  UNUSED(catalog);
-  UNUSED(name);
   return Status::kIoError;
 }
 

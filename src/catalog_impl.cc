@@ -31,14 +31,12 @@ void CatalogImpl::Release() {
 }
 
 std::tuple<Status, CatalogImpl*> CatalogImpl::OpenCatalog(
-    span<const uint8_t> name) {
-  UNUSED(name);
+    MAYBE_UNUSED span<const uint8_t> name) {
   return {Status::kIoError, nullptr};
 }
 
 std::tuple<Status, SpaceImpl*> CatalogImpl::OpenSpace(
-    span<const uint8_t> name) {
-  UNUSED(name);
+    MAYBE_UNUSED span<const uint8_t> name) {
   return {Status::kIoError, nullptr};
 }
 

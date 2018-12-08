@@ -251,7 +251,7 @@ class LinkedListNode {
 
  private:
   /** Constructor for sentinel nodes. */
-  inline constexpr LinkedListNode(bool is_sentinel)
+  explicit inline constexpr LinkedListNode(MAYBE_UNUSED bool is_sentinel)
       : next_(this),
         prev_(this)
 #if DCHECK_IS_ON()
@@ -259,11 +259,7 @@ class LinkedListNode {
         list_sentinel_(this)
 #endif  // DCHECK_IS_ON()
   {
-#if DCHECK_IS_ON()
     DCHECK(is_sentinel);
-#else
-    UNUSED(is_sentinel);
-#endif  // DCHECK_IS_ON()
   }
 
   /** Used by the list move-constructor for sentinel nodes. */

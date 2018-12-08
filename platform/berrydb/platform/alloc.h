@@ -12,13 +12,13 @@
 
 #include "berrydb/types.h"
 #include "./checks.h"
+#include "./compiler.h"
 
 #if DCHECK_IS_ON()
 #include <cstring>
 #endif  // DCHECK_IS_ON()
 
 namespace berrydb {
-
 /**
  * Dynamically allocates memory.
  *
@@ -51,7 +51,7 @@ inline void* Allocate(std::size_t size_in_bytes) {
  * @param data  result of a previous call to Allocate(bytes)
  * @param bytes must match the value passed to the Allocate() call
  */
-inline void Deallocate(void* data, std::size_t size_in_bytes) {
+inline void Deallocate(void* data, MAYBE_UNUSED std::size_t size_in_bytes) {
   DCHECK(size_in_bytes > 0);
   DCHECK(data != nullptr);
   DCHECK_EQ(reinterpret_cast<uintptr_t>(data) & (sizeof(size_t) - 1), 0U);
@@ -69,7 +69,6 @@ inline void Deallocate(void* data, std::size_t size_in_bytes) {
 #endif  // DCHECK_IS_ON()
 
   free(heap_block);
-  UNUSED(size_in_bytes);
 }
 
 }  // namespace berrydb

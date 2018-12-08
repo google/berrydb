@@ -41,20 +41,18 @@ void StoreImpl::Release() {
 
 StoreImpl::StoreImpl(
     BlockAccessFile* data_file, size_t data_file_size,
-    RandomAccessFile* log_file, size_t log_file_size, PagePool* page_pool,
-    const StoreOptions& options)
+    RandomAccessFile* log_file,
+    // This will be used when we implement log recovery.
+    MAYBE_UNUSED size_t log_file_size,
+    PagePool* page_pool,
+    // This will be used when we implement creating/loading the metadata page.
+    MAYBE_UNUSED const StoreOptions& options)
     : data_file_(data_file), log_file_(log_file), page_pool_(page_pool),
       init_transaction_(this, true), header_(
           page_pool->page_shift(), data_file_size >> page_pool->page_shift()) {
   DCHECK(data_file != nullptr);
   DCHECK(log_file != nullptr);
   DCHECK(page_pool != nullptr);
-
-  // This will be used when we implement creating/loading the metadata page.
-  UNUSED(options);
-
-  // This will be used when we implement log recovery.
-  UNUSED(log_file_size);
 }
 
 StoreImpl::~StoreImpl() {

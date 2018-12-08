@@ -56,9 +56,4 @@
 
 #endif  // defined(BERRYDB_PLATFORM_BUILT_WITH_GLOG)
 
-// TODO(pwnall): Remove this in favor of MAYBE_UNUSED.
-#if !defined(UNUSED)
-#define UNUSED(x) (void)(x)
-#endif  // !defined(UNUSED)
-
 #endif  // BERRYDB_PLATFORM_COMPILER_H_

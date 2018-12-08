@@ -17,7 +17,9 @@ NODISCARD int NoDiscardCompilationTest() {
 // Checks that code using MAYBE_UNUSED compiles correctly.
 class MaybeUnusedCompilationTest {
  public:
-  MaybeUnusedCompilationTest() {}
+  // Targets GCC bug that only triggers on the first argument in a constructor.
+  // See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81429
+  explicit MaybeUnusedCompilationTest(MAYBE_UNUSED int unused_argument) {}
 
   void UnusedLocal() {
     // The compiler should not complain about the unused local.
@@ -79,7 +81,7 @@ TEST(CompilerTest, NoDiscardCompiles) {
 }
 
 TEST(CompilerTest, MaybeUnusedCompiles) {
-  MaybeUnusedCompilationTest test_instance;
+  MaybeUnusedCompilationTest test_instance(42);
   test_instance.UnusedLocal();
   test_instance.UnusedArgument(42);
 }

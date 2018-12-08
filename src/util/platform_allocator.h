@@ -50,11 +50,9 @@ struct PlatformAllocator {
   }
 
   inline PlatformAllocator() noexcept = default;
-  inline PlatformAllocator(const PlatformAllocator& other) noexcept = default;
+  inline PlatformAllocator(const PlatformAllocator&) noexcept = default;
   template <typename U>
-  inline PlatformAllocator(const PlatformAllocator<U>& other) noexcept {
-    UNUSED(other);
-  };
+  inline PlatformAllocator(const PlatformAllocator<U>&) noexcept {}
 };
 
 template <typename T, typename U>
