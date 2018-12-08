@@ -5,8 +5,8 @@
 #ifndef BERRYDB_FREE_PAGE_LIST_FORMAT_H
 #define BERRYDB_FREE_PAGE_LIST_FORMAT_H
 
-#include "berrydb/platform.h"
 #include "berrydb/span.h"
+#include "util/endianness.h"
 
 namespace berrydb {
 

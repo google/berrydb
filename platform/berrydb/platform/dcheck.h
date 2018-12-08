@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BERRYDB_PLATFORM_CHECKS_H_
-#define BERRYDB_PLATFORM_CHECKS_H_
+#ifndef BERRYDB_PLATFORM_DCHECK_H_
+#define BERRYDB_PLATFORM_DCHECK_H_
 
 #include <cassert>
 
@@ -56,4 +56,4 @@
 
 #endif  // defined(BERRYDB_PLATFORM_BUILT_WITH_GLOG)
 
-#endif  // BERRYDB_PLATFORM_CHECKS_H_
+#endif  // BERRYDB_PLATFORM_DCHECK_H_

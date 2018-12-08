@@ -4,7 +4,7 @@
 
 #include "./store_header.h"
 
-#include "berrydb/platform.h"
+#include "../util/endianness.h"
 
 namespace berrydb {
 
