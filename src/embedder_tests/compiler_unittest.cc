@@ -40,16 +40,16 @@ int UnreachableCompilationTest(int argument) {
 
   // The compiler should not complain about the missing return value, as this
   // code path is flagged unreachable.
-  UNREACHABLE();
+  BUILTIN_UNREACHABLE();
 }
 
 int AssumeCompilationTest(int argument) {
-  ASSUME(argument == 5);
+  BUILTIN_ASSUME(argument == 5);
   return argument + 3;
 }
 
 int LikelyEqualsFive(int value) {
-  // LIKELY is not the same as ASSUME. The compiler should generate code
+  // LIKELY is not the same as BUILTIN_ASSUME. The compiler should generate code
   // handling both cases.
   if (LIKELY(value == 5)) {
     return 1;
@@ -58,7 +58,7 @@ int LikelyEqualsFive(int value) {
 }
 
 int UnlikelyEqualsFive(int value) {
-  // UNLIKELY is not the same as ASSUME. The compiler should generate code
+  // UNLIKELY is not the same as BUILTIN_ASSUME. The compiler should generate code
   // handling both cases.
   if (UNLIKELY(value == 5)) {
     return 1;

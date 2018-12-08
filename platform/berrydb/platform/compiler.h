@@ -21,12 +21,16 @@
 // UNLIKELY(predicate) is a partial backport of C++20's [[unlikely]]. This
 // backport may only be used as if(UNLIKELY(predicate)).
 //
-// ASSUME(predicate) asks the optimizer to assume that the predicate is true.
-// The predicate may be evaluated, so it must not have side effects. Passing in
-// a false predicate results in undefined behavior.
+// BUILTIN_ASSUME(predicate) asks the optimizer to assume that the predicate is
+// true. The predicate may be evaluated, so it must not have side effects.
+// Executing of a BUILTIN_ASSUME with a false predicate has undefined behavior.
+// This macro is used to implement BERRYDB_ASSUME() variants, which result in
+// DCHECKs on debug builds.
 //
-// UNREACHABLE() informs the compiler that the current location will never be
-// executed. Executing an UNREACHABLE() results in undefined behavior.
+// BUILTIN_UNREACHABLE() informs the compiler that the current location will
+// never be executed. Executing a BUILTIN_UNREACHABLE() has undefined behavior.
+// This macro is used to implement BERRYDB_UNREACHABLE(), which results in
+// DCHECKs on debug builds.
 //
 // ALWAYS_INLINE asks the compiler to ignore its heuristics and inline a method.
 // This macro must be used instead of the inline keyword, not in addition to it.
@@ -94,30 +98,30 @@
 #endif  // HAS_CPP_ATTRIBUTE(unlikely)
 #endif  // !defined(UNLIKELY)
 
-#if !defined(ASSUME)
+#if !defined(BUILTIN_ASSUME)
 #if defined(__clang__)
-#define ASSUME(x) if(x) {} else __builtin_unreachable()
+#define BUILTIN_ASSUME(x) if(x) {} else __builtin_unreachable()
 // Clang also supports the alternative below, which is closer to our intent.
 // Sadly, we can't use this alternative because it generates warnings.
-// #define ASSUME(x) __builtin_assume(x)
+// #define BUILTIN_ASSUME(x) __builtin_assume(x)
 #elif defined(__GNUC__)
-#define ASSUME(x) if(x) {} else __builtin_unreachable()
+#define BUILTIN_ASSUME(x) if(x) {} else __builtin_unreachable()
 #elif defined(_MSC_VER)
-#define ASSUME(x) __assume(x)
+#define BUILTIN_ASSUME(x) __assume(x)
 #else
-#define ASSUME(x) assert(x)
+#define BUILTIN_ASSUME(x)
 #endif  // defined(__clang__)
-#endif  // !defined(ASSUME)
+#endif  // !defined(BUILTIN_ASSUME)
 
-#if !defined(UNREACHABLE)
+#if !defined(BUILTIN_UNREACHABLE)
 #if defined(__clang__) || defined(__GNUC__)
-#define UNREACHABLE() __builtin_unreachable()
+#define BUILTIN_UNREACHABLE() __builtin_unreachable()
 #elif defined(_MSC_VER)
-#define UNREACHABLE() __assume(0)
+#define BUILTIN_UNREACHABLE() __assume(0)
 #else
-#define UNREACHABLE() assert(false)
+#define BUILTIN_UNREACHABLE()
 #endif  // defined(__clang__) || defined(__GNUC__)
-#endif  // !defined(UNREACHABLE)
+#endif  // !defined(BUILTIN_UNREACHABLE)
 
 #if !defined(ALWAYS_INLINE)
 #if defined(__clang__) || defined(__GNUC__)
