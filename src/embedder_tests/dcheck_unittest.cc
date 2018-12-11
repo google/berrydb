@@ -44,12 +44,15 @@ TEST_F(DcheckDeathTest, DcheckEqFailure) {
   ASSERT_NE(five_, six_);
 #if DCHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(DCHECK_EQ(five_, six_), "");
+  EXPECT_DEATH_IF_SUPPORTED(DCHECK_EQ(six_, five_), "");
 #endif  // DCHECK_IS_ON()
 }
 
 TEST_F(DcheckTest, DcheckNeSuccess) {
   ASSERT_NE(five_, six_);
+  ASSERT_NE(six_, five_);
   DCHECK_NE(five_, six_);
+  DCHECK_NE(six_, five_);
 }
 
 TEST_F(DcheckDeathTest, DcheckNeFailure) {
@@ -61,7 +64,9 @@ TEST_F(DcheckDeathTest, DcheckNeFailure) {
 
 TEST_F(DcheckTest, DcheckGeSuccess) {
   ASSERT_GE(six_, five_);
+  ASSERT_GE(six_, five_ + 1);
   DCHECK_GE(six_, five_);
+  DCHECK_GE(six_, five_ + 1);
 }
 
 TEST_F(DcheckDeathTest, DcheckGeFailure) {
@@ -78,14 +83,18 @@ TEST_F(DcheckTest, DcheckGtSuccess) {
 
 TEST_F(DcheckDeathTest, DcheckGtFailure) {
   ASSERT_LE(five_, six_);
+  ASSERT_LE(five_ + 1, six_);
 #if DCHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(DCHECK_GT(five_, six_), "");
+  EXPECT_DEATH_IF_SUPPORTED(DCHECK_GT(five_ + 1, six_), "");
 #endif  // DCHECK_IS_ON()
 }
 
 TEST_F(DcheckTest, DcheckLeSuccess) {
   ASSERT_LE(five_, six_);
+  ASSERT_LE(five_ + 1, six_);
   DCHECK_LE(five_, six_);
+  DCHECK_LE(five_ + 1, six_);
 }
 
 TEST_F(DcheckDeathTest, DcheckLeFailure) {
@@ -102,8 +111,10 @@ TEST_F(DcheckTest, DcheckLtSuccess) {
 
 TEST_F(DcheckDeathTest, DcheckLtFailure) {
   ASSERT_GE(six_, five_);
+  ASSERT_GE(six_, five_ + 1);
 #if DCHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(DCHECK_LT(six_, five_), "");
+  EXPECT_DEATH_IF_SUPPORTED(DCHECK_LT(six_, five_ + 1), "");
 #endif  // DCHECK_IS_ON()
 }
 

@@ -235,6 +235,7 @@ if(BERRYDB_BUILD_TESTS)
       "${PROJECT_SOURCE_DIR}/src/test/file_deleter.h"
       "${PROJECT_SOURCE_DIR}/src/test/file_deleter_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/test/test_main.cc"
+      "${PROJECT_SOURCE_DIR}/src/util/checks_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/util/endianness_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/util/linked_list_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/util/platform_allocator_unittest.cc"
