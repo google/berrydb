@@ -220,6 +220,7 @@ if(BERRYDB_BUILD_TESTS)
       "${PROJECT_BINARY_DIR}/src/api/version_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/alloc_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/compiler_unittest.cc"
+      "${PROJECT_SOURCE_DIR}/src/embedder_tests/dcheck_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/endianness_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/embedder_tests/vfs_unittest.cc"
       "${PROJECT_SOURCE_DIR}/src/format/store_header_unittest.cc"

@@ -27,6 +27,7 @@ namespace berrydb {
  */
 inline void* Allocate(std::size_t size_in_bytes) {
   DCHECK(size_in_bytes > 0);
+  BUILTIN_ASSUME(size_in_bytes > 0);
 
 #if DCHECK_IS_ON()
   void* heap_block = std::malloc(size_in_bytes + sizeof(size_t));
