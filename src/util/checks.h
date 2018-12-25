@@ -10,7 +10,9 @@
 // Assumptions (BERRYDB_ASSUME*) communicate invariants to the optimizer, and
 // enforce the optimizer in builds where DCHECK_IS_ON(). By default, invariants
 // should be expressed as assumptions. Unsuitable invariants should be expressed
-// as checks (BERRYDB_CHECK*).
+// as checks (BERRYDB_CHECK*). BERRYDB_UNREACHED is a better form of
+// BERRYDB_ASSUME(false), and may suppress additional compiler warnings or
+// enable more optimizations.
 //
 // Both invariants and checks should prefer the specialized comparison forms
 // (_EQ, _NE, _GT, _GE, _LT, _LE) whenever the error message may convey
@@ -31,38 +33,43 @@
 #define BERRYDB_CHECK_LE(a, b)    DCHECK_LE((a), (b))
 #define BERRYDB_CHECK_LT(a, b)    DCHECK_LT((a), (b))
 
-#define BERRYDB_ASSUME(condition)  do { \
-      BERRYDB_CHECK(condition);         \
-      BUILTIN_ASSUME(condition);        \
-    } while (0);
+#define BERRYDB_ASSUME(condition)  do {  \
+      BERRYDB_CHECK(condition);          \
+      BUILTIN_ASSUME(condition);         \
+    } while (0)
 
 #define BERRYDB_ASSUME_EQ(a, b)  do {    \
       BERRYDB_CHECK_EQ((a), (b));        \
       BUILTIN_ASSUME((a) == (b));        \
-    } while (0);
+    } while (0)
 #define BERRYDB_ASSUME_NE(a, b)  do {    \
       BERRYDB_CHECK_NE((a), (b));        \
       BUILTIN_ASSUME((a) != (b));        \
-    } while (0);
+    } while (0)
 
 #define BERRYDB_ASSUME_GE(a, b)  do {    \
       BERRYDB_CHECK_GE((a), (b));        \
       BUILTIN_ASSUME((a) >= (b));        \
-    } while (0);
+    } while (0)
 
 #define BERRYDB_ASSUME_GT(a, b)  do {    \
       BERRYDB_CHECK_GT((a), (b));        \
       BUILTIN_ASSUME((a) >  (b));        \
-    } while (0);
+    } while (0)
 
 #define BERRYDB_ASSUME_LE(a, b)  do {    \
       BERRYDB_CHECK_LE((a), (b));        \
       BUILTIN_ASSUME((a) >= (b));        \
-    } while (0);
+    } while (0)
 
 #define BERRYDB_ASSUME_LT(a, b)  do {    \
       BERRYDB_CHECK_LT((a), (b));        \
       BUILTIN_ASSUME((a) >  (b));        \
-    } while (0);
+    } while (0)
+
+#define BERRYDB_UNREACHABLE() do {       \
+      BERRYDB_CHECK(false);              \
+      BUILTIN_UNREACHABLE();             \
+    } while (0)
 
 #endif  // BERRYDB_UTIL_CHECKS_H_

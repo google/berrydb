@@ -213,4 +213,11 @@ TEST_F(ChecksDeathTest, AssumeLtFailure) {
 #endif  // DCHECK_IS_ON()
 }
 
+TEST_F(ChecksDeathTest, Unreachable) {
+#if DCHECK_IS_ON()
+  EXPECT_DEATH_IF_SUPPORTED(BERRYDB_UNREACHABLE(), "");
+  EXPECT_DEATH_IF_SUPPORTED(BERRYDB_UNREACHABLE(), "");
+#endif  // DCHECK_IS_ON()
+}
+
 }  // namespace berrydb
