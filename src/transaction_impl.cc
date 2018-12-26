@@ -4,6 +4,7 @@
 
 #include "./transaction_impl.h"
 
+#include "berrydb/platform.h"
 #include "berrydb/status.h"
 #include "./page_pool.h"
 #include "./store_impl.h"
@@ -69,7 +70,7 @@ bool TransactionImpl::IsInit() const noexcept {
 
 std::tuple<Status, span<const uint8_t>> TransactionImpl::Get(
     MAYBE_UNUSED SpaceImpl* space, MAYBE_UNUSED span<const uint8_t> key) {
-  if (is_closed_)
+  if (UNLIKELY(is_closed_))
     return {Status::kAlreadyClosed, span<const uint8_t>()};
 
   return {Status::kIoError, span<const uint8_t>()};
@@ -78,7 +79,7 @@ std::tuple<Status, span<const uint8_t>> TransactionImpl::Get(
 Status TransactionImpl::Put(MAYBE_UNUSED SpaceImpl* space,
                             MAYBE_UNUSED span<const uint8_t> key,
                             MAYBE_UNUSED span<const uint8_t> value) {
-  if (is_closed_)
+  if (UNLIKELY(is_closed_))
     return Status::kAlreadyClosed;
 
   return Status::kIoError;
@@ -86,7 +87,7 @@ Status TransactionImpl::Put(MAYBE_UNUSED SpaceImpl* space,
 
 Status TransactionImpl::Delete(MAYBE_UNUSED SpaceImpl* space,
                                MAYBE_UNUSED span<const uint8_t> key) {
-  if (is_closed_)
+  if (UNLIKELY(is_closed_))
     return Status::kAlreadyClosed;
 
   return Status::kIoError;
@@ -118,7 +119,7 @@ Status TransactionImpl::Close() {
 Status TransactionImpl::Commit() {
   DCHECK(this != store_->init_transaction());
 
-  if (is_closed_)
+  if (UNLIKELY(is_closed_))
     return Status::kAlreadyClosed;
 
   // Write the pages modified by this transaction.
@@ -158,7 +159,7 @@ Status TransactionImpl::Commit() {
 }
 
 Status TransactionImpl::Rollback() {
-  if (is_closed_)
+  if (UNLIKELY(is_closed_))
     return Status::kAlreadyClosed;
 
   return Close();
@@ -166,24 +167,23 @@ Status TransactionImpl::Rollback() {
 
 std::tuple<Status, SpaceImpl*> TransactionImpl::CreateSpace(
     MAYBE_UNUSED CatalogImpl* catalog, MAYBE_UNUSED span<const uint8_t> name) {
-  if (is_closed_)
+  if (UNLIKELY(is_closed_))
     return {Status::kAlreadyClosed, nullptr};
 
   return {Status::kIoError, nullptr};
-
 }
 
 std::tuple<Status, CatalogImpl*> TransactionImpl::CreateCatalog(
     MAYBE_UNUSED CatalogImpl* catalog, MAYBE_UNUSED span<const uint8_t> name) {
-
-  if (is_closed_)
+  if (UNLIKELY(is_closed_))
     return {Status::kAlreadyClosed, nullptr};
+
   return {Status::kIoError, nullptr};
 }
 
 Status TransactionImpl::Delete(MAYBE_UNUSED CatalogImpl* catalog,
                                MAYBE_UNUSED span<const uint8_t> name) {
-  if (is_closed_)
+  if (UNLIKELY(is_closed_))
     return Status::kAlreadyClosed;
 
   return Status::kIoError;

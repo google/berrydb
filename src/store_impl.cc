@@ -67,7 +67,7 @@ Status StoreImpl::Initialize(const StoreOptions &options) {
 
   if (options.create_if_missing && header_.page_count < 3) {
     Status status = Bootstrap();
-    if (status != Status::kSuccess)
+    if (UNLIKELY(status != Status::kSuccess))
       return status;
   }
 
@@ -75,6 +75,8 @@ Status StoreImpl::Initialize(const StoreOptions &options) {
 }
 
 Status StoreImpl::Bootstrap() {
+  BERRYDB_ASSUME_EQ(page_pool_->page_shift(), header_.page_shift);
+
   TransactionImpl* transaction = CreateTransaction();
 
   Status fetch_status;
@@ -82,12 +84,12 @@ Status StoreImpl::Bootstrap() {
     Page* raw_header_page;
     std::tie(fetch_status, raw_header_page) = page_pool_->StorePage(
         this, 0, PagePool::kIgnorePageData);
-    if (fetch_status != Status::kSuccess) {
+    if (UNLIKELY(fetch_status != Status::kSuccess)) {
       DCHECK(raw_header_page == nullptr);
       transaction->Release();  // Rolls back the transaction.
       return fetch_status;
     }
-    PinnedPage header_page(raw_header_page, page_pool_);
+    const PinnedPage header_page(raw_header_page, page_pool_);
 
     transaction->WillModifyPage(header_page.get());
     span<uint8_t> header_page_data = header_page->mutable_data(
@@ -103,12 +105,12 @@ Status StoreImpl::Bootstrap() {
     Page* raw_root_catalog_page;
     std::tie(fetch_status, raw_root_catalog_page) = page_pool_->StorePage(
         this, 1, PagePool::kIgnorePageData);
-    if (fetch_status != Status::kSuccess) {
+    if (UNLIKELY(fetch_status != Status::kSuccess)) {
       DCHECK(raw_root_catalog_page == nullptr);
       transaction->Release();  // Rolls back the transaction.
       return fetch_status;
     }
-    PinnedPage root_catalog_page(raw_root_catalog_page, page_pool_);
+    const PinnedPage root_catalog_page(raw_root_catalog_page, page_pool_);
 
     transaction->WillModifyPage(root_catalog_page.get());
     span<uint8_t> root_catalog_page_data = root_catalog_page->mutable_data(
@@ -132,7 +134,7 @@ TransactionImpl* StoreImpl::CreateTransaction() {
 }
 
 Status StoreImpl::Close() {
-  if (state_ != State::kOpen) {
+  if (UNLIKELY(state_ != State::kOpen)) {
     if (state_ == State::kClosed)
       return Status::kAlreadyClosed;
     else
@@ -155,13 +157,16 @@ Status StoreImpl::Close() {
     // running transactions. If an I/O error occurs, the first transaction will
     // rollback with kIoError, but the following transactions will rollback with
     // kAlreadyClosed. It's nice to return kIoError in this case.
-    if (rollback_status != Status::kSuccess && result == Status::kSuccess)
+    if (UNLIKELY(rollback_status != Status::kSuccess) &&
+        result == Status::kSuccess) {
       result = rollback_status;
+    }
   }
 
   // Rollback the init transaction to get the store's pages released.
   Status rollback_status = init_transaction_.Rollback();
-  if (rollback_status != Status::kSuccess && result == Status::kSuccess)
+  if (UNLIKELY(rollback_status != Status::kSuccess)
+      && result == Status::kSuccess)
     result = rollback_status;
 
   data_file_->Close();

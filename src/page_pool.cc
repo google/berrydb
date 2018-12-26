@@ -70,7 +70,7 @@ void PagePool::UnassignPageFromStore(Page* page) {
   if (page->is_dirty()) {
     Status write_status = store->WritePage(page);
     transaction->UnassignPersistedPage(page);
-    if (write_status != Status::kSuccess)
+    if (UNLIKELY(write_status != Status::kSuccess))
       store->Close();
   } else {
     transaction->UnassignPage(page);
@@ -144,7 +144,7 @@ Status PagePool::AssignPageToStore(
   TransactionImpl* transaction = store->init_transaction();
   transaction->AssignPage(page, page_id);
   Status fetch_status = FetchStorePage(page, fetch_mode);
-  if (fetch_status == Status::kSuccess) {
+  if (LIKELY(fetch_status == Status::kSuccess)) {
     page_map_[std::make_pair(store, page_id)] = page;
     return Status::kSuccess;
   }
@@ -209,7 +209,7 @@ std::tuple<Status, Page*> PagePool::StorePage(StoreImpl* store, size_t page_id,
 #endif  // BERRYDB_CHECK_IS_ON()
 
   Status status = AssignPageToStore(page, store, page_id, fetch_mode);
-  if (status == Status::kSuccess)
+  if (LIKELY(status == Status::kSuccess))
     return {status, page};
 
   // Calling UnpinUnassignedPage will perform an extra check compared to

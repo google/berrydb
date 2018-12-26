@@ -32,7 +32,7 @@ std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
   Page* raw_head_page;
   std::tie(status, raw_head_page) = page_pool->StorePage(
       store, head_page_id_, PagePool::kFetchPageData);
-  if (status != Status::kSuccess) {
+  if (UNLIKELY(status != Status::kSuccess)) {
     BERRYDB_ASSUME(raw_head_page == nullptr);
     return {status, kInvalidPageId};
   }
@@ -51,7 +51,7 @@ std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
         FreePageListFormat::NextPageId64(head_page_data);
     size_t new_head_page_id = static_cast<size_t>(new_head_page_id64);
     // This check should be optimized out on 64-bit architectures.
-    if (new_head_page_id != new_head_page_id64)
+    if (UNLIKELY(new_head_page_id != new_head_page_id64))
       return {Status::kDatabaseTooLarge, kInvalidPageId};
 
     size_t free_page_id = head_page_id_;
@@ -72,8 +72,8 @@ std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
   }
 
   next_entry_offset -= FreePageListFormat::kEntrySize;
-  if (FreePageListFormat::IsCorruptEntryOffset(
-      next_entry_offset, page_pool->page_size())) {
+  if (UNLIKELY(FreePageListFormat::IsCorruptEntryOffset(
+      next_entry_offset, page_pool->page_size()))) {
     return {Status::kDataCorrupted, kInvalidPageId};
   }
 
@@ -81,7 +81,7 @@ std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
       LoadUint64(head_page_data.subspan(next_entry_offset, 8));
   size_t free_page_id = static_cast<size_t>(free_page_id64);
   // This check should be optimized out on 64-bit architectures.
-  if (free_page_id != free_page_id64)
+  if (UNLIKELY(free_page_id != free_page_id64))
     return {Status::kDatabaseTooLarge, kInvalidPageId};
   transaction->WillModifyPage(head_page.get());
   FreePageListFormat::SetNextEntryOffset(next_entry_offset,
@@ -105,7 +105,7 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
     Page* raw_head_page;
     std::tie(status, raw_head_page) = page_pool->StorePage(
         store, head_page_id_, PagePool::kFetchPageData);
-    if (status != Status::kSuccess) {
+    if (UNLIKELY(status != Status::kSuccess)) {
       BERRYDB_ASSUME(raw_head_page == nullptr);
       return status;
     }
@@ -118,8 +118,8 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
         FreePageListFormat::NextEntryOffset(head_page_readonly_data);
     if (next_entry_offset < page_pool->page_size()) {
       // We rely on the compiler to optimize out the redundant page size check.
-      if (FreePageListFormat::IsCorruptEntryOffset(
-          next_entry_offset, page_pool->page_size())) {
+      if (UNLIKELY(FreePageListFormat::IsCorruptEntryOffset(
+          next_entry_offset, page_pool->page_size()))) {
         return Status::kDataCorrupted;
       }
 
@@ -143,7 +143,7 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
   Page* raw_head_page;
   std::tie(status, raw_head_page) = page_pool->StorePage(
       store, page_id, PagePool::kIgnorePageData);
-  if (status != Status::kSuccess) {
+  if (UNLIKELY(status != Status::kSuccess)) {
     BERRYDB_ASSUME(raw_head_page == nullptr);
     return status;
   }
@@ -192,7 +192,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
   Page* raw_head_page;
   std::tie(status, raw_head_page) = page_pool->StorePage(
       store, head_page_id_, PagePool::kFetchPageData);
-  if (status != Status::kSuccess) {
+  if (UNLIKELY(status != Status::kSuccess)) {
     BERRYDB_ASSUME(raw_head_page == nullptr);
     return status;
   }
@@ -205,7 +205,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
   Page* raw_other_head_page;
   std::tie(status, raw_other_head_page) = page_pool->StorePage(
       store, other_head_page_id, PagePool::kFetchPageData);
-  if (status != Status::kSuccess) {
+  if (UNLIKELY(status != Status::kSuccess)) {
     BERRYDB_ASSUME(raw_other_head_page == nullptr);
     return status;
   }
@@ -262,9 +262,10 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
       FreePageListFormat::NextEntryOffset(head_page_readonly_data);
   size_t other_next_entry_offset =
       FreePageListFormat::NextEntryOffset(other_head_page_readonly_data);
-  if (FreePageListFormat::IsCorruptEntryOffset(next_entry_offset, page_size) ||
-      FreePageListFormat::IsCorruptEntryOffset(other_next_entry_offset,
-                                               page_size)) {
+  if (UNLIKELY(FreePageListFormat::IsCorruptEntryOffset(next_entry_offset,
+                                                        page_size)) ||
+      UNLIKELY(FreePageListFormat::IsCorruptEntryOffset(other_next_entry_offset,
+                                                        page_size))) {
     return Status::kDataCorrupted;
   }
 

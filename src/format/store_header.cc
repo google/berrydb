@@ -30,6 +30,7 @@ StoreHeader::StoreHeader(size_t page_shift, size_t page_count)
 #endif  // BERRYDB_CHECK_IS_ON()
     , page_shift(page_shift)
     {
+  BERRYDB_ASSUME_GT(page_shift, 0U);
 }
 
 void StoreHeader::Serialize(span<uint8_t> to) {

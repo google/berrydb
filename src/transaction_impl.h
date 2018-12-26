@@ -50,14 +50,15 @@ class TransactionImpl {
 
   /** Computes the internal representation for a pointer from the public API. */
   static inline TransactionImpl* FromApi(Transaction* api) noexcept {
-    TransactionImpl* impl = reinterpret_cast<TransactionImpl*>(api);
+    TransactionImpl* const impl = reinterpret_cast<TransactionImpl*>(api);
     DCHECK_EQ(api, &impl->api_);
     return impl;
   }
   /** Computes the internal representation for a pointer from the public API. */
   static inline const TransactionImpl* FromApi(
       const Transaction* api) noexcept {
-    const TransactionImpl* impl = reinterpret_cast<const TransactionImpl*>(api);
+    const TransactionImpl* const impl =
+        reinterpret_cast<const TransactionImpl*>(api);
     DCHECK_EQ(api, &impl->api_);
     return impl;
   }
@@ -150,7 +151,7 @@ class TransactionImpl {
     DCHECK(!is_init_);
 #endif  // BERRYDB_CHECK_IS_ON()
 
-    TransactionImpl* page_transaction = page->transaction();
+    TransactionImpl* const page_transaction = page->transaction();
     if (page_transaction != this) {
 // A page may not be modified by two transactions at the same time. This
 // follows from the concurrency model, which states that a Space modified

@@ -76,11 +76,11 @@ std::tuple<Status, Store*> PoolImpl::OpenStore(
   std::tie(status, data_file, data_file_size) = vfs_->OpenForBlockAccess(
       path, page_pool_.page_shift(), options.create_if_missing,
       options.error_if_exists);
-  if (status != Status::kSuccess)
+  if (UNLIKELY(status != Status::kSuccess))
     return {status, nullptr};
 
   status = data_file->Lock();
-  if (status != Status::kSuccess) {
+  if (UNLIKELY(status != Status::kSuccess)) {
     data_file->Close();
     return {status, nullptr};
   }
@@ -90,7 +90,7 @@ std::tuple<Status, Store*> PoolImpl::OpenStore(
   size_t log_file_size;
   std::tie(status, log_file, log_file_size) = vfs_->OpenForRandomAccess(
       log_file_path, true /* create_if_missing */, false /* error_if_exists */);
-  if (status != Status::kSuccess) {
+  if (UNLIKELY(status != Status::kSuccess)) {
     data_file->Close();
     return {status, nullptr};
   }
@@ -100,7 +100,7 @@ std::tuple<Status, Store*> PoolImpl::OpenStore(
   stores_.insert(store);
 
   status = store->Initialize(options);
-  if (status != Status::kSuccess) {
+  if (UNLIKELY(status != Status::kSuccess)) {
     store->Close();
     return {status, nullptr};
   }
