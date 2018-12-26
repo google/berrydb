@@ -4,7 +4,7 @@
 
 #include "./space_impl.h"
 
-#include "berrydb/platform.h"
+#include "./util/checks.h"
 
 namespace berrydb {
 
@@ -15,7 +15,7 @@ static_assert(std::is_standard_layout<SpaceImpl>::value,
 SpaceImpl* SpaceImpl::Create() {
   void* const heap_block = Allocate(sizeof(SpaceImpl));
   SpaceImpl* const space = new (heap_block) SpaceImpl();
-  DCHECK_EQ(heap_block, static_cast<void*>(space));
+  BERRYDB_ASSUME_EQ(heap_block, static_cast<void*>(space));
   return space;
 }
 

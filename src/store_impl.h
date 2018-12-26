@@ -28,6 +28,13 @@ class PoolImpl;
 /** Internal representation for the Store class in the public API. */
 class StoreImpl {
  public:
+  /** Public for testing convenience. */
+  enum class State {
+    kOpen = 0,
+    kClosing = 1,
+    kClosed = 2,
+  };
+
   /** Create a StoreImpl instance.
    *
    * This returns a minimally set up instance that can be registered with the
@@ -49,13 +56,13 @@ class StoreImpl {
   /** Computes the internal representation for a pointer from the public API. */
   static inline StoreImpl* FromApi(Store* api) noexcept {
     StoreImpl* const impl = reinterpret_cast<StoreImpl*>(api);
-    DCHECK_EQ(api, &impl->api_);
+    BERRYDB_ASSUME_EQ(api, &impl->api_);
     return impl;
   }
   /** Computes the internal representation for a pointer from the public API. */
   static inline const StoreImpl* FromApi(const Store* api) noexcept {
     const StoreImpl* const impl = reinterpret_cast<const StoreImpl*>(api);
-    DCHECK_EQ(api, &impl->api_);
+    BERRYDB_ASSUME_EQ(api, &impl->api_);
     return impl;
   }
 
@@ -124,7 +131,7 @@ class StoreImpl {
   void TransactionClosed(TransactionImpl* transaction);
 
 #if BERRYDB_CHECK_IS_ON()
-  /** Number of pool pages assigned to this store. For use in DCHECKs only.
+  /** Number of pool pages assigned to this store. For use in CHECKs only.
    *
    * This includes pinned pages and pages in the LRU list. */
   size_t AssignedPageCount() noexcept;
@@ -140,12 +147,6 @@ class StoreImpl {
             const StoreOptions& options);
   /** Use Release() to destroy StoreImpl instances. */
   ~StoreImpl();
-
-  enum class State {
-    kOpen = 0,
-    kClosing = 1,
-    kClosed = 3,
-  };
 
   /* The public API version of this class. */
   Store api_;  // Must be the first class member.

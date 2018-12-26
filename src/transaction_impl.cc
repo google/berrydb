@@ -8,8 +8,9 @@
 #include "berrydb/status.h"
 #include "./page_pool.h"
 #include "./store_impl.h"
+#include "./util/checks.h"
 
-// TODO(pwnall): Remove this once we don't need to DCHECK a Status value.
+// TODO(pwnall): Remove this once we don't need to CHECK a Status value.
 #include "berrydb/ostream_ops.h"
 
 namespace berrydb {
@@ -21,7 +22,7 @@ static_assert(std::is_standard_layout<TransactionImpl>::value,
 TransactionImpl* TransactionImpl::Create(StoreImpl* store) {
   void* const heap_block = Allocate(sizeof(TransactionImpl));
   TransactionImpl* const transaction = new (heap_block) TransactionImpl(store);
-  DCHECK_EQ(heap_block, static_cast<void*>(transaction));
+  BERRYDB_ASSUME_EQ(heap_block, static_cast<void*>(transaction));
   return transaction;
 }
 
@@ -37,7 +38,7 @@ TransactionImpl::TransactionImpl(StoreImpl* store)
     , is_init_(false)
 #endif  // BERRYDB_CHECK_IS_ON()
     {
-  DCHECK(store != nullptr);
+  BERRYDB_ASSUME(store != nullptr);
 }
 
 TransactionImpl::TransactionImpl(StoreImpl* store, MAYBE_UNUSED bool is_init)
@@ -46,8 +47,8 @@ TransactionImpl::TransactionImpl(StoreImpl* store, MAYBE_UNUSED bool is_init)
     , is_init_(true)
 #endif  // BERRYDB_CHECK_IS_ON()
     {
-  DCHECK(store != nullptr);
-  DCHECK(is_init == true);
+  BERRYDB_ASSUME(store != nullptr);
+  BERRYDB_ASSUME_EQ(is_init, true);
 }
 
 TransactionImpl::~TransactionImpl() {
@@ -57,10 +58,10 @@ TransactionImpl::~TransactionImpl() {
 
 
 #if BERRYDB_CHECK_IS_ON()
-void TransactionImpl::DcheckPageBelongsToTransaction(Page* page) {
-  DCHECK(page != nullptr);
-  DCHECK_EQ(page->transaction(), this);
-  DCHECK_EQ(store_->page_pool(), page->page_pool());
+void TransactionImpl::CheckPageBelongsToTransaction(Page* page) {
+  BERRYDB_ASSUME(page != nullptr);
+  BERRYDB_ASSUME_EQ(page->transaction(), this);
+  BERRYDB_ASSUME_EQ(store_->page_pool(), page->page_pool());
 }
 
 bool TransactionImpl::IsInit() const noexcept {
@@ -94,7 +95,7 @@ Status TransactionImpl::Delete(MAYBE_UNUSED SpaceImpl* space,
 }
 
 Status TransactionImpl::Close() {
-  DCHECK(!is_closed_);
+  BERRYDB_ASSUME(!is_closed_);
 
   is_closed_ = true;
 
@@ -117,7 +118,7 @@ Status TransactionImpl::Close() {
 }
 
 Status TransactionImpl::Commit() {
-  DCHECK(this != store_->init_transaction());
+  BERRYDB_ASSUME_NE(this, store_->init_transaction());
 
   if (UNLIKELY(is_closed_))
     return Status::kAlreadyClosed;
@@ -144,7 +145,7 @@ Status TransactionImpl::Commit() {
     MAYBE_UNUSED Status status = store_->WritePage(page);
 
     // TODO(pwnall): Handle errors, once we have logging in place.
-    DCHECK_EQ(status, Status::kSuccess);
+    BERRYDB_ASSUME_EQ(status, Status::kSuccess);
 
     PageWasPersisted(page, init_transaction);
     page_pool->UnpinStorePage(page);

@@ -7,7 +7,6 @@
 
 #include <tuple>
 
-#include "berrydb/platform.h"
 #include "berrydb/span.h"
 #include "berrydb/transaction.h"
 #include "./page.h"
@@ -51,7 +50,7 @@ class TransactionImpl {
   /** Computes the internal representation for a pointer from the public API. */
   static inline TransactionImpl* FromApi(Transaction* api) noexcept {
     TransactionImpl* const impl = reinterpret_cast<TransactionImpl*>(api);
-    DCHECK_EQ(api, &impl->api_);
+    BERRYDB_ASSUME_EQ(api, &impl->api_);
     return impl;
   }
   /** Computes the internal representation for a pointer from the public API. */
@@ -59,7 +58,7 @@ class TransactionImpl {
       const Transaction* api) noexcept {
     const TransactionImpl* const impl =
         reinterpret_cast<const TransactionImpl*>(api);
-    DCHECK_EQ(api, &impl->api_);
+    BERRYDB_ASSUME_EQ(api, &impl->api_);
     return impl;
   }
 
@@ -70,16 +69,16 @@ class TransactionImpl {
   inline constexpr StoreImpl* store() const noexcept { return store_; }
 
 #if BERRYDB_CHECK_IS_ON()
-  /** Number of pool pages assigned to this transaction. DCHECK use only.
+  /** Number of pool pages assigned to this transaction. CHECKs use only.
    *
    * This includes pinned pages and pages in the LRU list. */
   inline constexpr size_t AssignedPageCount() const noexcept {
     return pool_pages_.size();
   }
 
-  /** True if this transaction is the store's init transaction. DCHECK use only.
+  /** True if this transaction is the store's init transaction. CHECKs use only.
    *
-   * This method is not allowed for non-DCHECK use because its implementation
+   * This method is not allowed for non-CHECK use because its implementation
    * cannot be inlined. The implementation cannot be inlined because it depends
    * on the StoreImpl class, whose declaration depends on TransactionImpl. */
   bool IsInit() const noexcept;
@@ -99,9 +98,9 @@ class TransactionImpl {
    *                page pool entry
    */
   inline void AssignPage(Page* page, size_t page_id) noexcept {
-    DCHECK(page != nullptr);
-    DCHECK(!page->IsUnpinned());
-    DCHECK(page->transaction() == nullptr);
+    BERRYDB_ASSUME(page != nullptr);
+    BERRYDB_ASSUME(!page->IsUnpinned());
+    BERRYDB_ASSUME(page->transaction() == nullptr);
 
     page->WillCacheStoreData(this, page_id);
     pool_pages_.push_back(page);
@@ -117,11 +116,11 @@ class TransactionImpl {
    *             store, and will not be caching the page anymore
    */
   inline void UnassignPage(Page* page) noexcept {
-    DCHECK(page != nullptr);
-    DCHECK(!page->IsUnpinned());
-    DCHECK_EQ(page->transaction(), this);
+    BERRYDB_ASSUME(page != nullptr);
+    BERRYDB_ASSUME(!page->IsUnpinned());
+    BERRYDB_ASSUME_EQ(page->transaction(), this);
 #if BERRYDB_CHECK_IS_ON()
-    DcheckPageBelongsToTransaction(page);
+    CheckPageBelongsToTransaction(page);
 #endif  // BERRYDB_CHECK_IS_ON()
 
     pool_pages_.erase(page);
@@ -140,15 +139,15 @@ class TransactionImpl {
    * @param page the Page whose data buffer will be modified in this transaction
    */
   inline void WillModifyPage(Page* page) noexcept {
-    DCHECK(page != nullptr);
-    DCHECK(!page->IsUnpinned());
-    DCHECK(page->transaction() != nullptr);
-    DCHECK_EQ(page->transaction()->store(), store_);
+    BERRYDB_ASSUME(page != nullptr);
+    BERRYDB_ASSUME(!page->IsUnpinned());
+    BERRYDB_ASSUME(page->transaction() != nullptr);
+    BERRYDB_ASSUME_EQ(page->transaction()->store(), store_);
 
 // The init transaction will never be committed, so it cannot be used to
 // modify pages.
 #if BERRYDB_CHECK_IS_ON()
-    DCHECK(!is_init_);
+    BERRYDB_CHECK(!is_init_);
 #endif  // BERRYDB_CHECK_IS_ON()
 
     TransactionImpl* const page_transaction = page->transaction();
@@ -157,9 +156,9 @@ class TransactionImpl {
 // follows from the concurrency model, which states that a Space modified
 // by a transaction must not be accessed by any concurrent transaction.
 #if BERRYDB_CHECK_IS_ON()
-      DCHECK(page->transaction()->is_init_);
+      BERRYDB_CHECK(page->transaction()->is_init_);
 #endif  // BERRYDB_CHECK_IS_ON()
-      DCHECK(!page->is_dirty());
+      BERRYDB_ASSUME(!page->is_dirty());
 
       // TODO(pwnall): Once logging is done, consider if it's possible for a
       //     page not to be dirty while it is assigned to a non-init
@@ -183,19 +182,19 @@ class TransactionImpl {
    */
   inline void PageWasPersisted(Page* page,
                                TransactionImpl* init_transaction) noexcept {
-    DCHECK(page != nullptr);
-    DCHECK(!page->IsUnpinned());
-    DCHECK_EQ(page->transaction(), this);
+    BERRYDB_ASSUME(page != nullptr);
+    BERRYDB_ASSUME(!page->IsUnpinned());
+    BERRYDB_ASSUME_EQ(page->transaction(), this);
 
-    DCHECK(init_transaction != nullptr);
-    DCHECK_EQ(init_transaction->store(), store_);
+    BERRYDB_ASSUME(init_transaction != nullptr);
+    BERRYDB_ASSUME_EQ(init_transaction->store(), store_);
 #if BERRYDB_CHECK_IS_ON()
-    DCHECK(init_transaction->is_init_);
+    BERRYDB_CHECK(init_transaction->is_init_);
 #endif  // BERRYDB_CHECK_IS_ON()
 
     if (this == init_transaction) {
       // Pages owned by an init transaction cannot be dirty.
-      DCHECK(!page->is_dirty());
+      BERRYDB_ASSUME(!page->is_dirty());
       return;
     }
 
@@ -215,12 +214,12 @@ class TransactionImpl {
    *             store, and will not be caching the page anymore
    */
   inline void UnassignPersistedPage(Page* page) noexcept {
-    DCHECK(page != nullptr);
-    DCHECK(!page->IsUnpinned());
-    DCHECK_EQ(page->transaction(), this);
-    DCHECK(page->is_dirty());
+    BERRYDB_ASSUME(page != nullptr);
+    BERRYDB_ASSUME(!page->IsUnpinned());
+    BERRYDB_ASSUME_EQ(page->transaction(), this);
+    BERRYDB_ASSUME(page->is_dirty());
 #if BERRYDB_CHECK_IS_ON()
-    DCHECK(!is_init_);
+    BERRYDB_CHECK(!is_init_);
 #endif  // BERRYDB_CHECK_IS_ON()
 
     pool_pages_.erase(page);
@@ -243,16 +242,16 @@ class TransactionImpl {
   Status Delete(CatalogImpl* catalog, span<const uint8_t> name);
 
   inline constexpr bool IsClosed() const noexcept {
-    DCHECK(!is_committed_ || is_closed_);
+    BERRYDB_ASSUME(!is_committed_ || is_closed_);
     return is_closed_;
   }
   inline constexpr bool IsCommitted() const noexcept {
-    DCHECK(!is_committed_ || is_closed_);
+    BERRYDB_ASSUME(!is_committed_ || is_closed_);
     return is_committed_;
   }
   /** True if the transaction was rolled back. */
   inline constexpr bool IsRolledBack() const noexcept {
-    DCHECK(!is_committed_ || is_closed_);
+    BERRYDB_ASSUME(!is_committed_ || is_closed_);
     return is_closed_ && !is_committed_;
   }
   void Release();
@@ -265,13 +264,13 @@ class TransactionImpl {
   Status Close();
 
 #if BERRYDB_CHECK_IS_ON()
-  /** DCHECKs that the given page pool entry was assigned to this transaction.
+  /** CHECKs that the given page pool entry was assigned to this transaction.
    *
    * This method performs state consistency checks. The declaration is clunky,
    * but necessary because some of the checks depend on StoreImpl's definition,
    * and this file cannot include store_impl.h because StoreImpl contains a
    * TransactionImpl. */
-  void DcheckPageBelongsToTransaction(Page* page);
+  void CheckPageBelongsToTransaction(Page* page);
 #endif  // BERRYDB_CHECK_IS_ON()
 
   /* The public API version of this class. */

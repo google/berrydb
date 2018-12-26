@@ -4,17 +4,48 @@
 
 #include "./store_impl.h"
 
+#if BERRYDB_CHECK_IS_ON()
+#include <ostream>  // Needed by BERRYDB_ASSUME_EQ(State, State).
+#endif  // BERRYDB_CHECK_IS_ON()
 #include <tuple>
 
 #include "berrydb/options.h"
+#include "berrydb/platform.h"
 #include "berrydb/vfs.h"
 #include "./free_page_list.h"
 #include "./pinned_page.h"
 #include "./pool_impl.h"
 #include "./transaction_impl.h"
+#include "./util/checks.h"
 #include "./util/span_util.h"
 
 namespace berrydb {
+
+#if BERRYDB_CHECK_IS_ON()
+
+namespace {
+
+const char* StoreImplStateToCString(StoreImpl::State state) noexcept {
+  switch (state) {
+  case StoreImpl::State::kClosed:
+    return "Closed";
+  case StoreImpl::State::kClosing:
+    return "Closing";
+  case StoreImpl::State::kOpen:
+    return "Open";
+  }
+
+  BERRYDB_UNREACHABLE();
+}
+
+}  // namespace
+
+// Needed by BERRYDB_ASSUME_EQ(State, State)
+std::ostream& operator<<(std::ostream& stream, StoreImpl::State state) {
+  return stream << "[State: " << StoreImplStateToCString(state) << "]";
+}
+
+#endif  // BERRYDB_CHECK_IS_ON()
 
 static_assert(std::is_standard_layout<StoreImpl>::value,
     "StoreImpl must be a standard layout type so its public API can be "
@@ -27,7 +58,7 @@ StoreImpl* StoreImpl::Create(
   void* const heap_block = Allocate(sizeof(StoreImpl));
   StoreImpl* const store = new (heap_block) StoreImpl(
       data_file, data_file_size, log_file, log_file_size, page_pool, options);
-  DCHECK_EQ(heap_block, static_cast<void*>(store));
+  BERRYDB_ASSUME_EQ(heap_block, static_cast<void*>(store));
 
   page_pool->pool()->StoreCreated(store);
   return store;
@@ -50,16 +81,16 @@ StoreImpl::StoreImpl(
     : data_file_(data_file), log_file_(log_file), page_pool_(page_pool),
       init_transaction_(this, true), header_(
           page_pool->page_shift(), data_file_size >> page_pool->page_shift()) {
-  DCHECK(data_file != nullptr);
-  DCHECK(log_file != nullptr);
-  DCHECK(page_pool != nullptr);
+  BERRYDB_ASSUME(data_file != nullptr);
+  BERRYDB_ASSUME(log_file != nullptr);
+  BERRYDB_ASSUME(page_pool != nullptr);
 }
 
 StoreImpl::~StoreImpl() {
   if (state_ == State::kOpen)
     Close();
 
-  DCHECK(state_ == State::kClosed);
+  BERRYDB_ASSUME_EQ(state_, State::kClosed);
 }
 
 Status StoreImpl::Initialize(const StoreOptions &options) {
@@ -85,7 +116,7 @@ Status StoreImpl::Bootstrap() {
     std::tie(fetch_status, raw_header_page) = page_pool_->StorePage(
         this, 0, PagePool::kIgnorePageData);
     if (UNLIKELY(fetch_status != Status::kSuccess)) {
-      DCHECK(raw_header_page == nullptr);
+      BERRYDB_ASSUME(raw_header_page == nullptr);
       transaction->Release();  // Rolls back the transaction.
       return fetch_status;
     }
@@ -105,7 +136,7 @@ Status StoreImpl::Bootstrap() {
     std::tie(fetch_status, raw_root_catalog_page) = page_pool_->StorePage(
         this, 1, PagePool::kIgnorePageData);
     if (UNLIKELY(fetch_status != Status::kSuccess)) {
-      DCHECK(raw_root_catalog_page == nullptr);
+      BERRYDB_ASSUME(raw_root_catalog_page == nullptr);
       transaction->Release();  // Rolls back the transaction.
       return fetch_status;
     }
@@ -178,11 +209,11 @@ Status StoreImpl::Close() {
 }
 
 Status StoreImpl::ReadPage(Page* page) {
-  DCHECK(page != nullptr);
-  DCHECK(page->transaction() != nullptr);
-  DCHECK_EQ(this, page->transaction()->store());
-  DCHECK(!page->is_dirty());
-  DCHECK(!page->IsUnpinned());
+  BERRYDB_ASSUME(page != nullptr);
+  BERRYDB_ASSUME(page->transaction() != nullptr);
+  BERRYDB_ASSUME_EQ(this, page->transaction()->store());
+  BERRYDB_ASSUME(!page->is_dirty());
+  BERRYDB_ASSUME(!page->IsUnpinned());
 
   const size_t file_offset = page->page_id() << header_.page_shift;
   const size_t page_size = static_cast<size_t>(1) << header_.page_shift;
@@ -190,11 +221,11 @@ Status StoreImpl::ReadPage(Page* page) {
 }
 
 Status StoreImpl::WritePage(Page* page) {
-  DCHECK(page != nullptr);
-  DCHECK(page->transaction() != nullptr);
-  DCHECK_EQ(this, page->transaction()->store());
-  DCHECK(page->is_dirty());
-  //DCHECK(!page->IsUnpinned());
+  BERRYDB_ASSUME(page != nullptr);
+  BERRYDB_ASSUME(page->transaction() != nullptr);
+  BERRYDB_ASSUME_EQ(this, page->transaction()->store());
+  BERRYDB_ASSUME(page->is_dirty());
+  // BERRYDB_ASSUME(!page->IsUnpinned());
 
   const size_t file_offset = page->page_id() << header_.page_shift;
   const size_t page_size = static_cast<size_t>(1) << header_.page_shift;
@@ -202,13 +233,13 @@ Status StoreImpl::WritePage(Page* page) {
 }
 
 void StoreImpl::TransactionClosed(TransactionImpl* transaction) {
-  DCHECK(transaction != nullptr);
-  DCHECK(transaction->IsClosed());
+  BERRYDB_ASSUME(transaction != nullptr);
+  BERRYDB_ASSUME(transaction->IsClosed());
 #if BERRYDB_CHECK_IS_ON()
-  DCHECK_EQ(this, transaction->store());
+  BERRYDB_CHECK_EQ(this, transaction->store());
 #endif  // BERRYDB_CHECK_IS_ON()
 
-  DCHECK(state_ != State::kClosed);
+  BERRYDB_ASSUME_NE(state_, State::kClosed);
   if (state_ != State::kOpen)
     return;
 

@@ -11,14 +11,13 @@
 #include <tuple>
 #include <unordered_map>
 
+#include "berrydb/status.h"
 #include "./page.h"
 #include "./store_impl.h"
 #include "./transaction_impl.h"
 #include "./util/checks.h"
 #include "./util/linked_list.h"
 #include "./util/platform_allocator.h"
-#include "berrydb/platform.h"
-#include "berrydb/status.h"
 
 namespace berrydb {
 
@@ -165,11 +164,11 @@ class PagePool {
    *              entry's cached data eligible for eviction */
   inline void UnpinStorePage(Page* page,
                              PageUnpinMode mode = kCachePage) noexcept {
-    DCHECK(page != nullptr);
-    DCHECK(page->transaction() != nullptr);
-    DCHECK(page->transaction()->store() != nullptr);
+    BERRYDB_ASSUME(page != nullptr);
+    BERRYDB_ASSUME(page->transaction() != nullptr);
+    BERRYDB_ASSUME(page->transaction()->store() != nullptr);
 #if BERRYDB_CHECK_IS_ON()
-    DCHECK_EQ(page->page_pool(), this);
+    BERRYDB_CHECK_EQ(page->page_pool(), this);
 #endif  // BERRYDB_CHECK_IS_ON()
 
     page->RemovePin();

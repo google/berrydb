@@ -109,7 +109,7 @@ TEST_F(StoreImplTest, WriteReadPage) {
 
     // Clear the page to make sure ReadPage fetches the correct content.
     FillSpan(page_data, 0);
-    // Bypass DCHECKs in ReadPage.
+    // Bypass CHECKs in ReadPage.
     transaction->PageWasPersisted(page, store->init_transaction());
     ASSERT_EQ(Status::kSuccess, store->ReadPage(page));
     ASSERT_EQ(page->data(1 << kStorePageShift), make_span(buffer[i]));
@@ -129,7 +129,7 @@ TEST_F(StoreImplTest, WriteReadPage) {
     // Clear the page to make sure ReadPage fetches the correct content.
     FillSpan(page->mutable_data(1 << kStorePageShift), 0);
     transaction->PageWasPersisted(page, store->init_transaction());
-    // Bypass DCHECKs in ReadPage.
+    // Bypass CHECKs in ReadPage.
     ASSERT_EQ(Status::kSuccess, store->ReadPage(page));
     ASSERT_EQ(page->data(1 << kStorePageShift), make_span(buffer[i]));
 

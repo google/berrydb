@@ -150,7 +150,8 @@ class LinkedList {
     Node* const node = Bridge::NodeForHost(value);
 
 #if BERRYDB_CHECK_IS_ON()
-    DCHECK_EQ(&sentinel_, node->list_sentinel_);
+    BERRYDB_CHECK(!node->is_sentinel());
+    BERRYDB_CHECK_EQ(&sentinel_, node->list_sentinel_);
 #endif  // BERRYDB_CHECK_IS_ON()
 
     node->Remove();
@@ -326,8 +327,8 @@ class LinkedListNode {
 #endif  // BERRYDB_CHECK_IS_ON()
 
     // Redundant with check above, might trigger if memory gets corrupted.
-    DCHECK(next_ != nullptr);
-    DCHECK(next_->prev_ == this);
+    BERRYDB_ASSUME(next_ != nullptr);
+    BERRYDB_ASSUME_EQ(next_->prev_, this);
 
     return next_;
   }
@@ -341,8 +342,8 @@ class LinkedListNode {
 #endif  // BERRYDB_CHECK_IS_ON()
 
     // Redundant with check above, might trigger if memory gets corrupted.
-    DCHECK(prev_ != nullptr);
-    DCHECK(prev_->next_ == this);
+    BERRYDB_ASSUME(prev_ != nullptr);
+    BERRYDB_ASSUME_EQ(prev_->next_, this);
 
     return prev_;
   }

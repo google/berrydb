@@ -5,8 +5,8 @@
 #ifndef BERRYDB_SPACE_IMPL_H_
 #define BERRYDB_SPACE_IMPL_H_
 
-#include "berrydb/platform.h"
 #include "berrydb/space.h"
+#include "./util/checks.h"
 
 namespace berrydb {
 
@@ -23,13 +23,13 @@ class SpaceImpl {
   /** Computes the internal representation for a pointer from the public API. */
   static inline SpaceImpl* FromApi(Space* api) noexcept {
     SpaceImpl* const impl = reinterpret_cast<SpaceImpl*>(api);
-    DCHECK_EQ(api, &impl->api_);
+    BERRYDB_ASSUME_EQ(api, &impl->api_);
     return impl;
   }
   /** Computes the internal representation for a pointer from the public API. */
   static inline const SpaceImpl* FromApi(const Space* api) noexcept {
     const SpaceImpl* const impl = reinterpret_cast<const SpaceImpl*>(api);
-    DCHECK_EQ(api, &impl->api_);
+    BERRYDB_ASSUME_EQ(api, &impl->api_);
     return impl;
   }
 

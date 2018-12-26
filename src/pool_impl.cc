@@ -5,7 +5,6 @@
 #include "./pool_impl.h"
 
 #include "berrydb/options.h"
-#include "berrydb/platform.h"
 #include "berrydb/vfs.h"
 #include "./store_impl.h"
 #include "./util/checks.h"
@@ -32,11 +31,11 @@ PoolImpl::~PoolImpl() {
   // The existence of pinned pages implies that some transactions are still
   // running. This should not be the case, as all the stores should have been
   // closed.
-  DCHECK_EQ(page_pool_.pinned_pages(), 0U);
+  BERRYDB_ASSUME_EQ(page_pool_.pinned_pages(), 0U);
 
   // The difference between allocated pages and unused pages is pages in the LRU
   // queue. All the stores should have been closed, so the LRU should be empty.
-  DCHECK_EQ(page_pool_.allocated_pages(), page_pool_.unused_pages());
+  BERRYDB_ASSUME_EQ(page_pool_.allocated_pages(), page_pool_.unused_pages());
 }
 
 // static
@@ -45,20 +44,20 @@ void* PoolImpl::operator new(size_t instance_size) {
 }
 
 void PoolImpl::StoreCreated(StoreImpl* store) {
-  DCHECK(store != nullptr);
-  DCHECK(!store->IsClosed());
+  BERRYDB_ASSUME(store != nullptr);
+  BERRYDB_ASSUME(!store->IsClosed());
 #if BERRYDB_CHECK_IS_ON()
-  DCHECK_EQ(this, store->page_pool()->pool());
+  BERRYDB_CHECK_EQ(this, store->page_pool()->pool());
 #endif  // BERRYDB_CHECK_IS_ON()
 
   stores_.insert(store);
 }
 
 void PoolImpl::StoreClosed(StoreImpl* store) {
-  DCHECK(store != nullptr);
-  DCHECK(store->IsClosed());
+  BERRYDB_ASSUME(store != nullptr);
+  BERRYDB_ASSUME(store->IsClosed());
 #if BERRYDB_CHECK_IS_ON()
-  DCHECK_EQ(this, store->page_pool()->pool());
+  BERRYDB_CHECK_EQ(this, store->page_pool()->pool());
 #endif  // BERRYDB_CHECK_IS_ON()
 
   // TODO(pwnall): This probably needs the same open/closed/isClosing logic as
