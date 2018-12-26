@@ -18,6 +18,7 @@
 #include "./transaction_impl.h"
 #include "./test/block_access_file_wrapper.h"
 #include "./test/file_deleter.h"
+#include "./util/checks.h"
 #include "./util/span_util.h"
 #include "./util/unique_ptr.h"
 
@@ -111,9 +112,9 @@ TEST_F(PagePoolTest, AllocPageState) {
 
   EXPECT_FALSE(page->is_dirty());
   EXPECT_FALSE(page->IsUnpinned());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_EQ(nullptr, page->transaction());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
   page_pool.UnpinUnassignedPage(page);
 }
@@ -194,9 +195,9 @@ TEST_F(PagePoolTest, AllocUsesLruList) {
   EXPECT_EQ(1U, page_pool->allocated_pages());
   EXPECT_EQ(0U, page_pool->unused_pages());
   EXPECT_EQ(1U, page_pool->pinned_pages());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_EQ(nullptr, page2->transaction());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
   page_pool->UnpinUnassignedPage(page2);
 }
@@ -216,9 +217,9 @@ TEST_F(PagePoolTest, AllocPrefersFreeListToLruList) {
   ASSERT_EQ(Status::kSuccess, page_pool->AssignPageToStore(
       page, store.get(), 0, PagePool::kIgnorePageData));
   EXPECT_EQ(store->init_transaction(), page->transaction());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_EQ(1U, store->AssignedPageCount());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
   // kIgnorePageData requires us to mark the page dirty.
   UniquePtr<TransactionImpl> transaction(store->CreateTransaction());
@@ -238,10 +239,10 @@ TEST_F(PagePoolTest, AllocPrefersFreeListToLruList) {
   EXPECT_EQ(2U, page_pool->allocated_pages());
   EXPECT_EQ(0U, page_pool->unused_pages());
   EXPECT_EQ(1U, page_pool->pinned_pages());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_EQ(nullptr, page2->transaction());
   EXPECT_EQ(1U, store->AssignedPageCount());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
   page_pool->UnpinUnassignedPage(page2);
 }
@@ -270,9 +271,9 @@ TEST_F(PagePoolTest, UnassignPageFromStoreState) {
   page_pool->UnassignPageFromStore(page);
   EXPECT_FALSE(page->is_dirty());
   EXPECT_FALSE(page->IsUnpinned());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_EQ(nullptr, page->transaction());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
   EXPECT_FALSE(store->IsClosed());
 
   page_pool->UnpinUnassignedPage(page);
@@ -310,9 +311,9 @@ TEST_F(PagePoolTest, UnassignPageFromStoreIoError) {
   page_pool->UnassignPageFromStore(page);
   EXPECT_FALSE(page->is_dirty());
   EXPECT_FALSE(page->IsUnpinned());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_EQ(nullptr, page->transaction());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
   EXPECT_EQ(true, store->IsClosed());
   EXPECT_EQ(true, transaction->IsClosed());
 
@@ -379,9 +380,9 @@ TEST_F(PagePoolTest, AssignPageToStoreIoError) {
       page, store.get(), 1, PagePool::kFetchPageData));
   EXPECT_FALSE(page->is_dirty());
   EXPECT_FALSE(page->IsUnpinned());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_EQ(nullptr, page->transaction());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
   page_pool->UnpinUnassignedPage(page);
 }
@@ -403,9 +404,9 @@ TEST_F(PagePoolTest, UnpinUnassignedPageState) {
 
   EXPECT_FALSE(page->is_dirty());
   EXPECT_TRUE(page->IsUnpinned());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_EQ(nullptr, page->transaction());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(PagePoolTest, PinUnpinStorePage) {
@@ -534,9 +535,9 @@ TEST_F(PagePoolTest, StorePage) {
   page_pool->UnpinUnassignedPage(page);
   EXPECT_FALSE(page->is_dirty());
   EXPECT_TRUE(page->IsUnpinned());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_EQ(nullptr, page->transaction());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
   EXPECT_EQ(1U, page_pool->allocated_pages());
   EXPECT_EQ(1U, page_pool->unused_pages());
   EXPECT_EQ(0U, page_pool->pinned_pages());

@@ -17,6 +17,7 @@
 
 #include "berrydb/platform.h"
 #include "berrydb/status.h"
+#include "../util/checks.h"
 #include "../util/platform_allocator.h"
 
 namespace berrydb {
@@ -111,9 +112,9 @@ class LibcBlockAccessFile : public BlockAccessFile {
  public:
   LibcBlockAccessFile(FILE* fp, MAYBE_UNUSED size_t block_shift)
       : fp_(fp)
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
       , block_size_(static_cast<size_t>(1) << block_shift)
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
       {
     DCHECK(fp != nullptr);
 
@@ -123,19 +124,19 @@ class LibcBlockAccessFile : public BlockAccessFile {
   }
 
   Status Read(size_t offset, span<uint8_t> buffer) override {
-#if DCHECK_IS_ON()
-    DCHECK_EQ(offset & (block_size_ - 1), 0U);
     DCHECK_EQ(buffer.size() & (buffer.size() - 1), 0U);
-#endif  // DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
+    DCHECK_EQ(offset & (block_size_ - 1), 0U);
+#endif  // BERRYDB_CHECK_IS_ON()
 
     return ReadLibcFile(fp_, offset, buffer);
   }
 
   Status Write(span<const uint8_t> data, size_t offset) override {
-#if DCHECK_IS_ON()
-    DCHECK_EQ(offset & (block_size_ - 1), 0U);
     DCHECK_EQ(data.size() & (data.size() - 1), 0U);
-#endif  // DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
+    DCHECK_EQ(offset & (block_size_ - 1), 0U);
+#endif  // BERRYDB_CHECK_IS_ON()
 
     return WriteLibcFile(fp_, data, offset);
   }
@@ -164,9 +165,9 @@ class LibcBlockAccessFile : public BlockAccessFile {
  private:
   std::FILE* fp_;
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   size_t block_size_;
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 };
 
 class LibcRandomAccessFile : public RandomAccessFile {

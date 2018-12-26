@@ -8,6 +8,8 @@
 #include <utility>
 
 #include "berrydb/platform.h"
+#include "berrydb/types.h"
+#include "./checks.h"
 
 namespace berrydb {
 
@@ -127,10 +129,10 @@ class LinkedList {
     Node* node = pos.node_;
     DCHECK(node != nullptr);
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DCHECK(!node->is_sentinel());
     DCHECK_EQ(&sentinel_, node->list_sentinel_);
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
     node->Remove();
     DCHECK(size_ > 0);
@@ -144,9 +146,9 @@ class LinkedList {
   inline void erase(value_type value) noexcept {
     Node* node = Bridge::NodeForHost(value);
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DCHECK_EQ(&sentinel_, node->list_sentinel_);
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
     node->Remove();
     DCHECK(size_ > 0);
@@ -173,31 +175,31 @@ class LinkedList {
     }
 
     inline constexpr iterator& operator++() noexcept {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
       DCHECK(!node_->is_sentinel());  // Already at cend().
-#endif                                // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
       node_ = node_->next();
       return *this;
     }
     inline constexpr iterator operator++(int)noexcept {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
       DCHECK(!node_->is_sentinel());  // Already at cend().
-#endif                                // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
       Node* old_node = node_;
       node_ = node_->next();
       return iterator(old_node);
     }
     inline constexpr iterator& operator--() noexcept {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
       DCHECK(!node_->prev()->is_sentinel());  // Already at cbegin().
-#endif                                        // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
       node_ = node_->prev();
       return *this;
     }
     inline constexpr iterator operator--(int) noexcept {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
       DCHECK(!node_->prev()->is_sentinel());  // Already at cbegin().
-#endif                                        // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
       Node* old_node = node_;
       node_ = node_->prev();
       return iterator(old_node);
@@ -230,15 +232,15 @@ class LinkedListNode {
  public:
   /** Constructor for non-sentinel nodes. */
   constexpr inline LinkedListNode() noexcept
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
       : next_(nullptr),
         prev_(nullptr),
         list_sentinel_(nullptr)
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
   {
   }
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   /** Only intended for use in DCHECKs. */
   inline constexpr LinkedListNode* list_sentinel() const noexcept {
     return list_sentinel_;
@@ -254,23 +256,23 @@ class LinkedListNode {
   explicit inline constexpr LinkedListNode(MAYBE_UNUSED bool is_sentinel)
       : next_(this),
         prev_(this)
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
         ,
         list_sentinel_(this)
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
   {
     DCHECK(is_sentinel);
   }
 
   /** Used by the list move-constructor for sentinel nodes. */
   inline LinkedListNode(LinkedListNode&& other_sentinel)
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
       : list_sentinel_(this)
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
   {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DCHECK(other_sentinel.is_sentinel());
-#endif  // DCHECK_ISON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
     if (other_sentinel.next() == &other_sentinel) {
       // Empty list.
@@ -288,7 +290,7 @@ class LinkedListNode {
 // This is actually O(list size) when DCHECK is enabled. This is only
 // mildly unfortunate, because list-moves are generally used when a list's
 // items are destroyed.
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     for (LinkedListNode* node = next_; node != this; node = node->next_) {
       DCHECK(!node->is_sentinel());
       DCHECK_EQ(&other_sentinel, node->list_sentinel_);
@@ -297,7 +299,7 @@ class LinkedListNode {
 
       node->list_sentinel_ = this;
     }
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
   }
 
   template <typename AnyEmbedder, typename Bridge>
@@ -309,9 +311,9 @@ class LinkedListNode {
    *
    * This must not be called while the node is not in a linked list. */
   inline constexpr LinkedListNode* next() const noexcept {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DCHECK(list_sentinel_ != nullptr);
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
     // Redundant with check above, might trigger if memory gets corrupted.
     DCHECK(next_ != nullptr);
@@ -324,9 +326,9 @@ class LinkedListNode {
    *
    * This must not be called while the node is not in a linked list. */
   inline constexpr LinkedListNode* prev() const noexcept {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DCHECK(list_sentinel_ != nullptr);
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
     // Redundant with check above, might trigger if memory gets corrupted.
     DCHECK(prev_ != nullptr);
@@ -339,20 +341,20 @@ class LinkedListNode {
    *
    * The node must not already be in a list. */
   inline void InsertBefore(LinkedListNode* next) noexcept {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DCHECK(!is_sentinel());
     DCHECK(list_sentinel_ == nullptr);  // The node cannot already be in a list.
 
     // Redundant with check above, might trigger if memory gets corrupted. These
-    // are not outside the DCHECK_IS_ON() block because they're only guaranteed
-    // to be valid when DCHECKs are enabled.
+    // are not outside the BERRYDB_CHECK_IS_ON() block because they're only
+    // guaranteed to be valid when CHECKs are enabled.
     DCHECK(next_ == nullptr);
     DCHECK(prev_ == nullptr);
 
     DCHECK(next->list_sentinel_ != nullptr);  // Other node must be in a list.
 
     list_sentinel_ = next->list_sentinel_;
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
     // Redundant with check above, might trigger if memory gets corrupted.
     DCHECK(next->next_ != nullptr);
@@ -368,12 +370,12 @@ class LinkedListNode {
    *
    * The node must be in a list. */
   inline void Remove() noexcept {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DCHECK(!is_sentinel());
     DCHECK(list_sentinel_ != nullptr);  // The node must be in a list.
 
     list_sentinel_ = nullptr;
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
     // Redundant with check above, might trigger if memory gets corrupted.
     DCHECK(next_ != nullptr);
@@ -381,10 +383,10 @@ class LinkedListNode {
 
     this->next_->prev_ = this->prev_;
     this->prev_->next_ = this->next_;
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     this->next_ = nullptr;
     this->prev_ = nullptr;
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
   }
 
   // When DCHECKs are enabled, these fields are guaranteed to be null when the
@@ -394,7 +396,7 @@ class LinkedListNode {
   LinkedListNode* next_;
   LinkedListNode* prev_;
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   /** The sentinel node for list that this node currently belongs to.
    *
    * It is tempting to track the linked list that this node belongs to, rather
@@ -402,7 +404,7 @@ class LinkedListNode {
    * includes the embedder bridge type. The current setup avoids having
    * LinkedListNode depend on the bridge type. */
   LinkedListNode* list_sentinel_;
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 };
 
 /** Bridge that extracts the linked_list_node_ field from the embedder. */
@@ -420,9 +422,9 @@ class LinkedListBridge {
       LinkedListNode<Embedder>* node) noexcept {
     static_assert(std::is_standard_layout<Embedder>::value,
                   "Linked list embedders must be standard layout types");
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DCHECK(!node->is_sentinel());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
     Embedder* host = reinterpret_cast<Embedder*>(
         reinterpret_cast<char*>(node) - offsetof(Embedder, linked_list_node_));

@@ -6,6 +6,7 @@
 
 #include "berrydb/platform.h"
 #include "berrydb/status.h"
+#include "./util/checks.h"
 
 namespace berrydb {
 
@@ -16,7 +17,7 @@ static_assert(std::is_standard_layout<CatalogImpl>::value,
 CatalogImpl* CatalogImpl::Create() {
   void* heap_block = Allocate(sizeof(CatalogImpl));
   CatalogImpl* catalog = new (heap_block) CatalogImpl();
-  DCHECK_EQ(heap_block, static_cast<void*>(catalog));
+  BERRYDB_ASSUME_EQ(heap_block, static_cast<void*>(catalog));
   return catalog;
 }
 

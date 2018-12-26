@@ -8,9 +8,10 @@
 #include "berrydb/platform.h"
 
 // Assumptions (BERRYDB_ASSUME*) communicate invariants to the optimizer, and
-// enforce the optimizer in builds where DCHECK_IS_ON(). By default, invariants
-// should be expressed as assumptions. Unsuitable invariants should be expressed
-// as checks (BERRYDB_CHECK*). BERRYDB_UNREACHED is a better form of
+// enforce these assumptions (by crashing on failure) in builds where
+// BERRYDB_CHECK_IS_ON(). By default, invariants should be expressed as
+// assumptions. Unsuitable invariants should be expressed as checks
+// (BERRYDB_CHECK*). BERRYDB_UNREACHED is a better form of
 // BERRYDB_ASSUME(false), and may suppress additional compiler warnings or
 // enable more optimizations.
 //
@@ -24,6 +25,8 @@
 //
 // This section will be updated with specific guidance once we have more
 // experience around which invariants must be expressed as checks.
+
+#define BERRYDB_CHECK_IS_ON()     DCHECK_IS_ON()
 
 #define BERRYDB_CHECK(condition)  DCHECK(condition)
 #define BERRYDB_CHECK_EQ(a, b)    DCHECK_EQ((a), (b))

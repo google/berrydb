@@ -28,9 +28,9 @@ Page* Page::Create(PagePool* page_pool) {
 }
 
 void Page::Release(PagePool *page_pool) {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   DCHECK_EQ(page_pool_, page_pool);
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
   size_t block_size = sizeof(Page) + page_pool->page_size();
   void* heap_block = reinterpret_cast<void*>(this);
@@ -39,21 +39,21 @@ void Page::Release(PagePool *page_pool) {
 
 Page::Page(MAYBE_UNUSED PagePool* page_pool)
     : pin_count_(1)
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     , page_pool_(page_pool)
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
     {
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   transaction_ = nullptr;
-#endif
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 Page::~Page() {
   DCHECK(transaction_ == nullptr);
 }
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
 
 void Page::DcheckTransactionAssignmentIsValid(
     TransactionImpl* transaction) noexcept {
@@ -90,6 +90,6 @@ void Page::DcheckPageSizeMatches(size_t page_size) const noexcept {
   DCHECK_EQ(page_size, page_pool_->page_size());
 }
 
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
 }  // namespace berrydb

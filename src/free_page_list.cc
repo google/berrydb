@@ -11,16 +11,17 @@
 #include "./pinned_page.h"
 #include "./store_impl.h"
 #include "./transaction_impl.h"
+#include "./util/checks.h"
 #include "./util/span_util.h"
 
 namespace berrydb {
 
 std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
-  DCHECK(transaction != nullptr);
-  DCHECK(transaction != transaction->store()->init_transaction());
-#if DCHECK_IS_ON()
-  DCHECK(!was_merged_);
-#endif  // DCHECK_IS_ON()
+  BERRYDB_ASSUME(transaction != nullptr);
+  BERRYDB_ASSUME(transaction != transaction->store()->init_transaction());
+#if BERRYDB_CHECK_IS_ON()
+  BERRYDB_CHECK(!was_merged_);
+#endif  // BERRYDB_CHECK_IS_ON()
 
   if (is_empty())
     return {Status::kSuccess, kInvalidPageId};
@@ -32,12 +33,12 @@ std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
   std::tie(status, raw_head_page) = page_pool->StorePage(
       store, head_page_id_, PagePool::kFetchPageData);
   if (status != Status::kSuccess) {
-    DCHECK(raw_head_page == nullptr);
+    BERRYDB_ASSUME(raw_head_page == nullptr);
     return {status, kInvalidPageId};
   }
   PinnedPage head_page(raw_head_page, page_pool);
 
-  // The code below only uses the span size for DCHECKs, and relies on the
+  // The code below only uses the span size for CHECKs, and relies on the
   // compiler to optimize the span into a pointer in release mode.
   span<const uint8_t> head_page_data = head_page.data();
 
@@ -89,12 +90,12 @@ std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
 }
 
 Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
-  DCHECK(transaction != nullptr);
-  DCHECK(transaction != transaction->store()->init_transaction());
-  DCHECK(page_id != kInvalidPageId);
-#if DCHECK_IS_ON()
-  DCHECK(!was_merged_);
-#endif  // DCHECK_IS_ON()
+  BERRYDB_ASSUME(transaction != nullptr);
+  BERRYDB_ASSUME(transaction != transaction->store()->init_transaction());
+  BERRYDB_ASSUME(page_id != kInvalidPageId);
+#if BERRYDB_CHECK_IS_ON()
+  BERRYDB_CHECK(!was_merged_);
+#endif  // BERRYDB_CHECK_IS_ON()
 
   StoreImpl* store = transaction->store();
   PagePool* page_pool = store->page_pool();
@@ -105,7 +106,7 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
     std::tie(status, raw_head_page) = page_pool->StorePage(
         store, head_page_id_, PagePool::kFetchPageData);
     if (status != Status::kSuccess) {
-      DCHECK(raw_head_page == nullptr);
+      BERRYDB_ASSUME(raw_head_page == nullptr);
       return status;
     }
     PinnedPage head_page(raw_head_page, page_pool);
@@ -143,7 +144,7 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
   std::tie(status, raw_head_page) = page_pool->StorePage(
       store, page_id, PagePool::kIgnorePageData);
   if (status != Status::kSuccess) {
-    DCHECK(raw_head_page == nullptr);
+    BERRYDB_ASSUME(raw_head_page == nullptr);
     return status;
   }
   PinnedPage head_page(raw_head_page, page_pool);
@@ -172,15 +173,15 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
 }
 
 Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
-  DCHECK(transaction != nullptr);
-  DCHECK(transaction != transaction->store()->init_transaction());
-  DCHECK(other != nullptr);
-#if DCHECK_IS_ON()
-  DCHECK(!was_merged_);
-  DCHECK(!other->was_merged_);
-  DCHECK(other->tail_page_is_defined_);
+  BERRYDB_ASSUME(transaction != nullptr);
+  BERRYDB_ASSUME(transaction != transaction->store()->init_transaction());
+  BERRYDB_ASSUME(other != nullptr);
+#if BERRYDB_CHECK_IS_ON()
+  BERRYDB_CHECK(!was_merged_);
+  BERRYDB_CHECK(!other->was_merged_);
+  BERRYDB_CHECK(other->tail_page_is_defined_);
   other->was_merged_ = true;
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
   if (other->is_empty())
     return Status::kSuccess;
@@ -192,7 +193,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
   std::tie(status, raw_head_page) = page_pool->StorePage(
       store, head_page_id_, PagePool::kFetchPageData);
   if (status != Status::kSuccess) {
-    DCHECK(raw_head_page == nullptr);
+    BERRYDB_ASSUME(raw_head_page == nullptr);
     return status;
   }
   PinnedPage head_page(raw_head_page, page_pool);
@@ -205,7 +206,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
   std::tie(status, raw_other_head_page) = page_pool->StorePage(
       store, other_head_page_id, PagePool::kFetchPageData);
   if (status != Status::kSuccess) {
-    DCHECK(raw_other_head_page == nullptr);
+    BERRYDB_ASSUME(raw_other_head_page == nullptr);
     return status;
   }
   PinnedPage other_head_page(raw_other_head_page, page_pool);
@@ -235,7 +236,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
         store, other_tail_page_id, PagePool::kFetchPageData);
 
     if (status != Status::kSuccess) {
-      DCHECK(raw_other_tail_page == nullptr);
+      BERRYDB_ASSUME(raw_other_tail_page == nullptr);
       return status;
     }
 
@@ -277,7 +278,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
       other_next_entry_offset - FreePageListFormat::kFirstEntryOffset;
   if (next_entry_offset + needed_space_minus_one_entry < page_size) {
     // This list's head page has enough room for all the IDs.
-    DCHECK_LE(
+    BERRYDB_ASSUME_LE(
         next_entry_offset + needed_space_minus_one_entry +
         FreePageListFormat::kEntrySize, page_size);
 
@@ -298,12 +299,12 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
     transaction->WillModifyPage(other_head_page.get());
     span<uint8_t> other_head_page_data = other_head_page.mutable_data();
 
-    // DCHECK failure implies that the data corruption check above is broken.
-    DCHECK_LE(other_next_entry_offset, page_size);
+    // False assumption implies that the data corruption check above is broken.
+    BERRYDB_ASSUME_LE(other_next_entry_offset, page_size);
     size_t empty_space = page_size - other_next_entry_offset;
-    // DCHECK failure implies that the page IDs in the two head pages do fit in
-    // a single page, so the capacity check above is broken.
-    DCHECK_LE(empty_space, next_entry_offset);
+    // False assumption implies that the page IDs in the two head pages do fit
+    // in a single page, so the capacity check above is broken.
+    BERRYDB_ASSUME_LE(empty_space, next_entry_offset);
     size_t new_next_entry_offset = next_entry_offset - empty_space;
     CopySpan(
         head_page_data.subspan(new_next_entry_offset, empty_space),

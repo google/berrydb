@@ -30,9 +30,9 @@ TEST_F(ChecksTest, CheckSuccess) {
 
 TEST_F(ChecksDeathTest, CheckFailure) {
   ASSERT_FALSE(five_ == six_);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_CHECK(five_ == six_), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksTest, CheckEqSuccess) {
@@ -42,10 +42,10 @@ TEST_F(ChecksTest, CheckEqSuccess) {
 
 TEST_F(ChecksDeathTest, CheckEqFailure) {
   ASSERT_NE(five_, six_);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_CHECK_EQ(five_, six_), "");
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_CHECK_EQ(six_, five_), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksTest, CheckNeSuccess) {
@@ -57,9 +57,9 @@ TEST_F(ChecksTest, CheckNeSuccess) {
 
 TEST_F(ChecksDeathTest, CheckNeFailure) {
   ASSERT_EQ(five_, six_ - 1);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_CHECK_NE(five_, six_ - 1), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksTest, CheckGeSuccess) {
@@ -71,9 +71,9 @@ TEST_F(ChecksTest, CheckGeSuccess) {
 
 TEST_F(ChecksDeathTest, CheckGeFailure) {
   ASSERT_LT(five_, six_);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_CHECK_GE(five_, six_), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksTest, CheckGtSuccess) {
@@ -84,10 +84,10 @@ TEST_F(ChecksTest, CheckGtSuccess) {
 TEST_F(ChecksDeathTest, CheckGtFailure) {
   ASSERT_LE(five_, six_);
   ASSERT_LE(five_ + 1, six_);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_CHECK_GT(five_, six_), "");
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_CHECK_GT(five_ + 1, six_), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksTest, CheckLeSuccess) {
@@ -99,9 +99,9 @@ TEST_F(ChecksTest, CheckLeSuccess) {
 
 TEST_F(ChecksDeathTest, CheckLeFailure) {
   ASSERT_GT(six_, five_);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_CHECK_LE(six_, five_), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksTest, CheckLtSuccess) {
@@ -112,10 +112,10 @@ TEST_F(ChecksTest, CheckLtSuccess) {
 TEST_F(ChecksDeathTest, CheckLtFailure) {
   ASSERT_GE(six_, five_);
   ASSERT_GE(six_, five_ + 1);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_CHECK_LT(six_, five_), "");
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_CHECK_LT(six_, five_ + 1), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksTest, AssumeSuccess) {
@@ -125,9 +125,9 @@ TEST_F(ChecksTest, AssumeSuccess) {
 
 TEST_F(ChecksDeathTest, AssumeFailure) {
   ASSERT_FALSE(five_ == six_);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_ASSUME(five_ == six_), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksTest, AssumeEqSuccess) {
@@ -137,10 +137,10 @@ TEST_F(ChecksTest, AssumeEqSuccess) {
 
 TEST_F(ChecksDeathTest, AssumeEqFailure) {
   ASSERT_NE(five_, six_);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_ASSUME_EQ(five_, six_), "");
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_ASSUME_EQ(six_, five_), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksTest, AssumeNeSuccess) {
@@ -152,9 +152,9 @@ TEST_F(ChecksTest, AssumeNeSuccess) {
 
 TEST_F(ChecksDeathTest, AssumeNeFailure) {
   ASSERT_EQ(five_, six_ - 1);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_ASSUME_NE(five_, six_ - 1), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksTest, AssumeGeSuccess) {
@@ -166,9 +166,9 @@ TEST_F(ChecksTest, AssumeGeSuccess) {
 
 TEST_F(ChecksDeathTest, AssumeGeFailure) {
   ASSERT_LT(five_, six_);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_ASSUME_GE(five_, six_), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksTest, AssumeGtSuccess) {
@@ -179,10 +179,10 @@ TEST_F(ChecksTest, AssumeGtSuccess) {
 TEST_F(ChecksDeathTest, AssumeGtFailure) {
   ASSERT_LE(five_, six_);
   ASSERT_LE(five_ + 1, six_);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_ASSUME_GT(five_, six_), "");
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_ASSUME_GT(five_ + 1, six_), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksTest, AssumeLeSuccess) {
@@ -194,9 +194,9 @@ TEST_F(ChecksTest, AssumeLeSuccess) {
 
 TEST_F(ChecksDeathTest, AssumeLeFailure) {
   ASSERT_GT(six_, five_);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_ASSUME_LE(six_, five_), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksTest, AssumeLtSuccess) {
@@ -207,17 +207,17 @@ TEST_F(ChecksTest, AssumeLtSuccess) {
 TEST_F(ChecksDeathTest, AssumeLtFailure) {
   ASSERT_GE(six_, five_);
   ASSERT_GE(six_, five_ + 1);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_ASSUME_LT(six_, five_), "");
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_ASSUME_LT(six_, five_ + 1), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 TEST_F(ChecksDeathTest, Unreachable) {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_UNREACHABLE(), "");
   EXPECT_DEATH_IF_SUPPORTED(BERRYDB_UNREACHABLE(), "");
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 }
 
 }  // namespace berrydb

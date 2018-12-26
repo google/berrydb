@@ -7,8 +7,8 @@
 
 #include <tuple>
 
-#include "berrydb/platform.h"
 #include "berrydb/types.h"
+#include "./util/checks.h"
 
 namespace berrydb {
 
@@ -82,9 +82,9 @@ class FreePageList {
 
   /** The first page in the free list. */
   inline constexpr size_t head_page_id() const noexcept {
-#if DCHECK_IS_ON()
-    DCHECK(!was_merged_);
-#endif  // DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
+    BERRYDB_CHECK(!was_merged_);
+#endif  // BERRYDB_CHECK_IS_ON()
     return head_page_id_;
   }
 
@@ -94,10 +94,10 @@ class FreePageList {
    * This method should not be used for lists where set_head_page_id() was
    * called. */
   inline constexpr size_t tail_page_id() const noexcept {
-#if DCHECK_IS_ON()
-    DCHECK(!was_merged_);
-    DCHECK(tail_page_is_defined_);
-#endif  // DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
+    BERRYDB_CHECK(!was_merged_);
+    BERRYDB_CHECK(tail_page_is_defined_);
+#endif  // BERRYDB_CHECK_IS_ON()
     return tail_page_id_;
   }
 
@@ -109,10 +109,10 @@ class FreePageList {
    * this method called on them
    */
   inline void set_head_page_id(size_t head_page_id) noexcept {
-#if DCHECK_IS_ON()
-    DCHECK(!was_merged_);
+#if BERRYDB_CHECK_IS_ON()
+    BERRYDB_CHECK(!was_merged_);
     tail_page_is_defined_ = false;
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
     head_page_id_ = head_page_id;
   }
 
@@ -121,21 +121,21 @@ class FreePageList {
     return head_page_id_ == kInvalidPageId;
   }
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   /** True if this list has been was_merged into another list.
    *
-   * This method should only be used in DCHECKs. */
+   * This method should only be used in CHECKs. */
   inline constexpr bool was_merged() const noexcept { return was_merged_; }
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
  private:
   size_t head_page_id_;
   size_t tail_page_id_;
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   bool tail_page_is_defined_ = true;
   bool was_merged_ = false;
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 };
 
 }  // namespace berrydb

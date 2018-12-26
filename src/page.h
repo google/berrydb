@@ -12,6 +12,7 @@
 #include "berrydb/span.h"
 // #include "./store_impl.h" would cause a cycle
 // #include "./transaction_impl.h" would cause a cycle
+#include "./util/checks.h"
 #include "./util/linked_list.h"
 
 namespace berrydb {
@@ -123,9 +124,9 @@ class Page {
    * @return an immutable span covering the page's data
    */
   inline span<const uint8_t> data(size_t page_size) const noexcept {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DcheckPageSizeMatches(page_size);
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
     return span<const uint8_t>(buffer(), page_size);
   }
 
@@ -139,18 +140,18 @@ class Page {
    */
   inline span<uint8_t> mutable_data(size_t page_size) noexcept {
     DCHECK(!IsUnpinned());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DcheckPageSizeMatches(page_size);
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
     return span<uint8_t>(mutable_buffer(), page_size);
   }
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   /** The pool that this page belongs to. Solely intended for use in DCHECKs. */
   inline constexpr const PagePool* page_pool() const noexcept {
     return page_pool_;
   }
-#endif  // DCHECK_IS_ON
+#endif  // BERRYDB_CHECK_IS_ON
 
   /** True if the pool page's contents can be replaced. */
   inline constexpr bool IsUnpinned() const noexcept {
@@ -159,9 +160,9 @@ class Page {
 
   /** Increments the page's pin count. */
   inline void AddPin() noexcept {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DCHECK_NE(pin_count_, kMaxPinCount);
-#endif  // DCHECK_IS_ON
+#endif  // BERRYDB_CHECK_IS_ON()
     ++pin_count_;
   }
 
@@ -183,12 +184,12 @@ class Page {
     DCHECK(transaction != nullptr);
     DCHECK(pin_count_ != 0);
     DCHECK(!is_dirty_);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DCHECK(transaction_ == nullptr);
     DCHECK(transaction_list_node_.list_sentinel() == nullptr);
     DCHECK(linked_list_node_.list_sentinel() == nullptr);
     DcheckTransactionAssignmentIsValid(transaction);
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
     transaction_ = transaction;
     page_id_ = page_id;
@@ -205,16 +206,16 @@ class Page {
   inline void DoesNotCacheStoreData() noexcept {
     DCHECK_EQ(pin_count_, 1U);
     DCHECK(transaction_ != nullptr);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     // Fails if TransactionImpl::PageWillBeUnassigned() was not called right
     // before calling this method.
     DCHECK(transaction_list_node_.list_sentinel() == nullptr);
     DCHECK(linked_list_node_.list_sentinel() == nullptr);
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     transaction_ = nullptr;
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
   }
 
   /** Dirty flag setter for PagePool and TransactionImpl.
@@ -225,9 +226,9 @@ class Page {
    * @param is_dirty the new value of the page pool entry's dirty flag
    */
   inline void SetDirty(bool is_dirty) noexcept {
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DcheckNewDirtyValueIsValid(is_dirty);
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
     is_dirty_ = is_dirty;
   }
@@ -248,9 +249,9 @@ class Page {
   inline void ReassignToTransaction(TransactionImpl* transaction) noexcept {
     DCHECK(transaction != nullptr);
     DCHECK(transaction_ != nullptr);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DcheckTransactionReassignmentIsValid(transaction);
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
     transaction_ = transaction;
   }
@@ -260,7 +261,7 @@ class Page {
   Page(PagePool* page);
   ~Page();
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   /** The maximum value that pin_count_ can hold.
    *
    * Pages should always be pinned by a very small number of modules.
@@ -295,7 +296,7 @@ class Page {
    *
    * @param page_size the size that this page must match */
   void DcheckPageSizeMatches(size_t page_size) const noexcept;
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
   friend class LinkedListBridge<Page>;
   LinkedList<Page>::Node linked_list_node_;
@@ -316,9 +317,9 @@ class Page {
   size_t pin_count_;
   bool is_dirty_ = false;
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   PagePool* const page_pool_;
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
  public:
   /** Bridge for TransactionImpl's LinkedList<Page>.

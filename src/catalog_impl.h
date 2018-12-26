@@ -6,9 +6,9 @@
 #define BERRYDB_CATALOG_IMPL_H_
 
 #include "berrydb/catalog.h"
-#include "berrydb/platform.h"
 #include "berrydb/span.h"
 #include "berrydb/types.h"
+#include "./util/checks.h"
 
 namespace berrydb {
 
@@ -27,13 +27,13 @@ class CatalogImpl {
   /** Computes the internal representation for a pointer from the public API. */
   static inline CatalogImpl* FromApi(Catalog* api) noexcept {
     CatalogImpl* impl = reinterpret_cast<CatalogImpl*>(api);
-    DCHECK_EQ(api, &impl->api_);
+    BERRYDB_ASSUME_EQ(api, &impl->api_);
     return impl;
   }
   /** Computes the internal representation for a pointer from the public API. */
   static inline const CatalogImpl* FromApi(const Catalog* api) noexcept {
     const CatalogImpl* impl = reinterpret_cast<const CatalogImpl*>(api);
-    DCHECK_EQ(api, &impl->api_);
+    BERRYDB_ASSUME_EQ(api, &impl->api_);
     return impl;
   }
 

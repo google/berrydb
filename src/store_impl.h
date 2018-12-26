@@ -123,12 +123,12 @@ class StoreImpl {
    * @param transaction must be associated with this store, and closed */
   void TransactionClosed(TransactionImpl* transaction);
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   /** Number of pool pages assigned to this store. For use in DCHECKs only.
    *
    * This includes pinned pages and pages in the LRU list. */
   size_t AssignedPageCount() noexcept;
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
  private:
   /** Use StoreImpl::Create() to obtain StoreImpl instances. */

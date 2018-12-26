@@ -200,9 +200,9 @@ Status StoreImpl::WritePage(Page* page) {
 void StoreImpl::TransactionClosed(TransactionImpl* transaction) {
   DCHECK(transaction != nullptr);
   DCHECK(transaction->IsClosed());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   DCHECK_EQ(this, transaction->store());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
   DCHECK(state_ != State::kClosed);
   if (state_ != State::kOpen)
@@ -217,13 +217,13 @@ std::string StoreImpl::LogFilePath(const std::string& store_path) {
   return log_path;
 }
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
 size_t StoreImpl::AssignedPageCount() noexcept {
   size_t count = init_transaction_.AssignedPageCount();
   for (TransactionImpl* transaction : transactions_)
     count += transaction->AssignedPageCount();
   return count;
 }
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
 }  // namespace berrydb

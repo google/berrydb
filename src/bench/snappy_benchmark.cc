@@ -8,6 +8,7 @@
 #include "snappy.h"
 
 #include "berrydb/platform.h"
+#include "../util/checks.h"
 
 namespace berrydb {
 
@@ -29,7 +30,7 @@ BENCHMARK_DEFINE_F(SnappyBenchmark, CompressionTest)(benchmark::State& state) {
     snappy::RawCompress(
         reinterpret_cast<char*>(input), input_size,
         reinterpret_cast<char*>(output), &output_size);
-    DCHECK_LE(output_size, output_buffer_size);
+    BERRYDB_ASSUME_LE(output_size, output_buffer_size);
   }
 
   state.SetBytesProcessed(state.iterations() * input_size);

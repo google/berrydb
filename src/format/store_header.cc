@@ -4,6 +4,7 @@
 
 #include "./store_header.h"
 
+#include "../util/checks.h"
 #include "../util/endianness.h"
 
 namespace berrydb {
@@ -24,9 +25,9 @@ namespace berrydb {
 
 StoreHeader::StoreHeader(size_t page_shift, size_t page_count)
     : page_count(page_count)
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     , free_list_head_page(kInvalidFreeListHeadPage)
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
     , page_shift(page_shift)
     {
 }
@@ -40,7 +41,7 @@ void StoreHeader::Serialize(span<uint8_t> to) {
 
   // This is guaranteed to set all the bytes 40..47 to 0.
   StoreUint64(0, to.subspan(40, 8));
-  DCHECK_LT(page_shift, 32U);
+  BERRYDB_ASSUME_LT(page_shift, 32U);
   to[40] = static_cast<uint8_t>(page_shift);
 }
 

@@ -14,6 +14,7 @@
 #include "./page.h"
 #include "./store_impl.h"
 #include "./transaction_impl.h"
+#include "./util/checks.h"
 #include "./util/linked_list.h"
 #include "./util/platform_allocator.h"
 #include "berrydb/platform.h"
@@ -167,9 +168,9 @@ class PagePool {
     DCHECK(page != nullptr);
     DCHECK(page->transaction() != nullptr);
     DCHECK(page->transaction()->store() != nullptr);
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     DCHECK_EQ(page->page_pool(), this);
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
     page->RemovePin();
     if (page->IsUnpinned()) {

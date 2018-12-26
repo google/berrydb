@@ -12,6 +12,7 @@
 #include "berrydb/status.h"
 #include "berrydb/vfs.h"
 #include "../test/file_deleter.h"
+#include "../util/checks.h"
 #include "../util/unique_ptr.h"
 
 namespace berrydb {
@@ -23,10 +24,10 @@ class VfsBenchmark : public benchmark::Fixture {
   void SetUp(const benchmark::State& state) override {
     block_size_ = static_cast<size_t>(state.range(0));
     block_shift_ = static_cast<size_t>(std::log2(block_size_));
-    DCHECK_EQ(block_size_, static_cast<size_t>(1) << block_shift_);
+    BERRYDB_ASSUME_EQ(block_size_, static_cast<size_t>(1) << block_shift_);
 
     block_bytes_ = reinterpret_cast<uint8_t*>(Allocate(block_size_));
-    DCHECK(block_bytes_ != nullptr);
+    BERRYDB_ASSUME(block_bytes_ != nullptr);
   }
 
   void TearDown(MAYBE_UNUSED const benchmark::State& state) override {

@@ -31,9 +31,9 @@ class PinnedPage {
     assert(page != nullptr);
     assert(page_pool != nullptr);
     assert(!page->IsUnpinned());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     assert(page->page_pool() == page_pool);
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
   }
 
   inline ~PinnedPage() { page_pool_->UnpinStorePage(page_); }

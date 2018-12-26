@@ -4,7 +4,7 @@
 
 #include "berrydb/status.h"
 
-#include "berrydb/platform.h"
+#include "../util/checks.h"
 
 namespace berrydb {
 
@@ -33,8 +33,7 @@ const char* StatusToCString(Status status) noexcept {
     break;
   }
 
-  DCHECK(false);
-  return "Unknown Status";
+  BERRYDB_UNREACHABLE();
 }
 
 }  // namespace berrydb

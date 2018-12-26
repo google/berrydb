@@ -8,6 +8,7 @@
 #include "berrydb/platform.h"
 #include "berrydb/vfs.h"
 #include "./store_impl.h"
+#include "./util/checks.h"
 
 namespace berrydb {
 
@@ -47,9 +48,9 @@ void* PoolImpl::operator new(size_t instance_size) {
 void PoolImpl::StoreCreated(StoreImpl* store) {
   DCHECK(store != nullptr);
   DCHECK(!store->IsClosed());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   DCHECK_EQ(this, store->page_pool()->pool());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
   stores_.insert(store);
 }
@@ -57,9 +58,9 @@ void PoolImpl::StoreCreated(StoreImpl* store) {
 void PoolImpl::StoreClosed(StoreImpl* store) {
   DCHECK(store != nullptr);
   DCHECK(store->IsClosed());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   DCHECK_EQ(this, store->page_pool()->pool());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
   // TODO(pwnall): This probably needs the same open/closed/isClosing logic as
   //               StoreImpl::TransactionClosed().

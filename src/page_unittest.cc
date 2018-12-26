@@ -14,6 +14,7 @@
 #include "./pool_impl.h"
 #include "./store_impl.h"
 #include "./test/file_deleter.h"
+#include "./util/checks.h"
 #include "./util/unique_ptr.h"
 
 #include "gtest/gtest.h"
@@ -67,10 +68,10 @@ TEST_F(PageTest, CreateRelease) {
 
   Page* page = Page::Create(&page_pool);
   EXPECT_NE(nullptr, page->buffer());
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_EQ(nullptr, page->transaction());
   EXPECT_EQ(&page_pool, page->page_pool());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
   page->RemovePin();
   EXPECT_TRUE(page->IsUnpinned());
@@ -121,9 +122,9 @@ TEST_F(PageTest, WillCacheStoreDataDoesNotCacheStoreData) {
   EXPECT_EQ(1337U, page->page_id());
 
   page->DoesNotCacheStoreData();
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
   EXPECT_EQ(nullptr, page->transaction());
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
   page->Release(page_pool);
 }

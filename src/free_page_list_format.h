@@ -55,8 +55,8 @@ class FreePageListFormat {
     // The implementation relies on the compiler to optimize away the span's
     // size and only pass the pointer in release builds.
     //
-    // The next_entry_offset value is not DCHECKed on purpose, so this method
-    // can be used by data corruption tests.
+    // The next_entry_offset value is not CHECKed on purpose, so this method can
+    // be used by data corruption tests.
     //
     // The 64-bit store is safe because page data is at least 64-bit-aligned,
     // and list data pages are made up of 64-bit numbers.
@@ -97,12 +97,12 @@ class FreePageListFormat {
    */
   static inline void SetNextPageId64(uint64_t next_page_id64,
                                      span<uint8_t> page_data) noexcept {
-    // The span size is only used in the DCHECK.
+    // The span size is only used in the CHECK.
     //
     // The implementation relies on the compiler to optimize away the span's
     // size and only pass the pointer in release builds.
     //
-    // The next_page_id64 value is not DCHECKed on purpose, so this method can
+    // The next_page_id64 value is not CHECKed on purpose, so this method can
     // be used by data corruption tests.
     //
     // The 64-bit store is safe because page data is at least 64-bit-aligned,

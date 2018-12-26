@@ -10,6 +10,7 @@
 #include "./page_pool.h"
 #include "./store_impl.h"
 #include "./transaction_impl.h"
+#include "./util/checks.h"
 
 namespace berrydb {
 
@@ -18,11 +19,11 @@ static_assert(
     "kInvalidPageId must be the same in FreePageManager and FreePageList");
 
 FreePageManager::FreePageManager(MAYBE_UNUSED StoreImpl* store)
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     : store_(store)
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
     {
-  DCHECK(store);
+  BERRYDB_ASSUME(store != nullptr);
 }
 
 FreePageManager::~FreePageManager() = default;
@@ -30,10 +31,10 @@ FreePageManager::~FreePageManager() = default;
 size_t FreePageManager::AllocPage(
     MAYBE_UNUSED TransactionImpl* transaction,
     MAYBE_UNUSED TransactionImpl* alloc_transaction) {
-#if DCHECK_IS_ON()
-  DCHECK_EQ(store_, transaction->store());
-  DCHECK_EQ(store_, alloc_transaction->store());
-#endif  // DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
+  BERRYDB_CHECK_EQ(store_, transaction->store());
+  BERRYDB_CHECK_EQ(store_, alloc_transaction->store());
+#endif  // BERRYDB_CHECK_IS_ON()
 
   // TODO(pwnall): Check for free pages scoped to the transaction.
 

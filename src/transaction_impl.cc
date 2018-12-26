@@ -32,18 +32,18 @@ void TransactionImpl::Release() {
 
 TransactionImpl::TransactionImpl(StoreImpl* store)
     : store_(store)
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     , is_init_(false)
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
     {
   DCHECK(store != nullptr);
 }
 
 TransactionImpl::TransactionImpl(StoreImpl* store, MAYBE_UNUSED bool is_init)
     : store_(store)
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
     , is_init_(true)
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
     {
   DCHECK(store != nullptr);
   DCHECK(is_init == true);
@@ -55,7 +55,7 @@ TransactionImpl::~TransactionImpl() {
 }
 
 
-#if DCHECK_IS_ON()
+#if BERRYDB_CHECK_IS_ON()
 void TransactionImpl::DcheckPageBelongsToTransaction(Page* page) {
   DCHECK(page != nullptr);
   DCHECK_EQ(page->transaction(), this);
@@ -65,7 +65,7 @@ void TransactionImpl::DcheckPageBelongsToTransaction(Page* page) {
 bool TransactionImpl::IsInit() const noexcept {
   return store_->init_transaction() == this;
 }
-#endif  // DCHECK_IS_ON()
+#endif  // BERRYDB_CHECK_IS_ON()
 
 std::tuple<Status, span<const uint8_t>> TransactionImpl::Get(
     MAYBE_UNUSED SpaceImpl* space, MAYBE_UNUSED span<const uint8_t> key) {
