@@ -5,9 +5,11 @@
 #ifndef BERRYDB_PINNED_PAGE_H_
 #define BERRYDB_PINNED_PAGE_H_
 
+#include <cassert>
+
+#include "berrydb/platform.h"
 #include "./page.h"
 #include "./page_pool.h"
-#include "./util/checks.h"
 
 namespace berrydb {
 
@@ -25,12 +27,12 @@ class PinnedPage {
    */
   inline constexpr PinnedPage(Page* page, PagePool* page_pool) noexcept
       : page_(page), page_pool_(page_pool) {
-    BERRYDB_ASSUME(page != nullptr);
-    BERRYDB_ASSUME(page_pool != nullptr);
-    BERRYDB_ASSUME(!page->IsUnpinned());
+    // DCHECK doesn't work inside constexpr.
+    assert(page != nullptr);
+    assert(page_pool != nullptr);
+    assert(!page->IsUnpinned());
 #if BERRYDB_CHECK_IS_ON()
-    // BERRYDB_CHECK_EQ doesn't currently work inside constexpr.
-    BERRYDB_CHECK(page->page_pool() == page_pool);
+    assert(page->page_pool() == page_pool);
 #endif  // BERRYDB_CHECK_IS_ON()
   }
 

@@ -8,7 +8,6 @@
 #include "berrydb/platform.h"
 #include "berrydb/span.h"
 #include "berrydb/types.h"
-#include "./checks.h"
 
 namespace berrydb {
 
@@ -23,9 +22,9 @@ namespace berrydb {
  */
 template <typename ElementType>
 inline constexpr uint64_t LoadUint64(span<ElementType> from) noexcept {
-  BERRYDB_ASSUME(from.data() != nullptr);
-  BERRYDB_ASSUME_EQ((reinterpret_cast<uintptr_t>(from.data()) & 7), 0U);
-  BERRYDB_ASSUME_EQ(from.size_bytes(), 8U);
+  // DCHECK_EQ doesn't work in constexpr.
+  DCHECK((reinterpret_cast<uintptr_t>(from.data()) & 7) == 0);
+  DCHECK(from.size_bytes() == 8);
 
   return PlatformLoadUint64(from.data());
 }
@@ -44,9 +43,8 @@ template <
     typename ElementType,
     typename = std::enable_if_t<!std::is_const<ElementType>::value>>
 inline void StoreUint64(uint64_t value, span<ElementType> to) noexcept {
-  BERRYDB_ASSUME(to.data() != nullptr);
-  BERRYDB_ASSUME_EQ((reinterpret_cast<uintptr_t>(to.data()) & 7), 0U);
-  BERRYDB_ASSUME_EQ(to.size_bytes(), 8U);
+  DCHECK_EQ((reinterpret_cast<uintptr_t>(to.data()) & 7), 0U);
+  DCHECK_EQ(to.size_bytes(), 8U);
 
   return PlatformStoreUint64(value, to.data());
 }

@@ -69,12 +69,12 @@ struct StoreHeader {
   /** Magic number used to tag all BerryDB files.
    *
    * The number is encoded as "BerryDB " on little-endian systems. */
-  static constexpr uint64_t kGlobalMagic = 0x2042447972726542;
+  static constexpr uint64_t kGlobalMagic = 0x4265727279444220;
 
   /** Magic number used to tag BerryDB store files.
    *
    * The number is encoded as "DBStore " on little-endian systems. */
-  static constexpr uint64_t kStoreMagic = 0x2065726f74534244;
+  static constexpr uint64_t kStoreMagic = 0x444253746f726520;
 
   /** Invalid value for the free_list_head_page header field.
    *
