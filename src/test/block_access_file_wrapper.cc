@@ -4,8 +4,8 @@
 
 #include "./block_access_file_wrapper.h"
 
-#include "berrydb/platform.h"
 #include "berrydb/status.h"
+#include "../util/checks.h"
 
 namespace berrydb {
 
@@ -18,28 +18,28 @@ BlockAccessFileWrapper::~BlockAccessFileWrapper() {
 }
 
 Status BlockAccessFileWrapper::Read(size_t offset, span<uint8_t> buffer) {
-  DCHECK(!is_closed_);
+  BERRYDB_ASSUME(!is_closed_);
   if (access_error_ != Status::kSuccess)
     return access_error_;
   return file_->Read(offset, buffer);
 }
 
 Status BlockAccessFileWrapper::Write(span<const uint8_t> data, size_t offset) {
-  DCHECK(!is_closed_);
+  BERRYDB_ASSUME(!is_closed_);
   if (access_error_ != Status::kSuccess)
     return access_error_;
   return file_->Write(data, offset);
 }
 
 Status BlockAccessFileWrapper::Sync() {
-  DCHECK(!is_closed_);
+  BERRYDB_ASSUME(!is_closed_);
   if (access_error_ != Status::kSuccess)
     return access_error_;
   return file_->Sync();
 }
 
 Status BlockAccessFileWrapper::Lock() {
-  DCHECK(!is_closed_);
+  BERRYDB_ASSUME(!is_closed_);
   if (access_error_ != Status::kSuccess)
     return access_error_;
   return file_->Lock();
@@ -47,7 +47,7 @@ Status BlockAccessFileWrapper::Lock() {
 
 
 Status BlockAccessFileWrapper::Close() {
-  DCHECK(!is_closed_);
+  BERRYDB_ASSUME(!is_closed_);
   is_closed_ = true;
 
   if (access_error_ != Status::kSuccess)

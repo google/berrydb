@@ -8,7 +8,6 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "berrydb/platform.h"
 #include "berrydb/span.h"
 // #include "./store_impl.h" would cause a cycle
 // #include "./transaction_impl.h" would cause a cycle
@@ -74,8 +73,8 @@ class Page {
    * no two concurrent transactions may modify the same Space, and each page
    * belongs at most one space.
    *
-   * When DCHECKs are enabled, this is null when the page is not assigned to a
-   * transaction. When DCHECKs are disabled, the value is undefined when the
+   * When CHECKs are enabled, this is null when the page is not assigned to a
+   * transaction. When CHECKs are disabled, the value is undefined when the
    * page is not assigend to a transaction.
    */
   inline constexpr TransactionImpl* transaction() const noexcept {
@@ -87,7 +86,7 @@ class Page {
    * This is undefined if the page pool entry isn't storing a store page's data.
    */
   inline constexpr size_t page_id() const noexcept {
-    DCHECK(transaction_ != nullptr);
+    BERRYDB_ASSUME(transaction_ != nullptr);
     return page_id_;
   }
 
@@ -97,7 +96,7 @@ class Page {
    * dirty page is removed from the pool, its content must be written to disk.
    */
   inline constexpr bool is_dirty() const noexcept {
-    DCHECK(!is_dirty_ || transaction_ != nullptr);
+    BERRYDB_ASSUME(!is_dirty_ || transaction_ != nullptr);
     return is_dirty_;
   }
 
@@ -125,7 +124,7 @@ class Page {
    */
   inline span<const uint8_t> data(size_t page_size) const noexcept {
 #if BERRYDB_CHECK_IS_ON()
-    DcheckPageSizeMatches(page_size);
+    CheckPageSizeMatches(page_size);
 #endif  // BERRYDB_CHECK_IS_ON()
     return span<const uint8_t>(buffer(), page_size);
   }
@@ -139,15 +138,15 @@ class Page {
    * @return a mutable span covering the page's data
    */
   inline span<uint8_t> mutable_data(size_t page_size) noexcept {
-    DCHECK(!IsUnpinned());
+    BERRYDB_ASSUME(!IsUnpinned());
 #if BERRYDB_CHECK_IS_ON()
-    DcheckPageSizeMatches(page_size);
+    CheckPageSizeMatches(page_size);
 #endif  // BERRYDB_CHECK_IS_ON()
     return span<uint8_t>(mutable_buffer(), page_size);
   }
 
 #if BERRYDB_CHECK_IS_ON()
-  /** The pool that this page belongs to. Solely intended for use in DCHECKs. */
+  /** The pool that this page belongs to. Solely intended for use in CHECKs. */
   inline constexpr const PagePool* page_pool() const noexcept {
     return page_pool_;
   }
@@ -160,15 +159,13 @@ class Page {
 
   /** Increments the page's pin count. */
   inline void AddPin() noexcept {
-#if BERRYDB_CHECK_IS_ON()
-    DCHECK_NE(pin_count_, kMaxPinCount);
-#endif  // BERRYDB_CHECK_IS_ON()
+    BERRYDB_ASSUME_NE(pin_count_, kMaxPinCount);
     ++pin_count_;
   }
 
   /** Decrements the page's pin count. */
   inline void RemovePin() noexcept {
-    DCHECK(pin_count_ != 0);
+    BERRYDB_ASSUME(pin_count_ != 0);
     --pin_count_;
   }
 
@@ -181,14 +178,14 @@ class Page {
    * must be pinned. */
   inline void WillCacheStoreData(TransactionImpl* transaction,
                                  size_t page_id) noexcept {
-    DCHECK(transaction != nullptr);
-    DCHECK(pin_count_ != 0);
-    DCHECK(!is_dirty_);
+    BERRYDB_ASSUME(transaction != nullptr);
+    BERRYDB_ASSUME(pin_count_ != 0);
+    BERRYDB_ASSUME(!is_dirty_);
 #if BERRYDB_CHECK_IS_ON()
-    DCHECK(transaction_ == nullptr);
-    DCHECK(transaction_list_node_.list_sentinel() == nullptr);
-    DCHECK(linked_list_node_.list_sentinel() == nullptr);
-    DcheckTransactionAssignmentIsValid(transaction);
+    BERRYDB_CHECK(transaction_ == nullptr);
+    BERRYDB_CHECK(transaction_list_node_.list_sentinel() == nullptr);
+    BERRYDB_CHECK(linked_list_node_.list_sentinel() == nullptr);
+    CheckTransactionAssignmentIsValid(transaction);
 #endif  // BERRYDB_CHECK_IS_ON()
 
     transaction_ = transaction;
@@ -204,13 +201,13 @@ class Page {
    * other pin owners will have the page's data change unexpectedly.
    */
   inline void DoesNotCacheStoreData() noexcept {
-    DCHECK_EQ(pin_count_, 1U);
-    DCHECK(transaction_ != nullptr);
+    BERRYDB_ASSUME_EQ(pin_count_, 1U);
+    BERRYDB_ASSUME(transaction_ != nullptr);
 #if BERRYDB_CHECK_IS_ON()
     // Fails if TransactionImpl::PageWillBeUnassigned() was not called right
     // before calling this method.
-    DCHECK(transaction_list_node_.list_sentinel() == nullptr);
-    DCHECK(linked_list_node_.list_sentinel() == nullptr);
+    BERRYDB_ASSUME(transaction_list_node_.list_sentinel() == nullptr);
+    BERRYDB_ASSUME(linked_list_node_.list_sentinel() == nullptr);
 #endif  // BERRYDB_CHECK_IS_ON()
 
 #if BERRYDB_CHECK_IS_ON()
@@ -227,7 +224,7 @@ class Page {
    */
   inline void SetDirty(bool is_dirty) noexcept {
 #if BERRYDB_CHECK_IS_ON()
-    DcheckNewDirtyValueIsValid(is_dirty);
+    CheckNewDirtyValueIsValid(is_dirty);
 #endif  // BERRYDB_CHECK_IS_ON()
 
     is_dirty_ = is_dirty;
@@ -247,10 +244,10 @@ class Page {
    * @param transaction the transaction that the Page is reassigned to
    */
   inline void ReassignToTransaction(TransactionImpl* transaction) noexcept {
-    DCHECK(transaction != nullptr);
-    DCHECK(transaction_ != nullptr);
+    BERRYDB_ASSUME(transaction != nullptr);
+    BERRYDB_ASSUME(transaction_ != nullptr);
 #if BERRYDB_CHECK_IS_ON()
-    DcheckTransactionReassignmentIsValid(transaction);
+    CheckTransactionReassignmentIsValid(transaction);
 #endif  // BERRYDB_CHECK_IS_ON()
 
     transaction_ = transaction;
@@ -261,7 +258,6 @@ class Page {
   Page(PagePool* page);
   ~Page();
 
-#if BERRYDB_CHECK_IS_ON()
   /** The maximum value that pin_count_ can hold.
    *
    * Pages should always be pinned by a very small number of modules.
@@ -269,33 +265,34 @@ class Page {
    */
   static constexpr size_t kMaxPinCount = ~static_cast<size_t>(0);
 
+#if BERRYDB_CHECK_IS_ON()
   // These methods performs state consistency checks. The declarations are
   // clunky, but necessary because some of the checks depend on the definitions
   // of StoreImpl and TransactionImpl. This file cannot include their headers
   // because StoreImpl and TransactionImpl contain LinkedList<Page> fields,
   // and their inlined methods call into inlined Page methods.
 
-  /** DCHECKs that a transaction assignment for this page is valid.
+  /** CHECKs that a transaction assignment for this page is valid.
    *
    * @param transaction the transaction that the Page will be assigned to */
-  void DcheckTransactionAssignmentIsValid(
+  void CheckTransactionAssignmentIsValid(
       TransactionImpl* transaction) noexcept;
 
-  /** DCHECKs that the given dirty flag value makes sense for this page.
+  /** CHECKs that the given dirty flag value makes sense for this page.
    *
    * @param is_dirty the new value of the dirty's page flag */
-  void DcheckNewDirtyValueIsValid(bool is_dirty) noexcept;
+  void CheckNewDirtyValueIsValid(bool is_dirty) noexcept;
 
-  /** DCHECKs that a transaction reassignment for this page is valid.
+  /** CHECKs that a transaction reassignment for this page is valid.
    *
    * @param transaction the transaction that the Page will be reassigned to */
-  void DcheckTransactionReassignmentIsValid(
+  void CheckTransactionReassignmentIsValid(
       TransactionImpl* transaction) noexcept;
 
-  /** DCHECKs that the page's size matches the given argument.
+  /** CHECKs that the page's size matches the given argument.
    *
    * @param page_size the size that this page must match */
-  void DcheckPageSizeMatches(size_t page_size) const noexcept;
+  void CheckPageSizeMatches(size_t page_size) const noexcept;
 #endif  // BERRYDB_CHECK_IS_ON()
 
   friend class LinkedListBridge<Page>;
@@ -304,6 +301,12 @@ class Page {
   friend class TransactionLinkedListBridge;
   LinkedList<Page>::Node transaction_list_node_;
 
+  /** The transaction this page is used by.
+   *
+   * When CHECKs are enabled, this is null when the page is not assigned to a
+   * transaction. When CHECKs are disabled, the value is undefined when the
+   * page is not assigend to a transaction.
+   */
   TransactionImpl* transaction_;
 
   /** The cached page ID, for pool entries that are caching a store's pages.
@@ -337,7 +340,7 @@ class Page {
       Embedder* const host = reinterpret_cast<Embedder*>(
           reinterpret_cast<char*>(node) -
           offsetof(Embedder, transaction_list_node_));
-      DCHECK_EQ(node, &host->transaction_list_node_);
+      BERRYDB_ASSUME_EQ(node, &host->transaction_list_node_);
       return host;
     }
   };

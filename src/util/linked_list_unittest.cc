@@ -39,7 +39,7 @@ class TestCustomLinkedListBridge {
     Embedder* host = reinterpret_cast<Embedder*>(
         reinterpret_cast<char*>(node) -
         offsetof(Embedder, custom_list_node_));
-    DCHECK_EQ(node, &host->custom_list_node_);
+    BERRYDB_ASSUME_EQ(node, &host->custom_list_node_);
     return host;
   }
 };

@@ -25,7 +25,7 @@ class FreePageListFormat {
    */
   static inline constexpr size_t NextEntryOffset(
       span<const uint8_t> page_data) noexcept {
-    // The span size is only used in asserts.
+    // The span size is only used in CHECKs.
     //
     // The implementation relies on the compiler to optimize away the span's
     // size and only pass the pointer in release builds.
@@ -50,7 +50,7 @@ class FreePageListFormat {
    */
   static inline void SetNextEntryOffset(size_t next_entry_offset,
                                         span<uint8_t> page_data) noexcept {
-    // The span size is only used in asserts.
+    // The span size is only used in CHECKs.
     //
     // The implementation relies on the compiler to optimize away the span's
     // size and only pass the pointer in release builds.
@@ -78,7 +78,7 @@ class FreePageListFormat {
    */
   static constexpr inline uint64_t NextPageId64(
       span<const uint8_t> page_data) noexcept {
-    // The span size is only used in asserts.
+    // The span size is only used in CHECKs.
     //
     // The implementation relies on the compiler to optimize away the span's
     // size and only pass the pointer in release builds.

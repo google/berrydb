@@ -36,43 +36,32 @@
 #define BERRYDB_CHECK_LE(a, b)    DCHECK_LE((a), (b))
 #define BERRYDB_CHECK_LT(a, b)    DCHECK_LT((a), (b))
 
-#define BERRYDB_ASSUME(condition)  do {  \
-      BERRYDB_CHECK(condition);          \
-      BUILTIN_ASSUME(condition);         \
+#if BERRYDB_CHECK_IS_ON()
+
+#define BERRYDB_ASSUME(condition)  BERRYDB_CHECK(condition)
+#define BERRYDB_ASSUME_EQ(a, b)    BERRYDB_CHECK_EQ(a, b)
+#define BERRYDB_ASSUME_NE(a, b)    BERRYDB_CHECK_NE(a, b)
+#define BERRYDB_ASSUME_GE(a, b)    BERRYDB_CHECK_GE(a, b)
+#define BERRYDB_ASSUME_GT(a, b)    BERRYDB_CHECK_GT(a, b)
+#define BERRYDB_ASSUME_LE(a, b)    BERRYDB_CHECK_LE(a, b)
+#define BERRYDB_ASSUME_LT(a, b)    BERRYDB_CHECK_LT(a, b)
+
+#define BERRYDB_UNREACHABLE() do {  \
+      BERRYDB_CHECK(false);         \
+      BUILTIN_UNREACHABLE();        \
     } while (0)
 
-#define BERRYDB_ASSUME_EQ(a, b)  do {    \
-      BERRYDB_CHECK_EQ((a), (b));        \
-      BUILTIN_ASSUME((a) == (b));        \
-    } while (0)
-#define BERRYDB_ASSUME_NE(a, b)  do {    \
-      BERRYDB_CHECK_NE((a), (b));        \
-      BUILTIN_ASSUME((a) != (b));        \
-    } while (0)
+#else  // BERRYDB_CHECK_IS_ON()
 
-#define BERRYDB_ASSUME_GE(a, b)  do {    \
-      BERRYDB_CHECK_GE((a), (b));        \
-      BUILTIN_ASSUME((a) >= (b));        \
-    } while (0)
+#define BERRYDB_ASSUME(condition)  BUILTIN_ASSUME(condition)
+#define BERRYDB_ASSUME_EQ(a, b)    BUILTIN_ASSUME((a) == (b))
+#define BERRYDB_ASSUME_NE(a, b)    BUILTIN_ASSUME((a) != (b))
+#define BERRYDB_ASSUME_GE(a, b)    BUILTIN_ASSUME((a) >= (b))
+#define BERRYDB_ASSUME_GT(a, b)    BUILTIN_ASSUME((a) >  (b))
+#define BERRYDB_ASSUME_LE(a, b)    BUILTIN_ASSUME((a) <= (b))
+#define BERRYDB_ASSUME_LT(a, b)    BUILTIN_ASSUME((a) <  (b))
+#define BERRYDB_UNREACHABLE()      BUILTIN_UNREACHABLE()
 
-#define BERRYDB_ASSUME_GT(a, b)  do {    \
-      BERRYDB_CHECK_GT((a), (b));        \
-      BUILTIN_ASSUME((a) >  (b));        \
-    } while (0)
-
-#define BERRYDB_ASSUME_LE(a, b)  do {    \
-      BERRYDB_CHECK_LE((a), (b));        \
-      BUILTIN_ASSUME((a) >= (b));        \
-    } while (0)
-
-#define BERRYDB_ASSUME_LT(a, b)  do {    \
-      BERRYDB_CHECK_LT((a), (b));        \
-      BUILTIN_ASSUME((a) >  (b));        \
-    } while (0)
-
-#define BERRYDB_UNREACHABLE() do {       \
-      BERRYDB_CHECK(false);              \
-      BUILTIN_UNREACHABLE();             \
-    } while (0)
+#endif  // BERRYDB_CHECK_IS_ON()
 
 #endif  // BERRYDB_UTIL_CHECKS_H_

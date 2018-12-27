@@ -12,7 +12,7 @@ class ChecksTest : public ::testing::Test {
  public:
   void SetUp() override {
     // The initialization is not done in a constructor to avoid having compilers
-    // optimize out failing / passing DCHECKs at compile time.
+    // optimize out failing / passing CHECKs at compile time.
     five_ = 5;
     six_ = 6;
     seven_ = 7;
