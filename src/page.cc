@@ -16,9 +16,9 @@ namespace berrydb {
 Page* Page::Create(PagePool* page_pool) {
   DCHECK(page_pool != nullptr);
 
-  size_t block_size = sizeof(Page) + page_pool->page_size();
-  void* page_block = Allocate(block_size);
-  Page* page = new (page_block) Page(page_pool);
+  const size_t block_size = sizeof(Page) + page_pool->page_size();
+  void* const page_block = Allocate(block_size);
+  Page* const page = new (page_block) Page(page_pool);
   DCHECK_EQ(reinterpret_cast<void*>(page), page_block);
 
   // Make sure that page data is 8-byte aligned.
@@ -32,8 +32,8 @@ void Page::Release(PagePool *page_pool) {
   DCHECK_EQ(page_pool_, page_pool);
 #endif  // BERRYDB_CHECK_IS_ON()
 
-  size_t block_size = sizeof(Page) + page_pool->page_size();
-  void* heap_block = reinterpret_cast<void*>(this);
+  const size_t block_size = sizeof(Page) + page_pool->page_size();
+  void* const heap_block = reinterpret_cast<void*>(this);
   Deallocate(heap_block, block_size);
 }
 

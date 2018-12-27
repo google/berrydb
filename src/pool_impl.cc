@@ -25,8 +25,7 @@ PoolImpl::PoolImpl(const PoolOptions& options, PassKey)
 PoolImpl::~PoolImpl() {
   // Replace the entire store list so StoreClosed() doesn't invalidate our
   // iterator.
-  StoreSet close_queue;
-  close_queue.swap(stores_);
+  StoreSet close_queue = std::move(stores_);
   for (StoreImpl* store : close_queue)
     store->Close();
 
@@ -85,7 +84,7 @@ std::tuple<Status, Store*> PoolImpl::OpenStore(
     return {status, nullptr};
   }
 
-  std::string log_file_path = StoreImpl::LogFilePath(path);
+  const std::string log_file_path = StoreImpl::LogFilePath(path);
   RandomAccessFile* log_file;
   size_t log_file_size;
   std::tie(status, log_file, log_file_size) = vfs_->OpenForRandomAccess(
@@ -95,7 +94,7 @@ std::tuple<Status, Store*> PoolImpl::OpenStore(
     return {status, nullptr};
   }
 
-  StoreImpl* store = StoreImpl::Create(
+  StoreImpl* const store = StoreImpl::Create(
       data_file, data_file_size, log_file, log_file_size, &page_pool_, options);
   stores_.insert(store);
 

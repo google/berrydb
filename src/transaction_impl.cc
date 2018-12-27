@@ -19,15 +19,15 @@ static_assert(std::is_standard_layout<TransactionImpl>::value,
     "exposed cheaply");
 
 TransactionImpl* TransactionImpl::Create(StoreImpl* store) {
-  void* heap_block = Allocate(sizeof(TransactionImpl));
-  TransactionImpl* transaction = new (heap_block) TransactionImpl(store);
+  void* const heap_block = Allocate(sizeof(TransactionImpl));
+  TransactionImpl* const transaction = new (heap_block) TransactionImpl(store);
   DCHECK_EQ(heap_block, static_cast<void*>(transaction));
   return transaction;
 }
 
 void TransactionImpl::Release() {
   this->~TransactionImpl();
-  void* heap_block = static_cast<void*>(this);
+  void* const heap_block = static_cast<void*>(this);
   Deallocate(heap_block, sizeof(TransactionImpl));
 }
 
@@ -100,7 +100,7 @@ Status TransactionImpl::Close() {
 
   // Unassign the pages that are assigned to this transaction.
 
-  PagePool* page_pool = store_->page_pool();
+  PagePool* const page_pool = store_->page_pool();
   page_pool->PinTransactionPages(&pool_pages_);
 
   // We cannot use C++11's range-based for loop because the iterator would get
@@ -128,10 +128,10 @@ Status TransactionImpl::Commit() {
   // commit. So, all the pages assigned to this transaction must be pages that
   // have been modified by it.
 
-  PagePool* page_pool = store_->page_pool();
+  PagePool* const page_pool = store_->page_pool();
   page_pool->PinTransactionPages(&pool_pages_);
 
-  TransactionImpl* init_transaction = store_->init_transaction();
+  TransactionImpl* const init_transaction = store_->init_transaction();
 
   // We cannot use C++11's range-based for loop because the iterator would get
   // invalidated when we remove the page it's pointing to from the list.

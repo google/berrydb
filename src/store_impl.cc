@@ -24,8 +24,8 @@ StoreImpl* StoreImpl::Create(
     BlockAccessFile* data_file, size_t data_file_size,
     RandomAccessFile* log_file, size_t log_file_size, PagePool* page_pool,
     const StoreOptions& options) {
-  void* heap_block = Allocate(sizeof(StoreImpl));
-  StoreImpl* store = new (heap_block) StoreImpl(
+  void* const heap_block = Allocate(sizeof(StoreImpl));
+  StoreImpl* const store = new (heap_block) StoreImpl(
       data_file, data_file_size, log_file, log_file_size, page_pool, options);
   DCHECK_EQ(heap_block, static_cast<void*>(store));
 
@@ -35,7 +35,7 @@ StoreImpl* StoreImpl::Create(
 
 void StoreImpl::Release() {
   this->~StoreImpl();
-  void* heap_block = static_cast<void*>(this);
+  void* const heap_block = static_cast<void*>(this);
   Deallocate(heap_block, sizeof(StoreImpl));
 }
 
@@ -66,7 +66,7 @@ Status StoreImpl::Initialize(const StoreOptions &options) {
   // TODO(pwnall): Check the log and attempt recovery.
 
   if (options.create_if_missing && header_.page_count < 3) {
-    Status status = Bootstrap();
+    const Status status = Bootstrap();
     if (UNLIKELY(status != Status::kSuccess))
       return status;
   }
@@ -92,8 +92,7 @@ Status StoreImpl::Bootstrap() {
     const PinnedPage header_page(raw_header_page, page_pool_);
 
     transaction->WillModifyPage(header_page.get());
-    span<uint8_t> header_page_data = header_page->mutable_data(
-        static_cast<size_t>(1) << header_.page_shift);
+    const span<uint8_t> header_page_data = header_page.mutable_data();
     FillSpan(header_page_data, 0);
     header_.free_list_head_page = FreePageList::kInvalidPageId;
     header_.page_count = 2;
@@ -113,13 +112,13 @@ Status StoreImpl::Bootstrap() {
     const PinnedPage root_catalog_page(raw_root_catalog_page, page_pool_);
 
     transaction->WillModifyPage(root_catalog_page.get());
-    span<uint8_t> root_catalog_page_data = root_catalog_page->mutable_data(
-        static_cast<size_t>(1) << header_.page_shift);
+    const span<uint8_t> root_catalog_page_data =
+        root_catalog_page.mutable_data();
     FillSpan(root_catalog_page_data, 0);
     // TODO(pwnall): Bootstrap the root catalog here.
   }
 
-  Status commit_status = transaction->Commit();
+  const Status commit_status = transaction->Commit();
   if (commit_status != Status::kSuccess)
     return commit_status;
 
@@ -128,7 +127,7 @@ Status StoreImpl::Bootstrap() {
 }
 
 TransactionImpl* StoreImpl::CreateTransaction() {
-  TransactionImpl* transaction = TransactionImpl::Create(this);
+  TransactionImpl* const transaction = TransactionImpl::Create(this);
   transactions_.push_back(transaction);
   return transaction;
 }
@@ -147,7 +146,7 @@ Status StoreImpl::Close() {
 
   // Replace the entire transaction list so TransactionClosed() doesn't
   // invalidate our iterator.
-  LinkedList<TransactionImpl> rollback_queue(std::move(transactions_));
+  LinkedList<TransactionImpl> rollback_queue = std::move(transactions_);
 
   Status result = Status::kSuccess;
   for (TransactionImpl* transaction : rollback_queue) {
@@ -185,8 +184,8 @@ Status StoreImpl::ReadPage(Page* page) {
   DCHECK(!page->is_dirty());
   DCHECK(!page->IsUnpinned());
 
-  size_t file_offset = page->page_id() << header_.page_shift;
-  size_t page_size = static_cast<size_t>(1) << header_.page_shift;
+  const size_t file_offset = page->page_id() << header_.page_shift;
+  const size_t page_size = static_cast<size_t>(1) << header_.page_shift;
   return data_file_->Read(file_offset, page->mutable_data(page_size));
 }
 
@@ -197,8 +196,8 @@ Status StoreImpl::WritePage(Page* page) {
   DCHECK(page->is_dirty());
   //DCHECK(!page->IsUnpinned());
 
-  size_t file_offset = page->page_id() << header_.page_shift;
-  size_t page_size = static_cast<size_t>(1) << header_.page_shift;
+  const size_t file_offset = page->page_id() << header_.page_shift;
+  const size_t page_size = static_cast<size_t>(1) << header_.page_shift;
   return data_file_->Write(page->data(page_size), file_offset);
 }
 
@@ -217,7 +216,7 @@ void StoreImpl::TransactionClosed(TransactionImpl* transaction) {
 }
 
 std::string StoreImpl::LogFilePath(const std::string& store_path) {
-  std::string log_path(store_path);
+  std::string log_path = store_path;
   log_path.append(".log", 4);
   return log_path;
 }

@@ -15,8 +15,8 @@ static_assert(std::is_standard_layout<CatalogImpl>::value,
     "exposed cheaply");
 
 CatalogImpl* CatalogImpl::Create() {
-  void* heap_block = Allocate(sizeof(CatalogImpl));
-  CatalogImpl* catalog = new (heap_block) CatalogImpl();
+  void* const heap_block = Allocate(sizeof(CatalogImpl));
+  CatalogImpl* const catalog = new (heap_block) CatalogImpl();
   BERRYDB_ASSUME_EQ(heap_block, static_cast<void*>(catalog));
   return catalog;
 }
@@ -27,7 +27,7 @@ CatalogImpl::~CatalogImpl() = default;
 
 void CatalogImpl::Release() {
   this->~CatalogImpl();
-  void* heap_block = static_cast<void*>(this);
+  void* const heap_block = static_cast<void*>(this);
   Deallocate(heap_block, sizeof(CatalogImpl));
 }
 

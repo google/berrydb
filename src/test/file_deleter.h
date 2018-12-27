@@ -23,7 +23,7 @@ class FileDeleter {
   ~FileDeleter();
 
   /** Path to the temporary file. */
-  inline const std::string& path() { return path_; }
+  inline const std::string& path() const { return path_; }
 
  private:
   const std::string path_;

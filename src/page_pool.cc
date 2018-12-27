@@ -28,7 +28,7 @@ PagePool::~PagePool() {
   // invalidated if we release the page it's pointing to.
 
   for (auto it = free_list_.begin(); it != free_list_.end(); ) {
-    Page* page = *it;
+    Page* const page = *it;
     ++it;
     page->Release(this);
   }
@@ -36,7 +36,7 @@ PagePool::~PagePool() {
   // The LRU list should be empty, unless we crash-close.
 
   for (auto it = lru_list_.begin(); it != lru_list_.end(); ) {
-    Page* page = *it;
+    Page* const page = *it;
     ++it;
     page->Release(this);
   }
@@ -62,13 +62,13 @@ void PagePool::UnassignPageFromStore(Page* page) {
   BERRYDB_CHECK_EQ(page->page_pool(), this);
 #endif  // BERRYDB_CHECK_IS_ON()
 
-  TransactionImpl* transaction = page->transaction();
-  StoreImpl* store = transaction->store();
+  TransactionImpl* const transaction = page->transaction();
+  StoreImpl* const store = transaction->store();
   BERRYDB_ASSUME_EQ(1U,
                     page_map_.count(std::make_pair(store, page->page_id())));
   page_map_.erase(std::make_pair(store, page->page_id()));
   if (page->is_dirty()) {
-    Status write_status = store->WritePage(page);
+    const Status write_status = store->WritePage(page);
     transaction->UnassignPersistedPage(page);
     if (UNLIKELY(write_status != Status::kSuccess))
       store->Close();
@@ -81,7 +81,7 @@ Page* PagePool::AllocPage() {
   if (!free_list_.empty()) {
     // The free list is used as a stack (LIFO), because the last used free page
     // has the highest chance of being in the CPU's caches.
-    Page* page = free_list_.front();
+    Page* const page = free_list_.front();
     free_list_.pop_front();
     page->AddPin();
     BERRYDB_ASSUME(page->transaction() == nullptr);
@@ -91,12 +91,12 @@ Page* PagePool::AllocPage() {
 
   if (page_count_ < page_capacity_) {
     ++page_count_;
-    Page* page = Page::Create(this);
+    Page* const page = Page::Create(this);
     return page;
   }
 
   if (!lru_list_.empty()) {
-    Page* page = lru_list_.front();
+    Page* const page = lru_list_.front();
     page->AddPin();
     lru_list_.pop_front();
     UnassignPageFromStore(page);
@@ -123,7 +123,7 @@ Status PagePool::FetchStorePage(Page *page, PageFetchMode fetch_mode) {
   // page dirty anyway.
 
 #if BERRYDB_CHECK_IS_ON()
-  span<uint8_t> page_data = page->mutable_data(page_size_);
+  const span<uint8_t> page_data = page->mutable_data(page_size_);
   // Fill the page with recognizable garbage (as opposed to random garbage), to
   // make it easier to spot code that uses uninitialized page data.
   FillSpan(page_data, 0xCD);
@@ -141,9 +141,9 @@ Status PagePool::AssignPageToStore(
   BERRYDB_CHECK_EQ(page->page_pool(), this);
 #endif  // BERRYDB_CHECK_IS_ON()
 
-  TransactionImpl* transaction = store->init_transaction();
+  TransactionImpl* const transaction = store->init_transaction();
   transaction->AssignPage(page, page_id);
-  Status fetch_status = FetchStorePage(page, fetch_mode);
+  const Status fetch_status = FetchStorePage(page, fetch_mode);
   if (LIKELY(fetch_status == Status::kSuccess)) {
     page_map_[std::make_pair(store, page_id)] = page;
     return Status::kSuccess;
@@ -186,7 +186,7 @@ std::tuple<Status, Page*> PagePool::StorePage(StoreImpl* store, size_t page_id,
 
   const auto& it = page_map_.find(std::make_pair(store, page_id));
   if (it != page_map_.end()) {
-    Page* page = it->second;
+    Page* const page = it->second;
     BERRYDB_ASSUME(page != nullptr);
     BERRYDB_ASSUME_EQ(store, page->transaction()->store());
     BERRYDB_ASSUME_EQ(page_id, page->page_id());
@@ -201,14 +201,14 @@ std::tuple<Status, Page*> PagePool::StorePage(StoreImpl* store, size_t page_id,
     return {Status::kSuccess, page};
   }
 
-  Page* page = AllocPage();
+  Page* const page = AllocPage();
   if (page == nullptr)
     return {Status::kPoolFull, nullptr};
 #if BERRYDB_CHECK_IS_ON()
   BERRYDB_CHECK_EQ(page->page_pool(), this);
 #endif  // BERRYDB_CHECK_IS_ON()
 
-  Status status = AssignPageToStore(page, store, page_id, fetch_mode);
+  const Status status = AssignPageToStore(page, store, page_id, fetch_mode);
   if (LIKELY(status == Status::kSuccess))
     return {status, page};
 

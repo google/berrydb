@@ -98,7 +98,7 @@ class span {
   inline constexpr span subspan(std::size_t pos,
                                 std::size_t count = -1) const noexcept {
     // Value of std::dynamic_extent.
-    std::size_t dynamic_extent = static_cast<std::size_t>(-1);
+    constexpr std::size_t dynamic_extent = static_cast<std::size_t>(-1);
     assert(pos <= size_);
     assert(count == dynamic_extent || count <= size_ - pos);
     return span(data_ + pos, (count == dynamic_extent) ? size_ - pos : count);

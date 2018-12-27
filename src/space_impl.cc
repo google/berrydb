@@ -13,8 +13,8 @@ static_assert(std::is_standard_layout<SpaceImpl>::value,
     "exposed cheaply");
 
 SpaceImpl* SpaceImpl::Create() {
-  void* heap_block = Allocate(sizeof(SpaceImpl));
-  SpaceImpl* space = new (heap_block) SpaceImpl();
+  void* const heap_block = Allocate(sizeof(SpaceImpl));
+  SpaceImpl* const space = new (heap_block) SpaceImpl();
   DCHECK_EQ(heap_block, static_cast<void*>(space));
   return space;
 }
@@ -25,7 +25,7 @@ SpaceImpl::~SpaceImpl() = default;
 
 void SpaceImpl::Release() {
   this->~SpaceImpl();
-  void* heap_block = static_cast<void*>(this);
+  void* const heap_block = static_cast<void*>(this);
   Deallocate(heap_block, sizeof(SpaceImpl));
 }
 

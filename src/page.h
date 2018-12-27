@@ -334,7 +334,7 @@ class Page {
       return &host->transaction_list_node_;
     }
     static inline Embedder* HostForNode(Node* node) noexcept {
-      Embedder* host = reinterpret_cast<Embedder*>(
+      Embedder* const host = reinterpret_cast<Embedder*>(
           reinterpret_cast<char*>(node) -
           offsetof(Embedder, transaction_list_node_));
       DCHECK_EQ(node, &host->transaction_list_node_);

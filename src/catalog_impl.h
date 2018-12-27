@@ -26,13 +26,13 @@ class CatalogImpl {
 
   /** Computes the internal representation for a pointer from the public API. */
   static inline CatalogImpl* FromApi(Catalog* api) noexcept {
-    CatalogImpl* impl = reinterpret_cast<CatalogImpl*>(api);
+    CatalogImpl* const impl = reinterpret_cast<CatalogImpl*>(api);
     BERRYDB_ASSUME_EQ(api, &impl->api_);
     return impl;
   }
   /** Computes the internal representation for a pointer from the public API. */
   static inline const CatalogImpl* FromApi(const Catalog* api) noexcept {
-    const CatalogImpl* impl = reinterpret_cast<const CatalogImpl*>(api);
+    const CatalogImpl* const impl = reinterpret_cast<const CatalogImpl*>(api);
     BERRYDB_ASSUME_EQ(api, &impl->api_);
     return impl;
   }

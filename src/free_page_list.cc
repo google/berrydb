@@ -26,8 +26,8 @@ std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
   if (is_empty())
     return {Status::kSuccess, kInvalidPageId};
 
-  StoreImpl* store = transaction->store();
-  PagePool* page_pool = store->page_pool();
+  StoreImpl* const store = transaction->store();
+  PagePool* const page_pool = store->page_pool();
   Status status;
   Page* raw_head_page;
   std::tie(status, raw_head_page) = page_pool->StorePage(
@@ -36,11 +36,11 @@ std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
     BERRYDB_ASSUME(raw_head_page == nullptr);
     return {status, kInvalidPageId};
   }
-  PinnedPage head_page(raw_head_page, page_pool);
+  const PinnedPage head_page(raw_head_page, page_pool);
 
   // The code below only uses the span size for CHECKs, and relies on the
   // compiler to optimize the span into a pointer in release mode.
-  span<const uint8_t> head_page_data = head_page.data();
+  const span<const uint8_t> head_page_data = head_page.data();
 
   size_t next_entry_offset =
       FreePageListFormat::NextEntryOffset(head_page_data);
@@ -77,9 +77,9 @@ std::tuple<Status, size_t> FreePageList::Pop(TransactionImpl* transaction) {
     return {Status::kDataCorrupted, kInvalidPageId};
   }
 
-  uint64_t free_page_id64 =
+  const uint64_t free_page_id64 =
       LoadUint64(head_page_data.subspan(next_entry_offset, 8));
-  size_t free_page_id = static_cast<size_t>(free_page_id64);
+  const size_t free_page_id = static_cast<size_t>(free_page_id64);
   // This check should be optimized out on 64-bit architectures.
   if (UNLIKELY(free_page_id != free_page_id64))
     return {Status::kDatabaseTooLarge, kInvalidPageId};
@@ -97,8 +97,8 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
   BERRYDB_CHECK(!was_merged_);
 #endif  // BERRYDB_CHECK_IS_ON()
 
-  StoreImpl* store = transaction->store();
-  PagePool* page_pool = store->page_pool();
+  StoreImpl* const store = transaction->store();
+  PagePool* const page_pool = store->page_pool();
 
   if (head_page_id_ != kInvalidPageId) {
     Status status;
@@ -109,10 +109,10 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
       BERRYDB_ASSUME(raw_head_page == nullptr);
       return status;
     }
-    PinnedPage head_page(raw_head_page, page_pool);
+    const PinnedPage head_page(raw_head_page, page_pool);
 
     // This code relies on the compiler to optimize away the size from the span.
-    span<const uint8_t> head_page_readonly_data = head_page.data();
+    const span<const uint8_t> head_page_readonly_data = head_page.data();
 
     size_t next_entry_offset =
         FreePageListFormat::NextEntryOffset(head_page_readonly_data);
@@ -125,7 +125,7 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
 
       // There's room for another entry in the page.
       transaction->WillModifyPage(head_page.get());
-      span<uint8_t> head_page_data = head_page.mutable_data();
+      const span<uint8_t> head_page_data = head_page.mutable_data();
       StoreUint64(static_cast<uint64_t>(page_id),
                   head_page_data.subspan(next_entry_offset, 8));
       next_entry_offset += FreePageListFormat::kEntrySize;
@@ -147,10 +147,10 @@ Status FreePageList::Push(TransactionImpl* transaction, size_t page_id) {
     BERRYDB_ASSUME(raw_head_page == nullptr);
     return status;
   }
-  PinnedPage head_page(raw_head_page, page_pool);
+  const PinnedPage head_page(raw_head_page, page_pool);
 
   transaction->WillModifyPage(head_page.get());
-  span<uint8_t> head_page_data = head_page.mutable_data();
+  const span<uint8_t> head_page_data = head_page.mutable_data();
   FreePageListFormat::SetNextEntryOffset(
       FreePageListFormat::kFirstEntryOffset, head_page_data);
   FreePageListFormat::SetNextPageId64(
@@ -186,8 +186,8 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
   if (other->is_empty())
     return Status::kSuccess;
 
-  StoreImpl* store = transaction->store();
-  PagePool* page_pool = store->page_pool();
+  StoreImpl* const store = transaction->store();
+  PagePool* const page_pool = store->page_pool();
   Status status;
   Page* raw_head_page;
   std::tie(status, raw_head_page) = page_pool->StorePage(
@@ -196,10 +196,10 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
     BERRYDB_ASSUME(raw_head_page == nullptr);
     return status;
   }
-  PinnedPage head_page(raw_head_page, page_pool);
+  const PinnedPage head_page(raw_head_page, page_pool);
 
   // Relying on the compiler to optimize the span size away.
-  span<const uint8_t> head_page_readonly_data = head_page.data();
+  const span<const uint8_t> head_page_readonly_data = head_page.data();
 
   size_t other_head_page_id = other->head_page_id_;
   Page* raw_other_head_page;
@@ -209,10 +209,11 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
     BERRYDB_ASSUME(raw_other_head_page == nullptr);
     return status;
   }
-  PinnedPage other_head_page(raw_other_head_page, page_pool);
+  const PinnedPage other_head_page(raw_other_head_page, page_pool);
 
   // Relying on the compiler to optimize the span size away.
-  span<const uint8_t> other_head_page_readonly_data = other_head_page.data();
+  const span<const uint8_t> other_head_page_readonly_data =
+      other_head_page.data();
 
   // Step 1: Each list is a (potentially) non-full page, followed by full pages.
   // Build a chain out of the full pages.
@@ -224,7 +225,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
   uint64_t full_chain_head_id64 =
       FreePageListFormat::NextPageId64(head_page_readonly_data);
 
-  size_t other_tail_page_id = other->tail_page_id_;
+  const size_t other_tail_page_id = other->tail_page_id_;
   if (other_tail_page_id != other->head_page_id_) {
     // Build the chain by prepending the other list's full pages to this list's
     // full pages.
@@ -235,7 +236,7 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
     std::tie(status, raw_other_tail_page) = page_pool->StorePage(
         store, other_tail_page_id, PagePool::kFetchPageData);
 
-    if (status != Status::kSuccess) {
+    if (UNLIKELY(status != Status::kSuccess)) {
       BERRYDB_ASSUME(raw_other_tail_page == nullptr);
       return status;
     }
@@ -257,10 +258,10 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
   // page write (for the header page), so the code below avoids changing the
   // list head.
 
-  size_t page_size = page_pool->page_size();
+  const size_t page_size = page_pool->page_size();
   size_t next_entry_offset =
       FreePageListFormat::NextEntryOffset(head_page_readonly_data);
-  size_t other_next_entry_offset =
+  const size_t other_next_entry_offset =
       FreePageListFormat::NextEntryOffset(other_head_page_readonly_data);
   if (UNLIKELY(FreePageListFormat::IsCorruptEntryOffset(next_entry_offset,
                                                         page_size)) ||
@@ -298,15 +299,15 @@ Status FreePageList::Merge(TransactionImpl *transaction, FreePageList *other) {
     // list's head page to fill up the other list's head page, and then chain
     // the other list's head page to this list's head page.
     transaction->WillModifyPage(other_head_page.get());
-    span<uint8_t> other_head_page_data = other_head_page.mutable_data();
+    const span<uint8_t> other_head_page_data = other_head_page.mutable_data();
 
     // False assumption implies that the data corruption check above is broken.
     BERRYDB_ASSUME_LE(other_next_entry_offset, page_size);
-    size_t empty_space = page_size - other_next_entry_offset;
+    const size_t empty_space = page_size - other_next_entry_offset;
     // False assumption implies that the page IDs in the two head pages do fit
     // in a single page, so the capacity check above is broken.
     BERRYDB_ASSUME_LE(empty_space, next_entry_offset);
-    size_t new_next_entry_offset = next_entry_offset - empty_space;
+    const size_t new_next_entry_offset = next_entry_offset - empty_space;
     CopySpan(
         head_page_data.subspan(new_next_entry_offset, empty_space),
         other_head_page_data.subspan(other_next_entry_offset, empty_space));

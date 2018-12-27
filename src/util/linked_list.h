@@ -55,7 +55,7 @@ class LinkedListBridge;
  *             std::is_standard_layout<Embedder>::value,
  *             "Linked list embedders must be standard layout types");
  *
- *         Embedder* host = reinterpret_cast<Embedder*>(
+ *         Embedder* const host = reinterpret_cast<Embedder*>(
  *             reinterpret_cast<char*>(node) -
  *             offsetof(Embedder, custom_list_node_));
  *         DCHECK_EQ(node, &host->custom_list_node_);
@@ -118,7 +118,7 @@ class LinkedList {
   inline void insert(iterator pos, value_type value) noexcept {
     DCHECK(value != nullptr);
 
-    Node* node = Bridge::NodeForHost(value);
+    Node* const node = Bridge::NodeForHost(value);
     DCHECK_EQ(value, Bridge::HostForNode(node));
 
     node->InsertBefore(pos.node_);
@@ -126,8 +126,9 @@ class LinkedList {
   }
 
   inline void erase(iterator pos) noexcept {
-    Node* node = pos.node_;
+    Node* const node = pos.node_;
     DCHECK(node != nullptr);
+    BERRYDB_ASSUME(node != nullptr);
 
 #if BERRYDB_CHECK_IS_ON()
     DCHECK(!node->is_sentinel());
@@ -144,7 +145,7 @@ class LinkedList {
    * This method has undefiend results if this list does not contain the given
    * value. */
   inline void erase(value_type value) noexcept {
-    Node* node = Bridge::NodeForHost(value);
+    Node* const node = Bridge::NodeForHost(value);
 
 #if BERRYDB_CHECK_IS_ON()
     DCHECK_EQ(&sentinel_, node->list_sentinel_);
@@ -185,7 +186,7 @@ class LinkedList {
 #if BERRYDB_CHECK_IS_ON()
       DCHECK(!node_->is_sentinel());  // Already at cend().
 #endif  // BERRYDB_CHECK_IS_ON()
-      Node* old_node = node_;
+      Node* const old_node = node_;
       node_ = node_->next();
       return iterator(old_node);
     }
@@ -200,7 +201,7 @@ class LinkedList {
 #if BERRYDB_CHECK_IS_ON()
       DCHECK(!node_->prev()->is_sentinel());  // Already at cbegin().
 #endif  // BERRYDB_CHECK_IS_ON()
-      Node* old_node = node_;
+      Node* const old_node = node_;
       node_ = node_->prev();
       return iterator(old_node);
     }
@@ -426,7 +427,7 @@ class LinkedListBridge {
     DCHECK(!node->is_sentinel());
 #endif  // BERRYDB_CHECK_IS_ON()
 
-    Embedder* host = reinterpret_cast<Embedder*>(
+    Embedder* const host = reinterpret_cast<Embedder*>(
         reinterpret_cast<char*>(node) - offsetof(Embedder, linked_list_node_));
     DCHECK_EQ(node, &host->linked_list_node_);
     return host;

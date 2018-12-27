@@ -30,16 +30,16 @@ inline void* Allocate(std::size_t size_in_bytes) {
   BUILTIN_ASSUME(size_in_bytes > 0);
 
 #if DCHECK_IS_ON()
-  void* heap_block = std::malloc(size_in_bytes + sizeof(size_t));
+  void* const heap_block = std::malloc(size_in_bytes + sizeof(size_t));
 
   *static_cast<size_t*>(heap_block) = size_in_bytes;
-  void* data = static_cast<void*>(static_cast<size_t*>(heap_block) + 1);
+  void* const data = static_cast<void*>(static_cast<size_t*>(heap_block) + 1);
 
   // Fill the heap block with a recognizable pattern, so it is easier to detect
   // use-before-initialize bugs.
   std::memset(data, 0xCC, size_in_bytes);
 #else   // DCHECK_IS_ON()
-  void* data = std::malloc(size_in_bytes);
+  void* const data = std::malloc(size_in_bytes);
 #endif  // DCHECK_IS_ON()
 
   DCHECK_EQ(reinterpret_cast<uintptr_t>(data) & (sizeof(size_t) - 1), 0U);
@@ -58,7 +58,7 @@ inline void Deallocate(void* data, MAYBE_UNUSED std::size_t size_in_bytes) {
   DCHECK_EQ(reinterpret_cast<uintptr_t>(data) & (sizeof(size_t) - 1), 0U);
 
 #if DCHECK_IS_ON()
-  void* heap_block = static_cast<void*>(static_cast<size_t*>(data) - 1);
+  void* const heap_block = static_cast<void*>(static_cast<size_t*>(data) - 1);
 
   DCHECK_EQ(*static_cast<size_t*>(heap_block), size_in_bytes);
 

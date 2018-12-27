@@ -36,8 +36,8 @@ struct PointerHasher {
 template <typename T>
 struct PointerSizeHasher {
   inline size_t operator()(const std::pair<T*, size_t> pair) const noexcept {
-    size_t h1 = PointerHasher<T>()(pair.first);
-    size_t h2 = SizeHasher()(pair.second);
+    const size_t h1 = PointerHasher<T>()(pair.first);
+    const size_t h2 = SizeHasher()(pair.second);
     return HashCombiner<size_t>()(h1, h2);
   }
 

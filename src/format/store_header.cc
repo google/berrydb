@@ -42,45 +42,45 @@ void StoreHeader::Serialize(span<uint8_t> to) {
 
   // This is guaranteed to set all the bytes 40..47 to 0.
   StoreUint64(0, to.subspan(40, 8));
-  BERRYDB_ASSUME_LT(page_shift, 32U);
+  DCHECK_LT(page_shift, 32U);
   to[40] = static_cast<uint8_t>(page_shift);
 }
 
 bool StoreHeader::Deserialize(span<const uint8_t> from) {
-  uint64_t global_magic = LoadUint64(from.subspan(0, 8));
-  if (global_magic != kGlobalMagic)
+  const uint64_t global_magic = LoadUint64(from.subspan(0, 8));
+  if (UNLIKELY(global_magic != kGlobalMagic))
     return false;
 
-  uint64_t store_magic = LoadUint64(from.subspan(8, 8));
-  if (store_magic != kStoreMagic)
+  const uint64_t store_magic = LoadUint64(from.subspan(8, 8));
+  if (UNLIKELY(store_magic != kStoreMagic))
     return false;
 
-  uint64_t format_version = LoadUint64(from.subspan(16, 8));
-  if (format_version != 0)
+  const uint64_t format_version = LoadUint64(from.subspan(16, 8));
+  if (UNLIKELY(format_version != 0))
     return false;
 
-  uint64_t number = LoadUint64(from.subspan(24, 8));
-  page_count = static_cast<size_t>(number);
-  if (page_count != number) {
+  const uint64_t page_count64 = LoadUint64(from.subspan(24, 8));
+  page_count = static_cast<size_t>(page_count64);
+  if (UNLIKELY(page_count != page_count64)) {
     // This can happen on 32-bit systems that try to load a large database.
     return false;
   }
 
-  number = LoadUint64(from.subspan(32, 8));
-  free_list_head_page = static_cast<size_t>(number);
-  if (free_list_head_page != number) {
+  const uint64_t free_list_head_page64 = LoadUint64(from.subspan(32, 8));
+  free_list_head_page = static_cast<size_t>(free_list_head_page64);
+  if (UNLIKELY(free_list_head_page != free_list_head_page64)) {
     // This should not happen if the size test above passed. Still, we currently
     // consider that the extra code size of the check is preferrable to data
     // corruption or a difficult-to-debug crash.
     return false;
   }
-  if (free_list_head_page == kInvalidFreeListHeadPage) {
+  if (UNLIKELY(free_list_head_page == kInvalidFreeListHeadPage)) {
     // Another data corruption case that is best caught early on.
     return false;
   }
 
   page_shift = from[40];
-  if (page_shift >= 32) {
+  if (UNLIKELY(page_shift >= 32)) {
     // This should only happen due to data corruption.
     // TODO(pwnall): Move the page_shift limit into a constant that is also
     //               enforced at store creation time.

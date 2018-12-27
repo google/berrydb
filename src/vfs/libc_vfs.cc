@@ -151,7 +151,7 @@ class LibcBlockAccessFile : public BlockAccessFile {
   }
 
   Status Close() override {
-    void* heap_block = reinterpret_cast<void*>(this);
+    void* const heap_block = reinterpret_cast<void*>(this);
     this->~LibcBlockAccessFile();
     Deallocate(heap_block, sizeof(LibcBlockAccessFile));
     return Status::kSuccess;
@@ -163,7 +163,7 @@ class LibcBlockAccessFile : public BlockAccessFile {
   }
 
  private:
-  std::FILE* fp_;
+  std::FILE* const fp_;
 
 #if BERRYDB_CHECK_IS_ON()
   size_t block_size_;
@@ -191,7 +191,7 @@ class LibcRandomAccessFile : public RandomAccessFile {
   Status Sync() override { return SyncLibcFile(fp_); }
 
   Status Close() override {
-    void* heap_block = reinterpret_cast<void*>(this);
+    void* const heap_block = reinterpret_cast<void*>(this);
     this->~LibcRandomAccessFile();
     Deallocate(heap_block, sizeof(LibcRandomAccessFile));
     return Status::kSuccess;
@@ -203,7 +203,7 @@ class LibcRandomAccessFile : public RandomAccessFile {
   }
 
  private:
-  std::FILE* fp_;
+  std::FILE* const fp_;
 };
 
 class LibcVfs : public Vfs {
@@ -218,8 +218,9 @@ class LibcVfs : public Vfs {
     if (fp == nullptr)
       return {Status::kIoError, nullptr, 0};
 
-    void* heap_block = Allocate(sizeof(LibcRandomAccessFile));
-    LibcRandomAccessFile* file = new (heap_block) LibcRandomAccessFile(fp);
+    void* const heap_block = Allocate(sizeof(LibcRandomAccessFile));
+    LibcRandomAccessFile* const file =
+        new (heap_block) LibcRandomAccessFile(fp);
     DCHECK_EQ(heap_block, reinterpret_cast<void*>(file));
     return {Status::kSuccess, file, file_size};
   }
@@ -233,8 +234,8 @@ class LibcVfs : public Vfs {
     if (fp == nullptr)
       return {Status::kIoError, nullptr, 0};
 
-    void* heap_block = Allocate(sizeof(LibcBlockAccessFile));
-    LibcBlockAccessFile* file = new (heap_block) LibcBlockAccessFile(
+    void* const heap_block = Allocate(sizeof(LibcBlockAccessFile));
+    LibcBlockAccessFile* const file = new (heap_block) LibcBlockAccessFile(
         fp, block_shift);
     DCHECK_EQ(heap_block, reinterpret_cast<void*>(file));
     return {Status::kSuccess, file, file_size};
