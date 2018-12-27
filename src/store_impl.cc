@@ -77,7 +77,7 @@ Status StoreImpl::Initialize(const StoreOptions &options) {
 Status StoreImpl::Bootstrap() {
   BERRYDB_ASSUME_EQ(page_pool_->page_shift(), header_.page_shift);
 
-  TransactionImpl* transaction = CreateTransaction();
+  TransactionImpl* const transaction = CreateTransaction();
 
   Status fetch_status;
   {

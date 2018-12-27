@@ -184,7 +184,7 @@ std::tuple<Status, Page*> PagePool::StorePage(StoreImpl* store, size_t page_id,
                                               PageFetchMode fetch_mode) {
   BERRYDB_ASSUME(store != nullptr);
 
-  const auto& it = page_map_.find(std::make_pair(store, page_id));
+  auto it = page_map_.find(std::make_pair(store, page_id));
   if (it != page_map_.end()) {
     Page* const page = it->second;
     BERRYDB_ASSUME(page != nullptr);
