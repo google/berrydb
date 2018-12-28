@@ -27,7 +27,7 @@ namespace {
 std::tuple<std::FILE*, size_t> OpenLibcFile(
     const std::string& file_path, bool create_if_missing,
     bool error_if_exists) {
-  DCHECK(!error_if_exists || create_if_missing);
+  BERRYDB_ASSUME(!error_if_exists || create_if_missing);
 
   const char* cpath = file_path.c_str();
 
@@ -116,7 +116,7 @@ class LibcBlockAccessFile : public BlockAccessFile {
       , block_size_(static_cast<size_t>(1) << block_shift)
 #endif  // BERRYDB_CHECK_IS_ON()
       {
-    DCHECK(fp != nullptr);
+    BERRYDB_ASSUME(fp != nullptr);
 
     // Disable buffering, because we're doing block I/O.
     // NOTE(pwnall): This is an incomplete substitute for O_DIRECT.
@@ -124,18 +124,18 @@ class LibcBlockAccessFile : public BlockAccessFile {
   }
 
   Status Read(size_t offset, span<uint8_t> buffer) override {
-    DCHECK_EQ(buffer.size() & (buffer.size() - 1), 0U);
+    BERRYDB_ASSUME_EQ(buffer.size() & (buffer.size() - 1), 0U);
 #if BERRYDB_CHECK_IS_ON()
-    DCHECK_EQ(offset & (block_size_ - 1), 0U);
+    BERRYDB_ASSUME_EQ(offset & (block_size_ - 1), 0U);
 #endif  // BERRYDB_CHECK_IS_ON()
 
     return ReadLibcFile(fp_, offset, buffer);
   }
 
   Status Write(span<const uint8_t> data, size_t offset) override {
-    DCHECK_EQ(data.size() & (data.size() - 1), 0U);
+    BERRYDB_ASSUME_EQ(data.size() & (data.size() - 1), 0U);
 #if BERRYDB_CHECK_IS_ON()
-    DCHECK_EQ(offset & (block_size_ - 1), 0U);
+    BERRYDB_CHECK_EQ(offset & (block_size_ - 1), 0U);
 #endif  // BERRYDB_CHECK_IS_ON()
 
     return WriteLibcFile(fp_, data, offset);
@@ -173,7 +173,7 @@ class LibcBlockAccessFile : public BlockAccessFile {
 class LibcRandomAccessFile : public RandomAccessFile {
  public:
   LibcRandomAccessFile(FILE* fp) : fp_(fp) {
-    DCHECK(fp != nullptr);
+    BERRYDB_ASSUME(fp != nullptr);
   }
 
   Status Read(size_t offset, span<uint8_t> buffer) override {
@@ -221,7 +221,7 @@ class LibcVfs : public Vfs {
     void* const heap_block = Allocate(sizeof(LibcRandomAccessFile));
     LibcRandomAccessFile* const file =
         new (heap_block) LibcRandomAccessFile(fp);
-    DCHECK_EQ(heap_block, reinterpret_cast<void*>(file));
+    BERRYDB_ASSUME_EQ(heap_block, reinterpret_cast<void*>(file));
     return {Status::kSuccess, file, file_size};
   }
   std::tuple<Status, BlockAccessFile*, size_t> OpenForBlockAccess(
@@ -237,7 +237,7 @@ class LibcVfs : public Vfs {
     void* const heap_block = Allocate(sizeof(LibcBlockAccessFile));
     LibcBlockAccessFile* const file = new (heap_block) LibcBlockAccessFile(
         fp, block_shift);
-    DCHECK_EQ(heap_block, reinterpret_cast<void*>(file));
+    BERRYDB_ASSUME_EQ(heap_block, reinterpret_cast<void*>(file));
     return {Status::kSuccess, file, file_size};
   }
 
