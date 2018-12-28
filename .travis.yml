@@ -3,7 +3,7 @@
 # This file can be validated on: http://lint.travis-ci.org/
 
 sudo: false
-dist: trusty
+dist: xenial
 language: cpp
 
 compiler:
@@ -34,7 +34,7 @@ addons:
     #   https://github.com/travis-ci/apt-source-whitelist/blob/master/ubuntu.json
     sources:
     - ubuntu-toolchain-r-test
-    - llvm-toolchain-trusty-7
+    - llvm-toolchain-xenial-7
     packages:
     - cmake
     - gcc-8
