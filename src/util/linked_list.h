@@ -90,7 +90,8 @@ class LinkedList {
   using EmbedderType = Embedder;
   using BridgeType = Bridge;
 
-  inline constexpr LinkedList() noexcept : sentinel_(true), size_(0) {}
+  inline constexpr LinkedList() noexcept
+      : sentinel_(Node::kSentinelNodeTag), size_(0) {}
   inline LinkedList(LinkedList&& other) noexcept
       : sentinel_(std::move(other.sentinel_)), size_(other.size_) {
     other.size_ = 0;
@@ -119,6 +120,7 @@ class LinkedList {
     DCHECK(value != nullptr);
 
     Node* const node = Bridge::NodeForHost(value);
+    DCHECK(node != nullptr);
     DCHECK_EQ(value, Bridge::HostForNode(node));
 
     node->InsertBefore(pos.node_);
@@ -231,6 +233,9 @@ class LinkedList {
 template <typename Embedder>
 class LinkedListNode {
  public:
+  struct SentinelNodeTag {};
+  static constexpr const SentinelNodeTag kSentinelNodeTag{};
+
   /** Constructor for non-sentinel nodes. */
   constexpr inline LinkedListNode() noexcept
 #if BERRYDB_CHECK_IS_ON()
@@ -254,7 +259,7 @@ class LinkedListNode {
 
  private:
   /** Constructor for sentinel nodes. */
-  explicit inline constexpr LinkedListNode(MAYBE_UNUSED bool is_sentinel)
+  explicit inline constexpr LinkedListNode(SentinelNodeTag) noexcept
       : next_(this),
         prev_(this)
 #if BERRYDB_CHECK_IS_ON()
@@ -262,11 +267,15 @@ class LinkedListNode {
         list_sentinel_(this)
 #endif  // BERRYDB_CHECK_IS_ON()
   {
-    DCHECK(is_sentinel);
   }
 
+  // Nodes cannot be copied, and can only be move-constructed.
+  LinkedListNode(const LinkedListNode&) = delete;
+  LinkedListNode& operator=(const LinkedListNode&) = delete;
+  LinkedListNode& operator=(LinkedListNode&&) = delete;
+
   /** Used by the list move-constructor for sentinel nodes. */
-  inline LinkedListNode(LinkedListNode&& other_sentinel)
+  inline LinkedListNode(LinkedListNode&& other_sentinel) noexcept
 #if BERRYDB_CHECK_IS_ON()
       : list_sentinel_(this)
 #endif  // BERRYDB_CHECK_IS_ON()
@@ -342,6 +351,8 @@ class LinkedListNode {
    *
    * The node must not already be in a list. */
   inline void InsertBefore(LinkedListNode* next) noexcept {
+    DCHECK(next != nullptr);
+
 #if BERRYDB_CHECK_IS_ON()
     DCHECK(!is_sentinel());
     DCHECK(list_sentinel_ == nullptr);  // The node cannot already be in a list.
