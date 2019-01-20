@@ -107,7 +107,12 @@
 #elif defined(__GNUC__)
 #define BUILTIN_ASSUME(x) if(x) {} else __builtin_unreachable()
 #elif defined(_MSC_VER)
-#define BUILTIN_ASSUME(x) __assume(x)
+// We should be able to use the MSVC __assume statement, as shown below.
+// However, the current MSVC version (19.16.27025.1) generates bad code, even
+// though the assumptions are all true.
+//
+// #define BUILTIN_ASSUME(x) __assume(x)
+#define BUILTIN_ASSUME(x)
 #else
 #define BUILTIN_ASSUME(x)
 #endif  // defined(__clang__)
