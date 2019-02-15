@@ -68,7 +68,7 @@ class LinkedListTest : public ::testing::Test {
 
 using LinkedListTestTypes =
     ::testing::Types<LinkedListWithStandardBridge, LinkedListWithCustomBridge>;
-TYPED_TEST_CASE(LinkedListTest, LinkedListTestTypes);
+TYPED_TEST_SUITE(LinkedListTest, LinkedListTestTypes);
 
 TYPED_TEST(LinkedListTest, EmptyConstructor) {
   EXPECT_EQ(0U, this->list_.size());
