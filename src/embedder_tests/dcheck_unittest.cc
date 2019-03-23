@@ -31,7 +31,8 @@ TEST_F(DcheckTest, DcheckSuccess) {
 TEST_F(DcheckDeathTest, DcheckFailure) {
   ASSERT_FALSE(five_ == six_);
 #if DCHECK_IS_ON()
-  EXPECT_DEATH_IF_SUPPORTED(DCHECK(five_ == six_), "");
+  auto failed_dcheck = [&]{ DCHECK(five_ == six_); };
+  EXPECT_DEATH_IF_SUPPORTED(failed_dcheck(), "");
 #endif  // DCHECK_IS_ON()
 }
 

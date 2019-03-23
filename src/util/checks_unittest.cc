@@ -31,7 +31,8 @@ TEST_F(ChecksTest, CheckSuccess) {
 TEST_F(ChecksDeathTest, CheckFailure) {
   ASSERT_FALSE(five_ == six_);
 #if BERRYDB_CHECK_IS_ON()
-  EXPECT_DEATH_IF_SUPPORTED(BERRYDB_CHECK(five_ == six_), "");
+  auto failed_check = [&] { BERRYDB_CHECK(five_ == six_); };
+  EXPECT_DEATH_IF_SUPPORTED(failed_check(), "");
 #endif  // BERRYDB_CHECK_IS_ON()
 }
 
@@ -126,7 +127,8 @@ TEST_F(ChecksTest, AssumeSuccess) {
 TEST_F(ChecksDeathTest, AssumeFailure) {
   ASSERT_FALSE(five_ == six_);
 #if BERRYDB_CHECK_IS_ON()
-  EXPECT_DEATH_IF_SUPPORTED(BERRYDB_ASSUME(five_ == six_), "");
+  auto failed_assume = [&] { BERRYDB_ASSUME(five_ == six_); };
+  EXPECT_DEATH_IF_SUPPORTED(failed_assume(), "");
 #endif  // BERRYDB_CHECK_IS_ON()
 }
 
@@ -215,8 +217,8 @@ TEST_F(ChecksDeathTest, AssumeLtFailure) {
 
 TEST_F(ChecksDeathTest, Unreachable) {
 #if BERRYDB_CHECK_IS_ON()
-  EXPECT_DEATH_IF_SUPPORTED(BERRYDB_UNREACHABLE(), "");
-  EXPECT_DEATH_IF_SUPPORTED(BERRYDB_UNREACHABLE(), "");
+  auto unreachable_code = [&] { BERRYDB_UNREACHABLE(); };
+  EXPECT_DEATH_IF_SUPPORTED(unreachable_code(), "");
 #endif  // BERRYDB_CHECK_IS_ON()
 }
 
