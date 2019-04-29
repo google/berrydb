@@ -1,4 +1,4 @@
-# Build matrix / environment variable are explained on:
+# Build matrix / environment variables are explained on:
 # http://about.travis-ci.org/docs/user/build-configuration/
 # This file can be validated on: http://lint.travis-ci.org/
 
@@ -7,23 +7,23 @@ dist: xenial
 osx_image: xcode10.2
 
 compiler:
-  - gcc
-  - clang
+- gcc
+- clang
 os:
-  - linux
-  - osx
+- linux
+- osx
 
 env:
-  - GLOG=1 BUILD_TYPE=Debug
-  - GLOG=1 BUILD_TYPE=RelWithDebInfo
-  - GLOG=0 BUILD_TYPE=Debug
-  - GLOG=0 BUILD_TYPE=RelWithDebInfo
+- GLOG=1 BUILD_TYPE=Debug
+- GLOG=1 BUILD_TYPE=RelWithDebInfo
+- GLOG=0 BUILD_TYPE=Debug
+- GLOG=0 BUILD_TYPE=RelWithDebInfo
 
 addons:
   apt:
     sources:
-    - ubuntu-toolchain-r-test
     - llvm-toolchain-xenial-8
+    - ubuntu-toolchain-r-test
     packages:
     - clang-8
     - cmake
@@ -49,8 +49,8 @@ install:
 # /usr/bin/clang points to an older compiler on both Linux and macOS.
 #
 # Homebrew's llvm package doesn't ship a versioned clang++ binary, so the values
-# below don't work on macOS. Fortunately, the path change above makes clang and
-# clang++ point to the right compiler on macOS.
+# below don't work on macOS. Fortunately, the path change above makes the
+# default values (clang and clang++) resolve to the correct compiler on macOS.
 - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
     if [ "$CXX" = "clang++" ]; then export CXX="clang++-8" CC="clang-8"; fi;
   fi
