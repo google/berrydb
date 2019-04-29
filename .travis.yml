@@ -39,11 +39,6 @@ addons:
     update: true
 
 before_install:
-# The Travis VM image for Mac already has a link at /usr/local/include/c++,
-# causing Homebrew's gcc installation to error out. This was reported to
-# Homebrew maintainers at https://github.com/Homebrew/brew/issues/1742 and
-# removing the link emerged as a workaround.
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then rm -f /usr/local/include/c++ ; fi
 # The following Homebrew packages aren't linked by default, and need to be
 # prepended to the path explicitly.
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
