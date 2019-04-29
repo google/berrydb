@@ -29,9 +29,9 @@ addons:
   apt:
     sources:
     - ubuntu-toolchain-r-test
-    - llvm-toolchain-xenial-7
+    - llvm-toolchain-xenial-8
     packages:
-    - clang-7
+    - clang-8
     - cmake
     - gcc-8
     - g++-8
@@ -40,7 +40,9 @@ addons:
     packages:
     - cmake
     - gcc@8
+    - llvm@8
     - ninja
+    update: true
 
 before_install:
 # The Travis VM image for Mac already has a link at /usr/local/include/c++,
@@ -48,9 +50,11 @@ before_install:
 # Homebrew maintainers at https://github.com/Homebrew/brew/issues/1742 and
 # removing the link emerged as a workaround.
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then rm -f /usr/local/include/c++ ; fi
+- if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+     export PATH="$(brew --prefix llvm)/bin:$PATH";
+  fi
 
 install:
-# /usr/bin/gcc is stuck to old versions by on both Linux and OSX.
 - if [ "$CXX" = "g++" ]; then export CXX="g++-8" CC="gcc-8"; fi
 - echo ${CC}
 - echo ${CXX}
