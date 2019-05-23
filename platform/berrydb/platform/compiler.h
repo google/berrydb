@@ -47,7 +47,7 @@
 #endif  // !defined(HAS_CPP_ATTRIBUTE)
 
 #if !defined(NODISCARD)
-#if HAS_CPP_ATTRIBUTE(nodiscard)
+#if HAS_CPP_ATTRIBUTE(nodiscard) && __cplusplus >= 201603L
 #define NODISCARD [[nodiscard]]
 #elif defined(__clang__) || defined(__GNUC__)
 #define NODISCARD __attribute__((warn_unused_result))
@@ -61,7 +61,7 @@
 #if !defined(MAYBE_UNUSED)
 // GCC does not parse [[maybe_unused]] correctly. Fall back to older attribute.
 // See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81429
-#if HAS_CPP_ATTRIBUTE(maybe_unused) && \
+#if HAS_CPP_ATTRIBUTE(maybe_unused) && __cplusplus >= 201603L && \
     (!defined(__GNUC__) || defined(__clang__))
 #define MAYBE_UNUSED [[maybe_unused]]
 #elif defined(__clang__) || defined(__GNUC__)
@@ -79,7 +79,7 @@
 #endif  // !defined(MAYBE_UNUSED)
 
 #if !defined(LIKELY)
-#if HAS_CPP_ATTRIBUTE(likely)
+#if HAS_CPP_ATTRIBUTE(likely) && __cplusplus >= 201803L
 #define LIKELY(x) [[likely]] (x)
 #elif defined(__clang__) || defined(__GNUC__)
 #define LIKELY(x) __builtin_expect(!!(x), true)
@@ -89,7 +89,7 @@
 #endif  // !defined(BERYYDB_LIKELY)
 
 #if !defined(UNLIKELY)
-#if HAS_CPP_ATTRIBUTE(unlikely)
+#if HAS_CPP_ATTRIBUTE(unlikely) && __cplusplus >= 201803L
 #define UNLIKELY(x) [[unlikely]] (x)
 #elif defined(__clang__) || defined(__GNUC__)
 #define UNLIKELY(x) __builtin_expect(!!(x), false)
