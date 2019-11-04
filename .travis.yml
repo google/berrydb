@@ -63,9 +63,11 @@ install:
 before_script:
 - mkdir -p build && cd build
 - cmake .. -G Ninja -DBERRYDB_USE_GLOG=$GLOG -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+    -DCMAKE_INSTALL_PREFIX=$HOME/.local
 - cmake --build .
 - cd ..
 
 script:
 - build/berrydb_tests
 - build/berrydb_bench
+- cd build && cmake --build . --target install
