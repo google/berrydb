@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 configure_file(
-  "${PROJECT_SOURCE_DIR}/src/api/version_unittest.cc.in"
+  "src/api/version_unittest.cc.in"
   "${PROJECT_BINARY_DIR}/src/api/version_unittest.cc"
 )
 
@@ -79,7 +79,7 @@ if(BERRYDB_USE_GLOG)
   # CPU cycles on the CI.
   set(BUILD_TESTING_SAVED "${BUILD_TESTING}")
   set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-  add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/glog" EXCLUDE_FROM_ALL)
+  add_subdirectory("third_party/glog" EXCLUDE_FROM_ALL)
   set(BUILD_TESTING "${BUILD_TESTING_SAVED}" CACHE BOOL "" FORCE)
 
   # glog triggers deprecation warnings on OSX.
@@ -103,51 +103,51 @@ if(BERRYDB_USE_GLOG)
 endif(BERRYDB_USE_GLOG)
 
 configure_file(
-  "${PROJECT_SOURCE_DIR}/platform/berrydb/platform/config.h.in"
+  "platform/berrydb/platform/config.h.in"
   "${PROJECT_BINARY_DIR}/platform/berrydb/platform/config.h"
 )
 
 add_library(berrydb "")
 target_sources(berrydb
   PRIVATE
-    "${PROJECT_SOURCE_DIR}/src/api/catalog.cc"
-    "${PROJECT_SOURCE_DIR}/src/api/options.cc"
-    "${PROJECT_SOURCE_DIR}/src/api/ostream_ops.cc"
-    "${PROJECT_SOURCE_DIR}/src/api/pool.cc"
-    "${PROJECT_SOURCE_DIR}/src/api/space.cc"
-    "${PROJECT_SOURCE_DIR}/src/api/status.cc"
-    "${PROJECT_SOURCE_DIR}/src/api/store.cc"
-    "${PROJECT_SOURCE_DIR}/src/api/transaction.cc"
-    "${PROJECT_SOURCE_DIR}/src/api/vfs.cc"
-    "${PROJECT_SOURCE_DIR}/src/format/store_header.cc"
-    "${PROJECT_SOURCE_DIR}/src/format/store_header.h"
-    "${PROJECT_SOURCE_DIR}/src/page.cc"
-    "${PROJECT_SOURCE_DIR}/src/page.h"
-    "${PROJECT_SOURCE_DIR}/src/catalog_impl.cc"
-    "${PROJECT_SOURCE_DIR}/src/catalog_impl.h"
-    "${PROJECT_SOURCE_DIR}/src/free_page_list_format.cc"
-    "${PROJECT_SOURCE_DIR}/src/free_page_list_format.h"
-    "${PROJECT_SOURCE_DIR}/src/free_page_list.cc"
-    "${PROJECT_SOURCE_DIR}/src/free_page_list.h"
-    "${PROJECT_SOURCE_DIR}/src/free_page_manager.cc"
-    "${PROJECT_SOURCE_DIR}/src/free_page_manager.h"
-    "${PROJECT_SOURCE_DIR}/src/page_pool.cc"
-    "${PROJECT_SOURCE_DIR}/src/page_pool.h"
-    "${PROJECT_SOURCE_DIR}/src/pool_impl.cc"
-    "${PROJECT_SOURCE_DIR}/src/pool_impl.h"
-    "${PROJECT_SOURCE_DIR}/src/space_impl.cc"
-    "${PROJECT_SOURCE_DIR}/src/space_impl.h"
-    "${PROJECT_SOURCE_DIR}/src/store_impl.cc"
-    "${PROJECT_SOURCE_DIR}/src/store_impl.h"
-    "${PROJECT_SOURCE_DIR}/src/transaction_impl.cc"
-    "${PROJECT_SOURCE_DIR}/src/transaction_impl.h"
-    "${PROJECT_SOURCE_DIR}/src/util/endianness.h"
-    "${PROJECT_SOURCE_DIR}/src/util/linked_list.h"
-    "${PROJECT_SOURCE_DIR}/src/util/platform_allocator.h"
-    "${PROJECT_SOURCE_DIR}/src/util/platform_deleter.h"
-    "${PROJECT_SOURCE_DIR}/src/util/span_util.h"
-    "${PROJECT_SOURCE_DIR}/src/util/unique_ptr.h"
-    "${PROJECT_SOURCE_DIR}/src/vfs/libc_vfs.cc"
+    "src/api/catalog.cc"
+    "src/api/options.cc"
+    "src/api/ostream_ops.cc"
+    "src/api/pool.cc"
+    "src/api/space.cc"
+    "src/api/status.cc"
+    "src/api/store.cc"
+    "src/api/transaction.cc"
+    "src/api/vfs.cc"
+    "src/format/store_header.cc"
+    "src/format/store_header.h"
+    "src/page.cc"
+    "src/page.h"
+    "src/catalog_impl.cc"
+    "src/catalog_impl.h"
+    "src/free_page_list_format.cc"
+    "src/free_page_list_format.h"
+    "src/free_page_list.cc"
+    "src/free_page_list.h"
+    "src/free_page_manager.cc"
+    "src/free_page_manager.h"
+    "src/page_pool.cc"
+    "src/page_pool.h"
+    "src/pool_impl.cc"
+    "src/pool_impl.h"
+    "src/space_impl.cc"
+    "src/space_impl.h"
+    "src/store_impl.cc"
+    "src/store_impl.h"
+    "src/transaction_impl.cc"
+    "src/transaction_impl.h"
+    "src/util/endianness.h"
+    "src/util/linked_list.h"
+    "src/util/platform_allocator.h"
+    "src/util/platform_deleter.h"
+    "src/util/span_util.h"
+    "src/util/unique_ptr.h"
+    "src/vfs/libc_vfs.cc"
   PUBLIC
     "${PROJECT_BINARY_DIR}/platform/berrydb/platform/config.h"
     "${PROJECT_SOURCE_DIR}/platform/berrydb/platform.h"
@@ -179,7 +179,7 @@ target_include_directories(berrydb
 
 # TODO(pwnall): These should be PRIVATE for the berrydb target.
 include_directories(
-  "${PROJECT_SOURCE_DIR}/platform"
+  "platform"
   "${PROJECT_BINARY_DIR}/platform"
 )
 
@@ -199,7 +199,7 @@ if(BERRYDB_BUILD_TESTS)
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
   # This project is tested using GoogleTest.
-  add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/googletest")
+  add_subdirectory("third_party/googletest")
 
   # GoogleTest triggers a missing field initializers warning.
   if(BERRYDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
@@ -212,36 +212,36 @@ if(BERRYDB_BUILD_TESTS)
   add_executable(berrydb_tests "")
   target_sources(berrydb_tests
     PRIVATE
-      "${PROJECT_SOURCE_DIR}/src/api/ostream_ops_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/api/pool_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/api/span_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/api/status_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/api/store_unittest.cc"
+      "src/api/ostream_ops_unittest.cc"
+      "src/api/pool_unittest.cc"
+      "src/api/span_unittest.cc"
+      "src/api/status_unittest.cc"
+      "src/api/store_unittest.cc"
       "${PROJECT_BINARY_DIR}/src/api/version_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/embedder_tests/alloc_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/embedder_tests/compiler_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/embedder_tests/dcheck_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/embedder_tests/endianness_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/embedder_tests/vfs_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/format/store_header_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/free_page_list_format_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/free_page_list_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/page_pool_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/page_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/store_impl_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/test/block_access_file_wrapper.cc"
-      "${PROJECT_SOURCE_DIR}/src/test/block_access_file_wrapper.h"
-      "${PROJECT_SOURCE_DIR}/src/test/file_deleter.cc"
-      "${PROJECT_SOURCE_DIR}/src/test/file_deleter.h"
-      "${PROJECT_SOURCE_DIR}/src/test/file_deleter_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/test/test_main.cc"
-      "${PROJECT_SOURCE_DIR}/src/util/checks_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/util/endianness_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/util/linked_list_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/util/platform_allocator_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/util/platform_deleter_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/util/span_util_unittest.cc"
-      "${PROJECT_SOURCE_DIR}/src/util/unique_ptr_unittest.cc"
+      "src/embedder_tests/alloc_unittest.cc"
+      "src/embedder_tests/compiler_unittest.cc"
+      "src/embedder_tests/dcheck_unittest.cc"
+      "src/embedder_tests/endianness_unittest.cc"
+      "src/embedder_tests/vfs_unittest.cc"
+      "src/format/store_header_unittest.cc"
+      "src/free_page_list_format_unittest.cc"
+      "src/free_page_list_unittest.cc"
+      "src/page_pool_unittest.cc"
+      "src/page_unittest.cc"
+      "src/store_impl_unittest.cc"
+      "src/test/block_access_file_wrapper.cc"
+      "src/test/block_access_file_wrapper.h"
+      "src/test/file_deleter.cc"
+      "src/test/file_deleter.h"
+      "src/test/file_deleter_unittest.cc"
+      "src/test/test_main.cc"
+      "src/util/checks_unittest.cc"
+      "src/util/endianness_unittest.cc"
+      "src/util/linked_list_unittest.cc"
+      "src/util/platform_allocator_unittest.cc"
+      "src/util/platform_deleter_unittest.cc"
+      "src/util/span_util_unittest.cc"
+      "src/util/unique_ptr_unittest.cc"
   )
   target_link_libraries(berrydb_tests berrydb gtest)
 
@@ -263,21 +263,21 @@ if(BERRYDB_BUILD_CLI)
   add_executable(berrydb_cli "")
   target_include_directories(berrydb_cli
     PRIVATE
-      "${PROJECT_SOURCE_DIR}/third_party/boost/assert/include"
-      "${PROJECT_SOURCE_DIR}/third_party/boost/config/include"
-      "${PROJECT_SOURCE_DIR}/third_party/boost/core/include"
-      "${PROJECT_SOURCE_DIR}/third_party/boost/detail/include"
-      "${PROJECT_SOURCE_DIR}/third_party/boost/iterator/include"
-      "${PROJECT_SOURCE_DIR}/third_party/boost/mpl/include"
-      "${PROJECT_SOURCE_DIR}/third_party/boost/preprocessor/include"
-      "${PROJECT_SOURCE_DIR}/third_party/boost/static_assert/include"
-      "${PROJECT_SOURCE_DIR}/third_party/boost/throw_exception/include"
-      "${PROJECT_SOURCE_DIR}/third_party/boost/tokenizer/include"
-      "${PROJECT_SOURCE_DIR}/third_party/boost/type_traits/include"
+      "third_party/boost/assert/include"
+      "third_party/boost/config/include"
+      "third_party/boost/core/include"
+      "third_party/boost/detail/include"
+      "third_party/boost/iterator/include"
+      "third_party/boost/mpl/include"
+      "third_party/boost/preprocessor/include"
+      "third_party/boost/static_assert/include"
+      "third_party/boost/throw_exception/include"
+      "third_party/boost/tokenizer/include"
+      "third_party/boost/type_traits/include"
   )
   target_sources(berrydb_cli
     PRIVATE
-      "${PROJECT_SOURCE_DIR}/src/cli/cli.cc"
+      "src/cli/cli.cc"
   )
   target_link_libraries(berrydb_cli berrydb)
 
@@ -295,31 +295,31 @@ if(BERRYDB_BUILD_BENCHMARKS)
   add_executable(berrydb_bench "")
   target_sources(berrydb_bench
     PRIVATE
-      "${PROJECT_SOURCE_DIR}/src/bench/benchmark_main.cc"
-      "${PROJECT_SOURCE_DIR}/src/bench/crc32c_benchmark.cc"
-      "${PROJECT_SOURCE_DIR}/src/bench/snappy_benchmark.cc"
-      "${PROJECT_SOURCE_DIR}/src/bench/vfs_benchmark.cc"
-      "${PROJECT_SOURCE_DIR}/src/test/file_deleter.cc"
-      "${PROJECT_SOURCE_DIR}/src/test/file_deleter.h"
+      "src/bench/benchmark_main.cc"
+      "src/bench/crc32c_benchmark.cc"
+      "src/bench/snappy_benchmark.cc"
+      "src/bench/vfs_benchmark.cc"
+      "src/test/file_deleter.cc"
+      "src/test/file_deleter.h"
   )
   target_link_libraries(berrydb_bench berrydb)
 
   # This project uses Google benchmark for benchmarking.
   set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
   set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
-  add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/benchmark")
+  add_subdirectory("third_party/benchmark")
   target_link_libraries(berrydb_bench benchmark)
 
   # This project uses crc32c.
   set(CRC32C_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(CRC32C_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
   set(CRC32C_USE_GLOG OFF CACHE BOOL "" FORCE)
-  add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/crc32c")
+  add_subdirectory("third_party/crc32c")
   target_link_libraries(berrydb_bench crc32c)
 
   # This project uses snappy.
   set(SNAPPY_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-  add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/snappy")
+  add_subdirectory("third_party/snappy")
   target_link_libraries(berrydb_bench snappy)
 
   # Snappy triggers sign comparison warnings on clang.
