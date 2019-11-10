@@ -2,10 +2,13 @@ cmake_minimum_required(VERSION 3.7.2)
 # Update include/berrydb/version.h when changing the version number.
 project(BerryDB VERSION 0.1.0 LANGUAGES C CXX)
 
-# This project requires C++14.
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+# C++ standard can be overridden when this is used as a sub-project.
+if(NOT CMAKE_CXX_STANDARD)
+  # This project requires C++14.
+  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  set(CMAKE_CXX_EXTENSIONS OFF)
+endif(NOT CMAKE_CXX_STANDARD)
 
 configure_file(
   "src/api/version_unittest.cc.in"
