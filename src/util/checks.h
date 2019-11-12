@@ -11,7 +11,7 @@
 // enforce these assumptions (by crashing on failure) in builds where
 // BERRYDB_CHECK_IS_ON(). By default, invariants should be expressed as
 // assumptions. Unsuitable invariants should be expressed as checks
-// (BERRYDB_CHECK*). BERRYDB_UNREACHED is a better form of
+// (BERRYDB_CHECK*). BERRYDB_UNREACHABLE() is a better form of
 // BERRYDB_ASSUME(false), and may suppress additional compiler warnings or
 // enable more optimizations.
 //
@@ -22,6 +22,9 @@
 // check against a concrete value -- when BERRYDB_ASSERT_NE(page_id, 0) fails,
 // page_id must be 0, so this form doesn't convey additional formation over
 // BERRYDB_ASSERT(page_id != 0).
+//
+// All expressions passed to the macros below may or may not be evaluated, so
+// they must be free of side-effects.
 //
 // This section will be updated with specific guidance once we have more
 // experience around which invariants must be expressed as checks.

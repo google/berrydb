@@ -22,10 +22,10 @@
 // backport may only be used as if(UNLIKELY(predicate)).
 //
 // BUILTIN_ASSUME(predicate) asks the optimizer to assume that the predicate is
-// true. The predicate may be evaluated, so it must not have side effects.
-// Executing of a BUILTIN_ASSUME with a false predicate has undefined behavior.
-// This macro is used to implement BERRYDB_ASSUME() variants, which result in
-// DCHECKs on debug builds.
+// true. The predicate may or may not be evaluated, so it must not have side
+// effects. Executing of a BUILTIN_ASSUME with a false predicate has undefined
+// behavior. This macro is used to implement BERRYDB_ASSUME() variants, which
+// result in DCHECKs on debug builds.
 //
 // BUILTIN_UNREACHABLE() informs the compiler that the current location will
 // never be executed. Executing a BUILTIN_UNREACHABLE() has undefined behavior.
@@ -107,12 +107,11 @@
 #elif defined(__GNUC__)
 #define BUILTIN_ASSUME(x) if(x) {} else __builtin_unreachable()
 #elif defined(_MSC_VER)
-// We should be able to use the MSVC __assume statement, as shown below.
-// However, the current MSVC version (19.16.27025.1) generates bad code, even
-// though the assumptions are all true.
-//
-// #define BUILTIN_ASSUME(x) __assume(x)
-#define BUILTIN_ASSUME(x)
+#define BUILTIN_ASSUME(x) __assume(x)
+// Older MSVC versions, like VS 2017, generate bad code with __assume enabled,
+// even though the assumptions are all true. If we suspect the problem
+// resurfaces, we can try disabling the use of __assume(), as shown below.
+// #define BUILTIN_ASSUME(x)
 #else
 #define BUILTIN_ASSUME(x)
 #endif  // defined(__clang__)
